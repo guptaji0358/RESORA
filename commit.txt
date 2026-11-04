@@ -1,0 +1,8 @@
+feat(gui): introduce RESORA product identity
+
+- Add ui/brand (name, tagline, painted quadtree "resolving grid" mark, generated QIcon)
+- New BrandLockup in the header (mark + RES/ORA wordmark + descriptor) and F1 AboutDialog
+- Window title, application name/icon, tagline on the Source page
+- Windows resource (resora.rc/.ico, generate_icon.py) for exe icon and RESORA file description
+- Test brand strings, icon, title and About; update docs/GUI.md and CLAUDE.md
+- Backend, QProcess/NDJSON, reports, cancellation, repo/package/exe names unchanged
