@@ -1,0 +1,27 @@
+#include <winver.h>
+
+IDI_ICON1 ICON "resora.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 0,1,0,0
+PRODUCTVERSION 0,1,0,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "ProductName", "RESORA\0"
+      VALUE "FileDescription", "RESORA - Image Resolution Analyzer\0"
+      VALUE "InternalName", "ImageResolutionAnalyzer\0"
+      VALUE "OriginalFilename", "ImageResolutionAnalyzer.exe\0"
+      VALUE "FileVersion", "0.1.0\0"
+      VALUE "ProductVersion", "0.1.0\0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 0x4B0
+  END
+END
