@@ -49,6 +49,7 @@ add_library(imgan_core STATIC
     src/widgets/toggleswitch.cpp
     src/widgets/phaserail.cpp
     src/widgets/elidedlabel.cpp
+    src/widgets/flowlayout.cpp
     src/widgets/framelessdialog.cpp
     src/widgets/importdialog.cpp
     src/widgets/locationrow.cpp

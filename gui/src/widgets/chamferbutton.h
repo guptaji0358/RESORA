@@ -30,6 +30,7 @@ protected:
     void keyPressEvent(QKeyEvent *e) override;
 
 private:
+    QFont labelFont() const;
     bool keyboardFocused_ = false;
     QString glyph_;
     bool compact_ = false;

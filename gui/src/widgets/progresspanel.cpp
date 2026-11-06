@@ -47,6 +47,7 @@ ProgressPanel::ProgressPanel(QWidget *parent)
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(10);
+    finder_->setMaximumHeight(250);
     layout->addWidget(finder_);
     layout->addLayout(top);
     layout->addWidget(message_);

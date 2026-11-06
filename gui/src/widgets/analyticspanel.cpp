@@ -149,6 +149,7 @@ AnalyticsPanel::AnalyticsPanel(QWidget *parent)
     auto *collection = new SectionCard(tr("Collection"), QString(), content_);
     auto *g1 = new QGridLayout;
     g1->setSpacing(10);
+    g1->setVerticalSpacing(16);
     addTile(g1, content_, "tile.total", tr("Total images"), 0, 0);
     addTile(g1, content_, "tile.analyzed", tr("Analyzed"), 0, 1);
     addTile(g1, content_, "tile.failed", tr("Failed"), 0, 2);
@@ -164,6 +165,7 @@ AnalyticsPanel::AnalyticsPanel(QWidget *parent)
     auto *resolution = new SectionCard(tr("Resolution"), QString(), content_);
     auto *g2 = new QGridLayout;
     g2->setSpacing(10);
+    g2->setVerticalSpacing(16);
     addTile(g2, content_, "tile.avgwidth", tr("Average width"), 0, 0);
     addTile(g2, content_, "tile.avgheight", tr("Average height"), 0, 1);
     addTile(g2, content_, "tile.avgmp", tr("Average megapixels"), 0, 2);

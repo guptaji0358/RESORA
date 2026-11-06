@@ -61,3 +61,12 @@ feat(duplicates): duplicate image finder (roadmap milestone 4)
 - engine: `duplicates` command; duplicates/ package (sources with exclusions, size pre-grouping, streaming SHA-256 exact groups, 128-bit dHash similar groups with anchor clustering and aspect guard, SQLite fingerprint cache keyed by path/size/mtime, savings arithmetic); imaging/discovery gains an optional `exclude`
 - GUI: DuplicateFinder dialog (multiple folders, exclusions, subfolders, imported collection, threshold, progress/cancel, exact vs similar groups, thumbnails, Open / Folder / Compare) + duplicatesmodel; button and Ctrl+Shift+D; read-only, no delete/move
 - tests: tests/test_duplicates.py, gui/tests/tst_duplicates.cpp; boundary test allows the duplicates logic package; docs/DUPLICATES.md, MILESTONE.md entry
+
+refactor(gui): UI refinement of layouts, spacing and buttons
+
+- mainwindow: per-page scrolling, centred 860 px column, compare workspace fills the window; FlowLayout for action rows
+- chamferbutton: size from a fixed label font (no squeezed labels); viewfinder capped; report rows stack path above buttons
+- duplicatefinder: setup column beside results, placeholder, wrapped member rows; theme styles QListWidget/QSplitter
+- imagepane: fix doubled percent sign; analytics grid spacing
+- tests: FlowLayout test in tst_widgets; grab_screens developer tool; docs/MILESTONE.md entry
+

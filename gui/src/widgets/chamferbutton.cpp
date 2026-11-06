@@ -39,13 +39,20 @@ void ChamferButton::keyPressEvent(QKeyEvent *e)
     QPushButton::keyPressEvent(e);
 }
 
+QFont ChamferButton::labelFont() const
+{
+    // Fixed by design: the application stylesheet re-fonts every QWidget on polish, which made
+    // sizeHint (measured early) disagree with paintEvent (measured late) and squeezed labels.
+    return compact_ ? Theme::display(8, QFont::DemiBold, 1) : Theme::display(9, QFont::DemiBold, 2);
+}
+
 QSize ChamferButton::sizeHint() const
 {
     const int g = compact_ ? 14 : kGlyph, gap = compact_ ? 7 : kGlyphGap;
     if (iconOnly_ && !glyph_.isEmpty())
         return {compact_ ? 36 : 44, compact_ ? 28 : 38};
     const int pad = compact_ ? 30 : 44;  // total horizontal padding, so text never touches the edge
-    const int w = fontMetrics().horizontalAdvance(text().toUpper()) + text().size() * (compact_ ? 1 : 2) + pad;
+    const int w = QFontMetrics(labelFont()).horizontalAdvance(text().toUpper()) + text().size() * (compact_ ? 1 : 2) + pad;
     return {qMax(w + (glyph_.isEmpty() ? 0 : g + gap), compact_ ? 0 : 120), compact_ ? 28 : 38};
 }
 
@@ -115,7 +122,7 @@ void ChamferButton::paintEvent(QPaintEvent *)
     p.setPen(QPen(edge, hasFocus() ? 2 : 1.2));
     p.drawPath(shape);
 
-    p.setFont(font());
+    p.setFont(labelFont());
     p.setPen(text);
     const QString label = this->text().toUpper();
     if (iconOnly_ && !glyph_.isEmpty()) {

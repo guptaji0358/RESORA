@@ -21,6 +21,8 @@
 #include "widgets/viewfinder.h"
 #include "ui/uiformat.h"
 #include "widgets/metriccard.h"
+#include "widgets/chamferbutton.h"
+#include "widgets/flowlayout.h"
 #include "widgets/progresspanel.h"
 #include "widgets/reportselector.h"
 #include "widgets/resultspanel.h"
@@ -308,6 +310,25 @@ private slots:
         startBtn->click();
         QVERIFY(!w.isScanning());
         QVERIFY(startBtn->isEnabled());
+    }
+
+    void flowLayoutWrapsInsteadOfSqueezing()
+    {
+        QWidget host;
+        auto *flow = new FlowLayout(&host);
+        QList<ChamferButton *> buttons;
+        for (const char *t : {"Image Properties", "Analytics", "Compare Images", "New Scan"}) {
+            buttons << new ChamferButton(QString::fromLatin1(t), &host);
+            flow->addWidget(buttons.last());
+        }
+        host.resize(420, flow->heightForWidth(420));  // narrower than the four buttons side by side
+        flow->activate();
+        for (ChamferButton *b : buttons) {
+            QCOMPARE(b->width(), b->sizeHint().width());      // never squeezed below the label
+            QVERIFY(b->geometry().right() <= host.width());   // never past the edge
+        }
+        QVERIFY(buttons.last()->y() > buttons.first()->y());  // wrapped onto a new row
+        QVERIFY(flow->heightForWidth(2000) < flow->heightForWidth(420));
     }
 };
 

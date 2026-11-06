@@ -64,6 +64,7 @@ void DuplicateFinder::showResult(const DupResult &r)
     if (!extra.isEmpty())
         status_->setText(status_->text() + QLatin1Char(' ') + extra);
     resultsBox_->show();
+    placeholder_->hide();
     showKind(!r.exact.isEmpty() || r.similar.isEmpty());
 }
 
@@ -127,6 +128,8 @@ QWidget *DuplicateFinder::memberRow(const DupGroup &g, int index)
     row->setStyleSheet(QStringLiteral("#dupRow{border:1px solid %1; border-left:3px solid %2;}")
                            .arg(Theme::line().name(), g.exact ? Theme::alert().name() : Theme::ember().name()));
     auto *h = new QHBoxLayout(row);
+    h->setContentsMargins(12, 10, 12, 10);
+    h->setSpacing(14);
     auto *thumb = new QLabel(tr("…"));
     thumb->setFixedSize(kThumb, kThumb);
     thumb->setAlignment(Qt::AlignCenter);
@@ -150,13 +153,16 @@ QWidget *DuplicateFinder::memberRow(const DupGroup &g, int index)
     });
 
     auto *col = new QVBoxLayout;
-    auto *name = new QLabel(f.name);
+    auto *name = new ElidedLabel;
+    name->setFullText(f.name);
     name->setFont(Theme::display(11, QFont::DemiBold));
     auto *full = new ElidedLabel;
     full->setFullText(QDir::toNativeSeparators(f.path));
     full->setProperty("role", QStringLiteral("muted"));
     auto *info = new QLabel(facts(f));
+    info->setWordWrap(true);
     auto *badge = new QLabel;
+    badge->setWordWrap(true);
     if (g.exact) {
         badge->setText(tr("EXACT DUPLICATE · identical content"));
         badge->setStyleSheet(QStringLiteral("color:%1; font-weight:600;").arg(Theme::alert().name()));
@@ -175,6 +181,7 @@ QWidget *DuplicateFinder::memberRow(const DupGroup &g, int index)
     h->addLayout(col, 1);
 
     auto *btns = new QVBoxLayout;
+    btns->setSpacing(6);
     auto *open = new ChamferButton(tr("Open"));
     auto *folder = new ChamferButton(tr("Folder"));
     auto *cmp = new ChamferButton(tr("Compare"));
@@ -192,5 +199,6 @@ QWidget *DuplicateFinder::memberRow(const DupGroup &g, int index)
     const QString other = g.files.size() > 1 ? g.files.at(index == 0 ? 1 : 0).path : QString();
     connect(cmp, &QPushButton::clicked, this, [this, path, other] { emit compareRequested(path, other); });
     h->addLayout(btns);
+    h->setAlignment(btns, Qt::AlignTop);
     return row;
 }

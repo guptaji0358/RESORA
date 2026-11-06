@@ -125,6 +125,48 @@ None confirmed (not manually checked).
 
 ---
 
+## Milestone: UI Refinement (layout, spacing, visual consistency)
+Scope: inspect every screen/dialog at normal and minimum window size, fix real layout defects, keep the RESORA dark identity. No engine, protocol or feature changes.
+
+### Layout problems found (from real renders, `gui/tests/grab_screens.cpp`, Windows platform plugin, 125 % scaling)
+- Compare workspace sat inside the window-wide scroll area: at 960x640 the viewer was pushed far below the fold, the right pane clipped, "17%% FIT" showed a doubled percent sign.
+- Scan page: the 16:9 viewfinder grew with the window width and pushed Cancel off screen at the minimum size.
+- Result/source action rows were wider than the 780 px column; layouts squeezed buttons below their label (icon touching the border, e.g. IMAGE PROPERTIES).
+- ChamferButton measured its size with the pre-stylesheet font and painted with the polished one, hence the mismatch above.
+- Report rows: path elided to "Not generated …nfirm a file)." because buttons took the row.
+- Content column stuck to the left with a large dead area on wide windows.
+- Duplicate Finder: whole dialog in one scroll area; two big empty list boxes pushed results below the fold; member-row buttons clipped ("FOLDE", "COMPA"); settings and results never visible together.
+- Analytics: uneven row spacing in tile grids. List widgets had no theme styling.
+
+### Improvements
+- Each phase page scrolls on its own; the Compare workspace fills the window (no outer scroll). Content column centred, width 860, tighter margins/spacing.
+- New shared `FlowLayout` (wrapping button rows) for source and readout actions; ChamferButton sizes from a fixed label font.
+- Viewfinder capped at 250 px high; report rows put the full path on its own line above the buttons.
+- Duplicate Finder: setup column (360 px) beside results, status/progress under the button, placeholder before first result, wrapped member rows, splitter sizing; themed QListWidget/QSplitter.
+- Fixed percent text in image pane; analytics tile grid spacing.
+
+### Files changed
+gui/CMakeLists.txt, gui/src/mainwindow.cpp, gui/src/ui/theme.cpp, gui/src/widgets/{chamferbutton.cpp,chamferbutton.h,flowlayout.cpp,flowlayout.h,duplicatefinder.cpp,duplicatefinder.h,duplicatefinder_results.cpp,imagepane.cpp,progresspanel.cpp,resultspanel.cpp,analyticspanel.cpp}, gui/tests/{CMakeLists.txt,grab_screens.cpp,tst_widgets.cpp}. Engine, main.py, protocol untouched.
+
+### 1. Automated verification
+Command: `run.bat /nolaunch` (2026-11-06). Python tests, engine selfcheck and ctest 10/10 passed after the changes (new `flowLayoutWrapsInsteadOfSqueezing` in tst_widgets; see final run in the report). Build OK.
+
+### 2. Visual verification (actual rendering)
+`grab_screens.exe` rendered the real MainWindow and dialogs with sample data at 1180x800 and 960x640 and saved PNGs that were inspected: Source, Scan (running/failed), Readout, Analytics (empty/filled), Compare (empty/two images), Settings, Properties, Duplicate Finder (setup/exact/similar), About, Import. Before/after were compared for Source, Readout, Scan, Compare, Duplicates, Analytics. This is rendering with sample data, not the live app driven by a user.
+
+### 3. Known defects
+- Dialogs were inspected at default size only, not at 100 %/150 %/200 % scaling or on a small physical screen; real-app interaction (hover/pressed/focus states, dragging dialogs, live scan) was not exercised.
+- Duplicate Finder group list still elides long summaries; its empty folder lists have no placeholder text.
+- Properties/Settings dialogs repeat the title in the title bar and the eyebrow (left as is).
+
+### 4. Unverified items
+Display scaling other than 125 %, multi-monitor boundary handling, high-contrast, keyboard traversal order after the layout changes.
+
+### 5. Final status
+**NOT FINISHED** — implementation and automated checks done; awaiting manual review.
+
+---
+
 ## Template for the next milestone
 
 ```

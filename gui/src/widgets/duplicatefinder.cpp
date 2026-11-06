@@ -29,7 +29,8 @@ DuplicateFinder::DuplicateFinder(const QStringList &collection, const QString &s
       collection_(collection), startFolder_(startFolder), cachePath_(cachePath)
 {
     setObjectName(QStringLiteral("duplicateFinder"));
-    setMinimumSize(900, 680);
+    setMinimumSize(980, 660);
+    resize(1100, 720);
     buildUi();
     refreshControls();
 }
@@ -55,9 +56,11 @@ void DuplicateFinder::buildUi()
     // --- sources ---
     auto *src = new SectionCard(tr("Where to look"));
     folders_ = new QListWidget;
-    folders_->setMaximumHeight(84);
+    folders_->setMinimumHeight(72);
+    folders_->setMaximumHeight(110);
     excludes_ = new QListWidget;
-    excludes_->setMaximumHeight(60);
+    excludes_->setMinimumHeight(48);
+    excludes_->setMaximumHeight(72);
     auto *add = new ChamferButton(tr("Add folder…"));
     add->setGlyph(QStringLiteral("add"));
     add->setCompact(true);
@@ -96,9 +99,8 @@ void DuplicateFinder::buildUi()
     connect(similar_, &QCheckBox::toggled, threshold_, &QWidget::setEnabled);
     connect(useCollection_, &QCheckBox::toggled, this, [this] { refreshControls(); });
     auto *thr = new QHBoxLayout;
-    thr->addWidget(similar_);
-    thr->addStretch(1);
     thr->addWidget(new QLabel(tr("Minimum similarity")));
+    thr->addStretch(1);
     thr->addWidget(threshold_);
     src->body()->addWidget(new QLabel(tr("Folders to scan")));
     src->body()->addWidget(folders_);
@@ -108,6 +110,7 @@ void DuplicateFinder::buildUi()
     src->body()->addLayout(r2);
     src->body()->addWidget(useCollection_);
     src->body()->addWidget(recursive_);
+    src->body()->addWidget(similar_);
     src->body()->addLayout(thr);
 
     start_ = new ChamferButton(tr("Find duplicates"));
@@ -127,10 +130,15 @@ void DuplicateFinder::buildUi()
     status_ = new QLabel;
     status_->setWordWrap(true);
     status_->setProperty("role", QStringLiteral("muted"));
-    auto *go = new QHBoxLayout;
-    go->addWidget(start_);
-    go->addWidget(cancel_);
-    go->addWidget(status_, 1);
+    auto *go = new QVBoxLayout;
+    go->setSpacing(8);
+    auto *goButtons = new QHBoxLayout;
+    goButtons->addWidget(start_);
+    goButtons->addWidget(cancel_);
+    goButtons->addStretch(1);
+    go->addLayout(goButtons);
+    go->addWidget(bar_);
+    go->addWidget(status_);
 
     // --- results ---
     resultsBox_ = new QWidget;
@@ -167,7 +175,7 @@ void DuplicateFinder::buildUi()
     rv->addWidget(kindNote_);
 
     groups_ = new QListWidget;
-    groups_->setMinimumWidth(240);
+    groups_->setMinimumWidth(200);
     connect(groups_, &QListWidget::currentRowChanged, this, &DuplicateFinder::fillMembers);
     membersHost_ = new QWidget;
     membersLayout_ = new QVBoxLayout(membersHost_);
@@ -182,6 +190,8 @@ void DuplicateFinder::buildUi()
     split->addWidget(groups_);
     split->addWidget(scroll);
     split->setStretchFactor(1, 1);
+    split->setSizes({230, 620});
+    split->setChildrenCollapsible(false);
     split->setMinimumHeight(260);
     rv->addWidget(split, 1);
     resultsBox_->hide();
@@ -192,10 +202,24 @@ void DuplicateFinder::buildUi()
     ov->setSpacing(12);
     ov->addWidget(eyebrow);
     ov->addWidget(note);
-    ov->addWidget(src);
-    ov->addLayout(go);
-    ov->addWidget(bar_);
-    ov->addWidget(resultsBox_, 1);
+    // Setup on the left (fixed width), outcome on the right: the groups get the room they need.
+    auto *left = new QVBoxLayout;
+    left->setSpacing(12);
+    left->addWidget(src);
+    left->addLayout(go);
+    left->addStretch(1);
+    auto *leftHost = new QWidget;
+    leftHost->setLayout(left);
+    leftHost->setFixedWidth(360);
+    placeholder_ = new QLabel(tr("Add a folder and press Find duplicates.\nIdentical files and visually similar images appear here, grouped."));
+    placeholder_->setProperty("role", QStringLiteral("muted"));
+    placeholder_->setAlignment(Qt::AlignCenter);
+    auto *cols = new QHBoxLayout;
+    cols->setSpacing(24);
+    cols->addWidget(leftHost, 0, Qt::AlignTop);
+    cols->addWidget(resultsBox_, 1);
+    cols->addWidget(placeholder_, 1);
+    ov->addLayout(cols, 1);
     auto *page = new QScrollArea;
     page->setWidgetResizable(true);
     page->setFrameShape(QFrame::NoFrame);
@@ -296,6 +320,8 @@ void DuplicateFinder::start()
     }
     paramsFile_->close();
     resultsBox_->hide();
+    if (placeholder_)
+        placeholder_->show();
     bar_->setRange(0, 0);
     bar_->show();
     status_->setText(tr("Starting…"));

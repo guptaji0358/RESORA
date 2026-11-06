@@ -70,7 +70,7 @@ private:
     QSpinBox *threshold_ = nullptr;
     ChamferButton *start_ = nullptr, *cancel_ = nullptr, *exactTab_ = nullptr, *similarTab_ = nullptr;
     QProgressBar *bar_ = nullptr;
-    QLabel *status_ = nullptr, *kindNote_ = nullptr;
+    QLabel *status_ = nullptr, *kindNote_ = nullptr, *placeholder_ = nullptr;
     QWidget *resultsBox_ = nullptr, *membersHost_ = nullptr;
     QVBoxLayout *membersLayout_ = nullptr;
     MetricCard *cards_[8] = {};

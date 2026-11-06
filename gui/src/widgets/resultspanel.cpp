@@ -83,12 +83,12 @@ void ResultsPanel::addReportRow(ReportRow &row, const QString &title, QVBoxLayou
 
     auto *line = new QHBoxLayout;
     line->setSpacing(8);
-    line->addWidget(row.path, 1);
     line->addWidget(row.open);
     line->addWidget(row.folder);
+    line->addStretch(1);
     auto *v = new QVBoxLayout(row.box);
     v->setContentsMargins(0, 0, 0, 0);
-    v->setSpacing(4);
+    v->setSpacing(6);
     auto *capRow = new QHBoxLayout;
     capRow->setSpacing(8);
     auto *fmt = new QLabel(row.box);
@@ -98,6 +98,7 @@ void ResultsPanel::addReportRow(ReportRow &row, const QString &title, QVBoxLayou
     capRow->addWidget(fmt);
     capRow->addWidget(row.caption, 1);
     v->addLayout(capRow);
+    v->addWidget(row.path);
     v->addLayout(line);
     into->addWidget(row.box);
 

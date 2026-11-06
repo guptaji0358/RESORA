@@ -34,6 +34,7 @@
 #include "widgets/settingsdialog.h"
 #include "widgets/appheader.h"
 #include "widgets/chamferbutton.h"
+#include "widgets/flowlayout.h"
 #include "widgets/phaserail.h"
 #include "widgets/toggleswitch.h"
 #include "widgets/sourcepicker.h"
@@ -95,28 +96,36 @@ QLabel *makeLabel(const QString &text, const char *role)
 }
 
 // A phase page: eyebrow + display heading + body, content kept to a readable width.
-QWidget *makePage(const QString &eyebrow, const QString &title, const QString &lede, QVBoxLayout **body, int maxWidth = 780)
+QWidget *makePage(const QString &eyebrow, const QString &title, const QString &lede, QVBoxLayout **body, int maxWidth = 860)
 {
     auto *page = new GridStage;
     auto *outer = new QHBoxLayout(page);
-    outer->setContentsMargins(48, 36, 48, 36);
+    outer->setContentsMargins(40, 28, 40, 28);
     auto *col = new QVBoxLayout;
-    col->setSpacing(14);
+    col->setSpacing(12);
     col->addWidget(makeLabel(eyebrow, "eyebrow"));
     col->addWidget(makeLabel(title, "display"));
     if (!lede.isEmpty())
         col->addWidget(makeLabel(lede, "lede"));
-    col->addSpacing(10);
+    col->addSpacing(6);
     *body = new QVBoxLayout;
-    (*body)->setSpacing(18);
+    (*body)->setSpacing(16);
     col->addLayout(*body);
     col->addStretch(1);
     auto *holder = new QWidget;
     holder->setMaximumWidth(maxWidth);
     holder->setLayout(col);
-    outer->addWidget(holder, 1);
-    outer->addStretch(0);
-    return page;
+    outer->addStretch(1);       // content column is centred; extra width is shared equally
+    outer->addWidget(holder, 100);
+    outer->addStretch(1);
+    // Each phase page scrolls on its own when the window is short; the compare workspace does not
+    // (it fills the window), so it is never wrapped.
+    auto *scroll = new QScrollArea;
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scroll->setWidget(page);
+    return scroll;
 }
 }  // namespace
 
@@ -160,7 +169,7 @@ void MainWindow::buildUi()
     start_->setToolTip(tr("Analyze the imported folder or images"));
     Theme::setProperty(start_, "variant", QStringLiteral("primary"));
     start_->setMinimumHeight(46);
-    auto *go = new QHBoxLayout;
+    auto *go = new FlowLayout;
     go->addWidget(start_);
     auto *compareSrc = new ChamferButton(tr("Compare Images"));
     compareSrc->setGlyph(QStringLiteral("swap"));
@@ -174,7 +183,6 @@ void MainWindow::buildUi()
     dupSrc->setToolTip(tr("Find identical and visually similar images (Ctrl+Shift+D); never deletes anything"));
     connect(dupSrc, &QPushButton::clicked, this, &MainWindow::openDuplicates);
     go->addWidget(dupSrc);
-    go->addStretch(1);
     src->addLayout(go);
 
     // --- 02 Scan ---
@@ -207,8 +215,7 @@ void MainWindow::buildUi()
     analyticsBtn->setGlyph(QStringLiteral("scan"));
     analyticsBtn->setToolTip(tr("Statistics for this collection (Ctrl+4)"));
     connect(analyticsBtn, &QPushButton::clicked, this, [this] { showPhase(PhaseRail::Analytics); });
-    auto *outRow = new QHBoxLayout;
-    outRow->setSpacing(12);
+    auto *outRow = new FlowLayout;
     outRow->addWidget(again_);
     outRow->addWidget(props);
     outRow->addWidget(analyticsBtn);
@@ -217,7 +224,6 @@ void MainWindow::buildUi()
     compareOut->setToolTip(tr("Compare two images side by side (Ctrl+Shift+C)"));
     connect(compareOut, &QPushButton::clicked, this, &MainWindow::openComparison);
     outRow->addWidget(compareOut);
-    outRow->addStretch(1);
     out->addLayout(outRow);
 
     // --- 04 Analytics ---
@@ -231,12 +237,6 @@ void MainWindow::buildUi()
     stack_->addWidget(compare_);
     connect(compare_, &ComparisonWorkspace::backRequested, this, &MainWindow::closeComparison);
 
-    auto *scroll = new QScrollArea;
-    scroll->setWidgetResizable(true);
-    scroll->setFrameShape(QFrame::NoFrame);
-    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setWidget(stack_);
-
     auto *shell = new QWidget;
     auto *shellLayout = new QVBoxLayout(shell);
     shellLayout->setContentsMargins(0, 0, 0, 0);
@@ -245,7 +245,7 @@ void MainWindow::buildUi()
     auto *body = new QHBoxLayout;
     body->setSpacing(0);
     body->addWidget(rail_);
-    body->addWidget(scroll, 1);
+    body->addWidget(stack_, 1);
     shellLayout->addLayout(body, 1);
     setCentralWidget(shell);
     // Start with focus on the neutral shell, not on an action button: a stray Enter does nothing.

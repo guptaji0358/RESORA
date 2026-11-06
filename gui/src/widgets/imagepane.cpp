@@ -177,7 +177,7 @@ void ImagePane::paintEvent(QPaintEvent *)
     p.drawRect(target.adjusted(-0.5, -0.5, 0.5, 0.5));
     // Zoom readout.
     p.setFont(Theme::mono(8.5));
-    const QString txt = QStringLiteral("%1%%  %2").arg(qRound(z * 100)).arg(fit_ ? tr("FIT") : QString());
+    const QString txt = QStringLiteral("%1%  %2").arg(qRound(z * 100)).arg(fit_ ? tr("FIT") : QString());
     p.setPen(Theme::mute());
     p.drawText(rect().adjusted(10, 0, -10, -8), Qt::AlignBottom | Qt::AlignRight, txt.trimmed());
 }
