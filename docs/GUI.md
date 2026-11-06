@@ -39,11 +39,12 @@ Product: **RESORA** (RES from resolution, ORA for a distinctive ending), subtitl
 
 | Piece | Where |
 |---|---|
-| Names, tagline, version, painted mark, `QIcon` | `ui/brand` (`Brand::paintMark`, `Brand::icon`) |
+| Names, tagline, version, mark (rendered from `Assets/branding/mark.svg`), `QIcon` | `ui/brand` (`Brand::paintMark`, `Brand::icon`) |
+| SVG icon family: tinting, hover/disabled states, DPR, missing-asset fallback | `ui/icons` (`Icons::icon/pixmap/artwork`), assets in [Assets/README.md](../Assets/README.md) |
 | Header lockup (mark + wordmark + descriptor) | `widgets/BrandLockup`, used by `AppHeader` |
 | About box (F1) | `widgets/AboutDialog` |
 | Window title, app name/icon | `MainWindow`, `main()` |
-| Exe icon + Windows file description | `gui/assets/resora.rc` + `resora.ico` (regenerate with `python gui/assets/generate_icon.py`; geometry mirrors `brand.cpp`) |
+| Exe icon + Windows file description | `Assets/app/resora.rc` + `resora.ico` (regenerate with `python Assets/app/generate_icon.py`; reads `Assets/branding/mark.svg`) |
 
 The executable file name stays `ImageResolutionAnalyzer.exe` (run.bat and tooling); the Windows resource shows "RESORA" as product name. No splash screen: the app starts instantly, so one would only add delay. The tagline appears on the Source page and in About.
 
@@ -85,3 +86,20 @@ CSV and TXT are independent (none, either, both). Enabled with an empty path is 
 
 ## Running
 `run.bat` (build + checks + launch) or `run.bat /nolaunch`. GUI tests (`ctest --test-dir build`, run by `run.bat`, exit 53 on failure): `tst_protocolparser`, `tst_backendprocess` (drives the real engine: success, error, spawn failure, cancel, kill escalation, stall timeout), `tst_widgets` (validation, request arguments, initial window state, UI formatting, progress panel states, results metrics).
+
+## Saved Locations (Settings)
+GUI-only feature; the Python engine is not involved. Open Settings from the header (SETTINGS) or Ctrl+,.
+- `locations/savedlocation.*`: model `{id, name, path}` + path normalisation and availability probe (`Available/Missing/NotDirectory/Invalid`).
+- `locations/locationstore.*`: validation (unique names case-insensitively, unique paths, absolute paths only, name <= 64) and persistence to `saved_locations.json` (`{"version":1,"locations":[...]}`) in `QStandardPaths::AppConfigLocation`, written atomically (`QSaveFile`); a failed save rolls the change back. Corrupt file -> moved aside as `.corrupt-<time>`; unreadable entries are preserved on save; newer format version or unreadable file -> read-only. Missing folders are flagged, never deleted.
+- `locations/locationrecommender.*`: pure logic for what to offer (only available folders) and the value produced (folder, or folder + typed file name / `image_resolution_report.<ext>` for reports).
+- `widgets/locationsuggester.*`: popup attached to one `QLineEdit` (focus, click, typing, Up/Down/Enter/Esc). Attached to the CSV and TXT report fields and to the folder path field of the Import dialog (`ImportDialog`); choosing only fills the field.
+- `widgets/settingsdialog.*`, `savedlocationspanel.*`, `locationrow.*`: Settings UI. Tests: `gui/tests/tst_locations.cpp`.
+
+## Visual assets
+SVG sources live in `Assets/` and are compiled in via `Assets/resora.qrc` (`:/icons/*.svg`, `:/branding/*`, `:/illustrations/*`); the GUI links `Qt6::Svg`. Icons use two colour tokens (paper, ember) that `ui/icons.cpp` swaps at render time, so hover, disabled and on-primary states come from one file and stay sharp at any DPR. `ChamferButton::setGlyph` draws an icon in the label colour; stock buttons use `Icons::icon(name)` (a state-aware `QIconEngine`). A missing asset logs a warning and draws a dashed red box instead of nothing. `tst_icons` covers the family.
+
+## Image properties (Milestone 1)
+`widgets/propertiesdialog` (a `FramelessDialog`, Ctrl+I / "Image Properties" button on the Readout page) runs the `properties` backend command
+through `BackendProcess` (file list in a temp params file) and renders `backend/propertiesmodel` sections (FILE, DIMENSIONS, ORIENTATION, COLOR,
+DENSITY, EXIF) as `SectionCard`s. Missing metadata shows muted italic "Not available". Several images: Prev/Next. Copy puts the text on the clipboard.
+Closing the dialog cancels a running job. Single/multiple-image imports preselect those images; a folder import asks the user to choose.

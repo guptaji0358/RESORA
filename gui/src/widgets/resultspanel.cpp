@@ -15,10 +15,13 @@
 #include "distributionbar.h"
 #include "elidedlabel.h"
 #include "metriccard.h"
+#include "ui/icons.h"
+#include "ui/theme.h"
 #include "ui/uiformat.h"
 
 ResultsPanel::ResultsPanel(QWidget *parent)
     : QWidget(parent),
+      emptyArt_(new QLabel(this)),
       empty_(new QLabel(tr("No scan results yet. Results appear here after a scan."), this)),
       content_(new QWidget(this)),
       total_(new MetricCard(tr("Files discovered"), content_)),
@@ -28,6 +31,9 @@ ResultsPanel::ResultsPanel(QWidget *parent)
       tableHeading_(new QLabel(tr("RESOLUTION LADDER"), content_)),
       byResolution_(new DistributionBar(content_))
 {
+    emptyArt_->setPixmap(Icons::artwork(QStringLiteral("illustrations/empty-results"), QSize(200, 125), devicePixelRatioF()));
+    emptyArt_->setFixedSize(200, 125);
+    emptyArt_->setAccessibleName(tr("Empty results illustration"));
     empty_->setProperty("role", QStringLiteral("muted"));
     empty_->setWordWrap(true);
     skipped_->setProperty("role", QStringLiteral("muted"));
@@ -51,7 +57,10 @@ ResultsPanel::ResultsPanel(QWidget *parent)
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
+    layout->addWidget(emptyArt_);
     layout->addWidget(empty_);
+    layout->setAlignment(emptyArt_, Qt::AlignLeft | Qt::AlignTop);
+    layout->setAlignment(empty_, Qt::AlignTop);
     layout->addWidget(content_, 1);
     clear();
 }
@@ -64,9 +73,11 @@ void ResultsPanel::addReportRow(ReportRow &row, const QString &title, QVBoxLayou
     row.path = new ElidedLabel(row.box);
     row.path->setProperty("role", QStringLiteral("mono"));
     row.open = new ChamferButton(tr("Open Report"), row.box);
+    static_cast<ChamferButton *>(row.open)->setGlyph(QStringLiteral("open-report"));
     row.open->setToolTip(tr("Open the %1 in its default application").arg(title));
     row.open->setAccessibleName(tr("Open %1").arg(title));
     row.folder = new ChamferButton(tr("Show Containing Folder"), row.box);
+    static_cast<ChamferButton *>(row.folder)->setGlyph(QStringLiteral("folder-open"));
     row.folder->setToolTip(tr("Open the folder that contains the %1").arg(title));
     row.folder->setAccessibleName(tr("Show folder of %1").arg(title));
 
@@ -78,7 +89,15 @@ void ResultsPanel::addReportRow(ReportRow &row, const QString &title, QVBoxLayou
     auto *v = new QVBoxLayout(row.box);
     v->setContentsMargins(0, 0, 0, 0);
     v->setSpacing(4);
-    v->addWidget(row.caption);
+    auto *capRow = new QHBoxLayout;
+    capRow->setSpacing(8);
+    auto *fmt = new QLabel(row.box);
+    fmt->setFixedSize(18, 18);
+    fmt->setPixmap(Icons::pixmap(title.startsWith(QLatin1String("CSV")) ? QStringLiteral("csv") : QStringLiteral("txt"),
+                                 18, Theme::mute(), Theme::ember(), devicePixelRatioF()));
+    capRow->addWidget(fmt);
+    capRow->addWidget(row.caption, 1);
+    v->addLayout(capRow);
     v->addLayout(line);
     into->addWidget(row.box);
 
@@ -92,6 +111,7 @@ void ResultsPanel::addReportRow(ReportRow &row, const QString &title, QVBoxLayou
 void ResultsPanel::clear()
 {
     empty_->show();
+    emptyArt_->show();
     content_->hide();
     for (ReportRow *r : {&csv_, &txt_}) {
         r->file.clear();
@@ -145,6 +165,7 @@ void ResultsPanel::showResult(const QJsonObject &data, bool wantCsv, bool wantTx
     setReport(csv_, wantCsv, reports.value(QStringLiteral("csv")).toString());
     setReport(txt_, wantTxt, reports.value(QStringLiteral("txt")).toString());
     empty_->hide();
+    emptyArt_->hide();
     content_->show();
 }
 

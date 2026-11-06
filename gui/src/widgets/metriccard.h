@@ -12,6 +12,9 @@ public:
 
     enum class Tone { Neutral, Good, Bad };
     void setValue(qint64 value, Tone tone = Tone::Neutral);
+    // Free-form value (e.g. "4.28 GB", "1,920 × 1,080"); `compact` uses the smaller numeral for long text.
+    // `hint` becomes the tooltip (definitions); empty leaves it unchanged.
+    void setText(const QString &text, Tone tone = Tone::Neutral, bool compact = false, const QString &hint = QString());
     QString valueText() const;
 
 private:

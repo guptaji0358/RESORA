@@ -3,6 +3,7 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFileInfo>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QMimeData>
 #include <QPushButton>
@@ -11,11 +12,13 @@
 #include "chamferbutton.h"
 #include "elidedlabel.h"
 #include "importdialog.h"
+#include "ui/icons.h"
 #include "ui/theme.h"
 
 SourcePicker::SourcePicker(QWidget *parent)
     : QWidget(parent),
       kind_(new QLabel(this)),
+      kindIcon_(new QLabel(this)),
       title_(new QLabel(this)),
       location_(new ElidedLabel(this)),
       detail_(new QLabel(this)),
@@ -35,12 +38,19 @@ SourcePicker::SourcePicker(QWidget *parent)
     notes_->setWordWrap(true);
     notes_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     change_->setAccessibleName(tr("Import or change the selection"));
+    static_cast<ChamferButton *>(change_)->setGlyph(QStringLiteral("import"));
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(6);
     layout->addWidget(kind_);
-    layout->addWidget(title_);
+    auto *titleRow = new QHBoxLayout;
+    titleRow->setSpacing(12);
+    kindIcon_->setFixedSize(32, 32);
+    kindIcon_->setAccessibleName(tr("Source type"));
+    titleRow->addWidget(kindIcon_, 0, Qt::AlignTop);
+    titleRow->addWidget(title_, 1);
+    layout->addLayout(titleRow);
     layout->addWidget(location_);
     layout->addWidget(detail_);
     layout->addWidget(notes_);
@@ -81,7 +91,7 @@ void SourcePicker::openImportDialog()
         start = selection_.folder;
     else if (!selection_.files.isEmpty())
         start = QFileInfo(selection_.files.first()).absolutePath();
-    ImportDialog dialog(start, window());
+    ImportDialog dialog(start, window(), locations_);
     if (dialog.exec() == QDialog::Accepted)
         setSelection(dialog.selection());
 }
@@ -106,6 +116,11 @@ void SourcePicker::refresh()
         location_->setFullText(tr("Press Ctrl+O, or drop a folder or images here."));
         detail_->setText(QString());
     }
+    const QString glyph = s.kind == ImportSelection::Folder ? QStringLiteral("folder")
+                          : s.kind == ImportSelection::SingleImage ? QStringLiteral("image")
+                          : s.kind == ImportSelection::None ? QStringLiteral("import") : QStringLiteral("images");
+    kindIcon_->setPixmap(Icons::pixmap(glyph, 32, has ? Theme::paper() : Icons::dim(), has ? Theme::ember() : Icons::dim(),
+                                       devicePixelRatioF()));
     location_->setVisible(true);
     detail_->setVisible(has);
 

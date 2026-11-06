@@ -78,7 +78,7 @@ class Boundaries(unittest.TestCase):
 
     def test_commands_import_only_shared_modules(self):
         allowed = {"..", "..command", "..protocol"}  # relative imports only; siblings would be "." / ".x"
-        logic_packages = ("..imaging.", "..reports.")
+        logic_packages = ("..imaging.", "..reports.", "..duplicates.")
         for path in (ENGINE / "commands").glob("*.py"):
             for mod in imported_modules(path):
                 if mod.startswith("."):

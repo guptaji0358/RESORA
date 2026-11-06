@@ -3,6 +3,7 @@
 // from real backend counts.
 #include <QList>
 #include <QPair>
+#include <QSize>
 #include <QString>
 #include <QWidget>
 
@@ -18,6 +19,8 @@ public:
     void setEntries(const QList<Entry> &entries);   // zero/negative counts are dropped
     int rowCount() const { return rows_; }
     // Share of `count` in `total` as 0..1 (0 when total <= 0). Pure, unit-tested.
+    // True pixel size of a standard class name (e.g. "Full HD"); empty size for custom/panorama/above/below.
+    static QSize standardSize(const QString &label);
     static double share(qint64 count, qint64 total);
 
 private:

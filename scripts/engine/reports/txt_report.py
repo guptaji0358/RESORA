@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Mapping, Sequence, TextIO
 
+from .analytics_text import analytics_lines
 from .atomic import atomic_write
 
 
@@ -34,6 +35,7 @@ def write_txt(
     recursive: bool,
     generated: str,
     selected_files: int | None = None,
+    analytics: Mapping[str, Any] | None = None,  # optional extra section; None = layout unchanged
 ) -> None:
     def write(fh: TextIO) -> None:
         fh.write("Image Resolution Report\n=======================\n")
@@ -65,5 +67,7 @@ def write_txt(
             fh.write("\nProblem files\n")
             for r in problems:
                 fh.write(f"  [{r['status']}] {r['path']}\n      {r.get('error') or ''}\n")
+        if analytics is not None:
+            fh.write("\n".join(analytics_lines(analytics, human_size)) + "\n")
 
     atomic_write(path, write, encoding="utf-8")

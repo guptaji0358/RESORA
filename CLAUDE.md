@@ -20,7 +20,7 @@ One module = one responsibility, independently testable, plain inputs/outputs. D
 
 ## Build and run
 - `run.bat` is the development launcher: kills only `ImageResolutionAnalyzer.exe`, reuses/creates `.venv`, reinstalls deps only if `requirements.txt` changed, runs engine selfcheck + unit tests, configures (once) and builds the GUI into `build/`, launches it.
-- `run.bat` also runs GUI tests via ctest (exit 53). `run.bat /nolaunch` builds and checks without launching. `run.bat /push` is a separate Git-only push (exit 60-66, see header of run.bat). Log: `logs/run.log`. Exit codes: 10 stop app, 20-22 python/venv, 30 pip, 40-41 engine checks, 50-52 Qt/build.
+- `run.bat` also runs GUI tests via ctest (exit 53). `run.bat /nolaunch` builds and checks without launching. `run.bat /commit` = normal build + launch, then `git add -A` + commit with the last block of `commit.txt` (explicit user action only; never pushes; exit 67-69). `run.bat /push` is a separate Git-only push (exit 60-66, see header of run.bat). Log: `logs/run.log`. Exit codes: 10 stop app, 20-22 python/venv, 30 pip, 40-41 engine checks, 50-52 Qt/build.
 
 ## Development workflow (verification discipline)
 - Don't run `run.bat /nolaunch` repeatedly to prove completion; don't repeat a successful verification without a reason (changed code, a failure to re-check, shared infrastructure touched).
@@ -55,4 +55,9 @@ One module = one responsibility, independently testable, plain inputs/outputs. D
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): GUI/engine split.
 - [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md): CLI/IPC contract (protocol v1), QProcess, cancellation, how to add commands.
 - [docs/GUI.md](docs/GUI.md): GUI classes, backend discovery, QProcess, progress, cancellation, reports.
+- [Assets/README.md](Assets/README.md): visual assets (SVG icons, branding, ICO), colour tokens, how to add an icon.
+- [docs/MILESTONE.md](docs/MILESTONE.md): permanent per-milestone completion record (append only; evidence-based).
+- [docs/ROADMAP.md](docs/ROADMAP.md): approved four-feature roadmap (properties, analytics, comparison, duplicates) and per-milestone plan; Milestones 1-4 are implemented (awaiting review).
+- [docs/ANALYTICS.md](docs/ANALYTICS.md): Resolution analytics definitions (averages, percentages, categories), `analytics` command, TXT option.
+- [docs/DUPLICATES.md](docs/DUPLICATES.md): Duplicate Finder (`duplicates` command): exact/similar algorithms, thresholds, storage savings.
 - [docs/IMAGE_ANALYSIS.md](docs/IMAGE_ANALYSIS.md): `scan` command, classification strategy, EXIF/multi-frame behaviour, reports.

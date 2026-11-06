@@ -20,10 +20,13 @@ def discover(
     recursive: bool,
     extensions: Collection[str],
     check: Callable[[], None] = lambda: None,
+    exclude: Collection[str] = (),
 ) -> Discovery:
     """`extensions` are lowercase with a leading dot. `check` is called per
-    directory so the caller can cancel."""
+    directory so the caller can cancel. `exclude`: absolute directory paths
+    (os.path.normcase) that are not entered, nor anything below them."""
     result = Discovery()
+    excluded = frozenset(exclude)
     pending = [root]
     while pending:
         check()
@@ -37,7 +40,7 @@ def discover(
         for entry in entries:
             try:
                 if entry.is_dir(follow_symlinks=False):
-                    if recursive:
+                    if recursive and os.path.normcase(os.path.abspath(entry.path)) not in excluded:
                         pending.append(Path(entry.path))
                 elif entry.is_file():
                     if os.path.splitext(entry.name)[1].lower() in extensions:

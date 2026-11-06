@@ -68,6 +68,9 @@ def _no_pixel_limit() -> Iterator[None]:
         Image.MAX_IMAGE_PIXELS = previous
 
 
+no_pixel_limit = _no_pixel_limit  # public name for sibling modules that also only read headers
+
+
 def _exif_orientation(img: Image.Image) -> int | None:
     try:
         return img.getexif().get(EXIF_ORIENTATION_TAG)

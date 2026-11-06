@@ -35,6 +35,7 @@ private:
     void setReport(ReportRow &row, bool wanted, const QString &confirmedPath);
     void openPath(const QString &path) const;
 
+    QLabel *emptyArt_;
     QLabel *empty_;
     QWidget *content_;
     MetricCard *total_;

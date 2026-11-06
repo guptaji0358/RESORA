@@ -51,11 +51,11 @@ private:
 PhaseRail::PhaseRail(QWidget *parent) : QWidget(parent)
 {
     setFixedWidth(92);
-    const QString names[] = {tr("Source"), tr("Scan"), tr("Readout")};
+    const QString names[] = {tr("Source"), tr("Scan"), tr("Readout"), tr("Analytics")};
     auto *l = new QVBoxLayout(this);
     l->setContentsMargins(0, 18, 0, 0);
     l->setSpacing(0);
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 4; ++i) {
         tabs_[i] = new PhaseTab(i + 1, names[i], this);
         l->addWidget(tabs_[i]);
         connect(tabs_[i], &QAbstractButton::clicked, this, [this, i] {
@@ -65,14 +65,14 @@ PhaseRail::PhaseRail(QWidget *parent) : QWidget(parent)
     }
     l->addStretch(1);
     setAvailable(Scan, false);
-    setAvailable(Readout, false);
+    setAvailable(Readout, false);  // Analytics stays available: it shows an empty state before a scan
     setCurrent(Source);
 }
 
 void PhaseRail::setCurrent(Phase p)
 {
     current_ = p;
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 4; ++i)
         tabs_[i]->setChecked(i == p);
 }
 

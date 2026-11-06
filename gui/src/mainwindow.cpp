@@ -1,5 +1,11 @@
 #include "mainwindow.h"
 
+#include "widgets/analyticspanel.h"
+#include "widgets/comparisonworkspace.h"
+#include "widgets/duplicatefinder.h"
+#include <QStandardPaths>
+#include "widgets/propertiesdialog.h"
+
 #include <QCheckBox>
 #include <QPainter>
 #include <QShortcut>
@@ -24,6 +30,8 @@
 #include <QVBoxLayout>
 
 #include "backend/backendprocess.h"
+#include "locations/locationstore.h"
+#include "widgets/settingsdialog.h"
 #include "widgets/appheader.h"
 #include "widgets/chamferbutton.h"
 #include "widgets/phaserail.h"
@@ -41,8 +49,9 @@ namespace {
 constexpr qint64 kProgressIntervalMs = 100;  // UI refresh cap; backend already throttles
 }
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+MainWindow::MainWindow(QWidget *parent, const QString &locationsFile) : QMainWindow(parent)
 {
+    locations_ = new LocationStore(locationsFile.isEmpty() ? LocationStore::defaultFilePath() : locationsFile, this);
     setWindowTitle(Brand::name() + QStringLiteral(" - ") + Brand::description());
     setWindowIcon(Brand::icon());
     setWindowFlag(Qt::FramelessWindowHint);
@@ -51,6 +60,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setStyleSheet(Theme::styleSheet());
     buildUi();
     setRunning(false);
+    updateAnalyticsControls();
 }
 
 bool MainWindow::isScanning() const
@@ -85,7 +95,7 @@ QLabel *makeLabel(const QString &text, const char *role)
 }
 
 // A phase page: eyebrow + display heading + body, content kept to a readable width.
-QWidget *makePage(const QString &eyebrow, const QString &title, const QString &lede, QVBoxLayout **body)
+QWidget *makePage(const QString &eyebrow, const QString &title, const QString &lede, QVBoxLayout **body, int maxWidth = 780)
 {
     auto *page = new GridStage;
     auto *outer = new QHBoxLayout(page);
@@ -102,7 +112,7 @@ QWidget *makePage(const QString &eyebrow, const QString &title, const QString &l
     col->addLayout(*body);
     col->addStretch(1);
     auto *holder = new QWidget;
-    holder->setMaximumWidth(780);
+    holder->setMaximumWidth(maxWidth);
     holder->setLayout(col);
     outer->addWidget(holder, 1);
     outer->addStretch(0);
@@ -124,14 +134,20 @@ void MainWindow::buildUi()
     recursive_ = new ToggleSwitch(tr("Include subfolders"));
     recursive_->setChecked(true);
     recursive_->setToolTip(tr("Also analyze images inside every folder below the selected one"));
+    source_->setLocationStore(locations_);
     src->addWidget(source_);
     src->addWidget(recursive_);
 
     csv_ = new ReportSelector(tr("CSV report"), QStringLiteral("csv"), tr("CSV files"));
     txt_ = new ReportSelector(tr("TXT report"), QStringLiteral("txt"), tr("Text files"));
+    csv_->setLocationStore(locations_);
+    txt_->setLocationStore(locations_);
     auto *reportCard = new SectionCard(tr("Export reports"), tr("Optional. Each format is independent."));
     reportCard->body()->addWidget(csv_);
     reportCard->body()->addWidget(txt_);
+    txtAnalytics_ = new ToggleSwitch(tr("Add analytics summary to the TXT report"));
+    txtAnalytics_->setToolTip(tr("Appends the Analytics statistics to the TXT report. Off by default; the CSV is never changed."));
+    reportCard->body()->addWidget(txtAnalytics_);
     src->addWidget(reportCard);
 
     notice_ = makeLabel(QString(), "error");
@@ -140,12 +156,24 @@ void MainWindow::buildUi()
     src->addWidget(notice_);
 
     start_ = new ChamferButton(tr("Start Scan"));
-    start_->setDefault(true);
+    static_cast<ChamferButton *>(start_)->setGlyph(QStringLiteral("scan"));
     start_->setToolTip(tr("Analyze the imported folder or images"));
     Theme::setProperty(start_, "variant", QStringLiteral("primary"));
     start_->setMinimumHeight(46);
     auto *go = new QHBoxLayout;
     go->addWidget(start_);
+    auto *compareSrc = new ChamferButton(tr("Compare Images"));
+    compareSrc->setGlyph(QStringLiteral("swap"));
+    compareSrc->setMinimumHeight(46);
+    compareSrc->setToolTip(tr("Compare two images side by side; no scan needed (Ctrl+Shift+C)"));
+    connect(compareSrc, &QPushButton::clicked, this, &MainWindow::openComparison);
+    go->addWidget(compareSrc);
+    auto *dupSrc = new ChamferButton(tr("Find Duplicates"));
+    dupSrc->setGlyph(QStringLiteral("images"));
+    dupSrc->setMinimumHeight(46);
+    dupSrc->setToolTip(tr("Find identical and visually similar images (Ctrl+Shift+D); never deletes anything"));
+    connect(dupSrc, &QPushButton::clicked, this, &MainWindow::openDuplicates);
+    go->addWidget(dupSrc);
     go->addStretch(1);
     src->addLayout(go);
 
@@ -156,6 +184,7 @@ void MainWindow::buildUi()
     scan->addWidget(progress_);
     cancel_ = new ChamferButton(tr("Cancel Scan"));
     cancel_->setToolTip(tr("Stop the running scan; reports from a cancelled scan are not valid"));
+    static_cast<ChamferButton *>(cancel_)->setGlyph(QStringLiteral("stop"));
     Theme::setProperty(cancel_, "variant", QStringLiteral("danger"));
     auto *scanRow = new QHBoxLayout;
     scanRow->addWidget(cancel_);
@@ -168,11 +197,39 @@ void MainWindow::buildUi()
     results_ = new ResultsPanel;
     out->addWidget(results_);
     again_ = new ChamferButton(tr("New Scan"));
+    static_cast<ChamferButton *>(again_)->setGlyph(QStringLiteral("refresh"));
     Theme::setProperty(again_, "variant", QStringLiteral("primary"));
+    auto *props = new ChamferButton(tr("Image Properties"));
+    props->setGlyph(QStringLiteral("image"));
+    props->setToolTip(tr("Detailed properties of an image (Ctrl+I)"));
+    connect(props, &QPushButton::clicked, this, &MainWindow::openProperties);
+    auto *analyticsBtn = new ChamferButton(tr("Analytics"));
+    analyticsBtn->setGlyph(QStringLiteral("scan"));
+    analyticsBtn->setToolTip(tr("Statistics for this collection (Ctrl+4)"));
+    connect(analyticsBtn, &QPushButton::clicked, this, [this] { showPhase(PhaseRail::Analytics); });
     auto *outRow = new QHBoxLayout;
+    outRow->setSpacing(12);
     outRow->addWidget(again_);
+    outRow->addWidget(props);
+    outRow->addWidget(analyticsBtn);
+    auto *compareOut = new ChamferButton(tr("Compare Images"));
+    compareOut->setGlyph(QStringLiteral("swap"));
+    compareOut->setToolTip(tr("Compare two images side by side (Ctrl+Shift+C)"));
+    connect(compareOut, &QPushButton::clicked, this, &MainWindow::openComparison);
+    outRow->addWidget(compareOut);
     outRow->addStretch(1);
     out->addLayout(outRow);
+
+    // --- 04 Analytics ---
+    QVBoxLayout *ana = nullptr;
+    stack_->addWidget(makePage(tr("04 — ANALYTICS"), tr("Collection analytics."), QString(), &ana, 1020));
+    analytics_ = new AnalyticsPanel;
+    ana->addWidget(analytics_);
+
+    // --- 05 Compare (workspace, reached by button / Ctrl+Shift+C; not a scan phase) ---
+    compare_ = new ComparisonWorkspace;
+    stack_->addWidget(compare_);
+    connect(compare_, &ComparisonWorkspace::backRequested, this, &MainWindow::closeComparison);
 
     auto *scroll = new QScrollArea;
     scroll->setWidgetResizable(true);
@@ -191,8 +248,15 @@ void MainWindow::buildUi()
     body->addWidget(scroll, 1);
     shellLayout->addLayout(body, 1);
     setCentralWidget(shell);
+    // Start with focus on the neutral shell, not on an action button: a stray Enter does nothing.
+    shell->setFocusPolicy(Qt::ClickFocus);
+    shell->setFocus(Qt::OtherFocusReason);
 
     connect(start_, &QPushButton::clicked, this, &MainWindow::startScan);
+    connect(analytics_, &AnalyticsPanel::refreshRequested, this, &MainWindow::startAnalytics);
+    connect(analytics_, &AnalyticsPanel::propertiesRequested, this, [this](const QString &path) {
+        PropertiesDialog(QStringList{path}, this).exec();
+    });
     connect(cancel_, &QPushButton::clicked, this, &MainWindow::cancelScan);
     connect(again_, &QPushButton::clicked, this, [this] { showPhase(PhaseRail::Source); });
     connect(progress_, &ProgressPanel::stateChanged, header_, &AppHeader::setState);
@@ -200,15 +264,26 @@ void MainWindow::buildUi()
     auto *open = new QShortcut(QKeySequence::Open, this);  // Ctrl+O
     connect(open, &QShortcut::activated, this, &MainWindow::importSources);
     connect(source_, &SourcePicker::selectionChanged, this, [this] {
+        analytics_->setStale(true);
+        updateAnalyticsControls();
         setNotice(QString());
         recursive_->setEnabled(!isScanning() && source_->selection().kind == ImportSelection::Folder);
         recursive_->setToolTip(source_->selection().kind == ImportSelection::Folder
                                    ? tr("Also analyze images inside every folder below the selected one")
                                    : tr("Applies to folder imports only"));
     });
+    connect(header_, &AppHeader::settingsRequested, this, &MainWindow::openSettings);
+    auto *settings = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma), this);
+    connect(settings, &QShortcut::activated, this, &MainWindow::openSettings);
+    auto *propsKey = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_I), this);
+    connect(propsKey, &QShortcut::activated, this, &MainWindow::openProperties);
+    auto *cmpKey = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C), this);
+    connect(cmpKey, &QShortcut::activated, this, &MainWindow::openComparison);
+    auto *dupKey = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_D), this);
+    connect(dupKey, &QShortcut::activated, this, &MainWindow::openDuplicates);
     auto *about = new QShortcut(QKeySequence(Qt::Key_F1), this);
     connect(about, &QShortcut::activated, this, [this] { AboutDialog(this).exec(); });
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 4; ++i) {
         auto *sc = new QShortcut(QKeySequence(Qt::CTRL | (Qt::Key_1 + i)), this);
         connect(sc, &QShortcut::activated, this, [this, i] {
             if (rail_->isPhaseAvailable(PhaseRail::Phase(i)))
@@ -230,6 +305,69 @@ void MainWindow::importSources()
     if (stack_->currentIndex() != PhaseRail::Source)
         showPhase(PhaseRail::Source);
     source_->openImportDialog();
+}
+
+void MainWindow::openSettings()
+{
+    SettingsDialog(locations_, this).exec();
+}
+
+void MainWindow::openProperties()
+{
+    // Preselect the imported images (single/multiple); a folder import asks the user to choose.
+    QStringList files = source_->selection().files;
+    if (source_->selection().kind == ImportSelection::Folder)
+        files.clear();
+    PropertiesDialog(files.mid(0, 500), this).exec();
+}
+
+void MainWindow::openDuplicates()  // Ctrl+Shift+D
+{
+    const ImportSelection sel = source_->selection();
+    const QString cache = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)
+                          + QStringLiteral("/duplicates-cache.sqlite");
+    const QStringList images = sel.kind == ImportSelection::Folder ? QStringList() : sel.files;
+    DuplicateFinder dlg(images, sel.kind == ImportSelection::Folder ? sel.folder : QString(), cache, this);
+    if (sel.kind == ImportSelection::Folder)
+        dlg.addFolder(sel.folder);
+    else
+        dlg.setUseCollection(true);
+    QString left, right;
+    connect(&dlg, &DuplicateFinder::compareRequested, &dlg, [&](const QString &a, const QString &b) {
+        left = a;
+        right = b;
+        dlg.accept();
+    });
+    dlg.exec();
+    if (!left.isEmpty() && !right.isEmpty() && !isComparing()) {
+        openComparison();
+        compare_->setImage(ComparisonWorkspace::Left, left);
+        compare_->setImage(ComparisonWorkspace::Right, right);
+    }
+}
+
+bool MainWindow::isComparing() const
+{
+    return stack_->currentWidget() == compare_;
+}
+
+void MainWindow::openComparison()
+{
+    if (isComparing())
+        return;
+    compareReturn_ = stack_->currentIndex();
+    compare_->setCollection(source_->selection(), recursive_->isChecked());
+    // Empty slots start from the imported images (single / multiple), if any; no scan involved.
+    const QStringList files = source_->selection().kind == ImportSelection::Folder ? QStringList() : source_->selection().files;
+    for (int s = 0; s < 2 && s < files.size(); ++s)
+        if (compare_->path(ComparisonWorkspace::Side(s)).isEmpty())
+            compare_->setImage(ComparisonWorkspace::Side(s), files.at(s));
+    stack_->setCurrentWidget(compare_);
+}
+
+void MainWindow::closeComparison()
+{
+    stack_->setCurrentIndex(compareReturn_);
 }
 
 void MainWindow::setNotice(const QString &text)
@@ -272,6 +410,14 @@ void MainWindow::setRunning(bool running)
     recursive_->setEnabled(!running && source_->selection().kind == ImportSelection::Folder);
     csv_->setBusy(running);
     txt_->setBusy(running);
+    txtAnalytics_->setEnabled(!running);
+    if (analytics_)
+        updateAnalyticsControls();
+}
+
+void MainWindow::updateAnalyticsControls()
+{
+    analytics_->setRefreshEnabled(!isScanning() && source_->validationError().isEmpty());
 }
 
 bool MainWindow::confirmOverwrite(const QString &path)
@@ -314,6 +460,7 @@ bool MainWindow::validateInput(ScanRequest *request)
     }
     request->csvPath = csv_->path().isEmpty() ? QString() : QFileInfo(csv_->path()).absoluteFilePath();
     request->txtPath = txt_->path().isEmpty() ? QString() : QFileInfo(txt_->path()).absoluteFilePath();
+    request->txtAnalytics = txtAnalytics_->isChecked();
     return true;
 }
 
@@ -324,6 +471,35 @@ void MainWindow::startScan()
     ScanRequest request;
     if (!validateInput(&request))
         return;
+    analyticsJob_ = false;
+    launch(request);
+}
+
+void MainWindow::startAnalytics()
+{
+    if (isScanning())
+        return;
+    const QString error = source_->validationError();
+    if (!error.isEmpty()) {
+        setNotice(error);
+        return;
+    }
+    ScanRequest request;
+    const ImportSelection selection = source_->selection();
+    if (selection.kind == ImportSelection::Folder) {
+        request.folder = selection.folder;
+        request.recursive = recursive_->isChecked();
+    } else {
+        request.files = selection.files;
+        request.recursive = false;
+    }
+    request.command = QStringLiteral("analytics");  // no reports are written
+    analyticsJob_ = true;
+    launch(request);
+}
+
+void MainWindow::launch(ScanRequest request)
+{
     const BackendLocation location =
         locateBackend(QProcessEnvironment::systemEnvironment(), QCoreApplication::applicationDirPath());
     if (!location.ok()) {
@@ -346,8 +522,10 @@ void MainWindow::startScan()
 
     request_ = request;
     setNotice(QString());
-    results_->clear();
-    rail_->setAvailable(PhaseRail::Readout, false);
+    if (!analyticsJob_) {
+        results_->clear();
+        rail_->setAvailable(PhaseRail::Readout, false);
+    }
     rail_->setAvailable(PhaseRail::Scan, true);
     showPhase(PhaseRail::Scan);
     progress_->setStarting();  // indeterminate until the backend reports a total
@@ -393,6 +571,14 @@ void MainWindow::jobEnded()
 
 void MainWindow::onSucceeded(const QJsonValue &data)
 {
+    analytics_->showAnalytics(data.toObject());
+    updateAnalyticsControls();
+    if (analyticsJob_) {  // refresh: the scan readout and reports stay as they were
+        progress_->setSucceeded(tr("Analytics refreshed."));
+        showPhase(PhaseRail::Analytics);
+        jobEnded();
+        return;
+    }
     results_->showResult(data.toObject(), !request_.csvPath.isEmpty(), !request_.txtPath.isEmpty());
     const int total = data.toObject().value(QStringLiteral("summary")).toObject().value(QStringLiteral("total")).toInt();
     progress_->setSucceeded(tr("Scan complete: %1 file(s) processed.").arg(total));
@@ -407,7 +593,7 @@ void MainWindow::onFailed(const QString &code, const QString &message, int exitC
     if (code == QLatin1String("report_failed"))
         text = tr("The scan ran, but a report could not be written (no reports were confirmed): %1").arg(message);
     else
-        text = tr("Scan failed [%1]: %2").arg(code, text);
+        text = (analyticsJob_ ? tr("Analytics failed [%1]: %2") : tr("Scan failed [%1]: %2")).arg(code, text);
     if (exitCode > 0)
         text += tr(" (exit code %1)").arg(exitCode);
     progress_->setFailed(text, stderrTail);
@@ -416,7 +602,8 @@ void MainWindow::onFailed(const QString &code, const QString &message, int exitC
 
 void MainWindow::onCancelled()
 {
-    progress_->setCancelled(tr("Scan cancelled. Reports from a cancelled scan are not valid."));
+    progress_->setCancelled(analyticsJob_ ? tr("Analytics refresh cancelled.")
+                                          : tr("Scan cancelled. Reports from a cancelled scan are not valid."));
     jobEnded();
 }
 

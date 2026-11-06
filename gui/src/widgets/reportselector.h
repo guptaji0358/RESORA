@@ -3,6 +3,8 @@
 #include <QString>
 #include <QWidget>
 
+class LocationStore;
+class LocationSuggester;
 class QCheckBox;
 class QLineEdit;
 class QPushButton;
@@ -23,6 +25,9 @@ public:
     // Empty when valid or disabled. Missing parent folders are fine: the backend creates them.
     QString validationError() const;
     void setBusy(bool busy);
+    // Enables Saved Locations recommendations on the path field (the store must outlive this widget).
+    void setLocationStore(const LocationStore *store);
+    QLineEdit *pathEdit() const { return edit_; }
 
 private:
     void browse();
@@ -33,4 +38,5 @@ private:
     QCheckBox *check_;
     QLineEdit *edit_;
     QPushButton *browse_;
+    LocationSuggester *suggester_ = nullptr;
 };

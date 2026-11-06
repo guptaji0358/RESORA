@@ -6,6 +6,7 @@
 #include "backend/importselection.h"
 
 class ElidedLabel;
+class LocationStore;
 class QDragEnterEvent;
 class QDropEvent;
 class QLabel;
@@ -22,6 +23,7 @@ public:
     QString validationError() const;  // empty when something scannable is imported
     void setBusy(bool busy);
     void openImportDialog();          // modal; no-op while busy
+    void setLocationStore(const LocationStore *store) { locations_ = store; }  // Saved Locations in the dialog
 
 signals:
     void selectionChanged();
@@ -34,6 +36,7 @@ private:
     void refresh();
 
     ImportSelection selection_;
+    const LocationStore *locations_ = nullptr;
     bool busy_ = false;
     QLabel *kind_;
     QLabel *title_;
@@ -41,4 +44,5 @@ private:
     QLabel *detail_;
     QLabel *notes_;
     QPushButton *change_;
+    QLabel *kindIcon_;
 };

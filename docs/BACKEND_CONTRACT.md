@@ -10,7 +10,7 @@ python -m scripts.engine [--params-file FILE] [--cancel-on-stdin] <command> [com
 
 - One process = one command = one job. No daemon, no shared state between invocations.
 - Simple inputs are command-line arguments. Structured or long inputs (many paths, option sets) go in a UTF-8 JSON **object** file passed with `--params-file`; the GUI writes it to a temp file and deletes it afterwards. Avoids Windows command-line length/quoting limits.
-- Visible commands: `selfcheck` (legacy alias `--selfcheck`), `scan` ([IMAGE_ANALYSIS.md](IMAGE_ANALYSIS.md)). Commands starting with `_` are diagnostics, hidden from help, not for the GUI.
+- Visible commands: `selfcheck` (legacy alias `--selfcheck`), `scan` ([IMAGE_ANALYSIS.md](IMAGE_ANALYSIS.md)), `analytics` (collection statistics, [ANALYTICS.md](ANALYTICS.md)), `properties` (detailed per-image properties; see [IMAGE_ANALYSIS.md](IMAGE_ANALYSIS.md)). Commands starting with `_` are diagnostics, hidden from help, not for the GUI.
 - `scan` accepts either a folder or, via the params file, `{"files": [...]}` (selected images; see [IMAGE_ANALYSIS.md](IMAGE_ANALYSIS.md)). The GUI uses the params file for every file selection, so path count never hits command-line limits.
 - Adding flags/commands is backward compatible; renaming or removing them, or changing result shapes, requires bumping `PROTOCOL_VERSION`.
 

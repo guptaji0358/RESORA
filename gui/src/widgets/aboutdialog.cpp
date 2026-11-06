@@ -3,6 +3,8 @@
 #include <QLabel>
 #include <QPainter>
 #include <QPushButton>
+
+#include "chamferbutton.h"
 #include <QVBoxLayout>
 
 #include "ui/brand.h"
@@ -23,15 +25,11 @@ protected:
 };
 }  // namespace
 
-AboutDialog::AboutDialog(QWidget *parent) : QDialog(parent)
+AboutDialog::AboutDialog(QWidget *parent) : FramelessDialog(tr("About %1").arg(Brand::name()), parent)
 {
-    setWindowTitle(tr("About %1").arg(Brand::name()));
     setWindowIcon(Brand::icon());
-    setModal(true);
-    setStyleSheet(QStringLiteral("QDialog{background:#0D0C0B;}"));
-    auto *col = new QVBoxLayout(this);
-    col->setContentsMargins(40, 32, 40, 28);
-    col->setSpacing(10);
+    auto *col = bodyLayout();
+    col->setContentsMargins(40, 28, 40, 28);
 
     col->addWidget(new BigMark(this), 0, Qt::AlignHCenter);
     auto *word = new QLabel(QStringLiteral("RES<span style='color:#FF5B2E'>ORA</span>"));
@@ -55,8 +53,8 @@ AboutDialog::AboutDialog(QWidget *parent) : QDialog(parent)
     note->setStyleSheet(QStringLiteral("color:#9A9186; font-size:8pt;"));
     col->addWidget(note, 0, Qt::AlignHCenter);
 
-    auto *ok = new QPushButton(tr("Close"));
-    ok->setDefault(true);
+    auto *ok = new ChamferButton(tr("Close"));
+    ok->setProperty("variant", QStringLiteral("primary"));
     connect(ok, &QPushButton::clicked, this, &QDialog::accept);
     col->addSpacing(8);
     col->addWidget(ok, 0, Qt::AlignHCenter);

@@ -33,6 +33,18 @@ void MetricCard::setValue(qint64 value, Tone tone)
                        : tone == Tone::Bad ? QStringLiteral("bad") : QStringLiteral("neutral"));
 }
 
+void MetricCard::setText(const QString &text, Tone tone, bool compact, const QString &hint)
+{
+    value_->setText(text);
+    Theme::setProperty(value_, "role", compact ? QStringLiteral("metricValueSm") : QStringLiteral("metricValue"));
+    Theme::setProperty(value_, "tone",
+                       tone == Tone::Good ? QStringLiteral("good")
+                       : tone == Tone::Bad ? QStringLiteral("bad") : QStringLiteral("neutral"));
+    if (!hint.isEmpty())
+        setToolTip(hint);
+    setAccessibleDescription(text);
+}
+
 QString MetricCard::valueText() const
 {
     return value_->text();

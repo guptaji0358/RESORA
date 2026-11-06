@@ -1,8 +1,63 @@
-feat(gui): introduce RESORA product identity
+feat(gui): Saved Locations in Settings with path recommendations
 
-- Add ui/brand (name, tagline, painted quadtree "resolving grid" mark, generated QIcon)
-- New BrandLockup in the header (mark + RES/ORA wordmark + descriptor) and F1 AboutDialog
-- Window title, application name/icon, tagline on the Source page
-- Windows resource (resora.rc/.ico, generate_icon.py) for exe icon and RESORA file description
-- Test brand strings, icon, title and About; update docs/GUI.md and CLAUDE.md
-- Backend, QProcess/NDJSON, reports, cancellation, repo/package/exe names unchanged
+- locations/: SavedLocation model, LocationStore (validated, versioned JSON in the per-user config dir, atomic save, corrupt/unreadable/newer-version handling), LocationRecommender
+- Settings dialog (header SETTINGS / Ctrl+,) with add, rename, change folder, remove and availability status
+- LocationSuggester popup on CSV/TXT report fields and a new folder path field in the Import dialog
+- tests: tst_locations; docs/GUI.md section
+
+fix(gui): Saved Locations action row and unstyled dialog buttons
+
+- ChamferButton: compact (28px) and icon-only modes; minimumSizeHint = sizeHint so labels never touch the edge
+- LocationRow: Rename / Change folder / Remove in one fixed horizontal strip (no wrapping), collapsing to icons when narrow
+- Settings "Done", About "Close", Import "Cancel" now use ChamferButton instead of stock Fusion QPushButton
+
+feat(gui): visual asset system and SVG icon family
+
+- Assets/: icons/ (21 SVG), branding/ (mark SVG as single source), illustrations/, app/ (ICO, RC, generator moved from gui/assets), resora.qrc
+- ui/icons: tinted, DPR-aware SVG rendering, state-aware QIconEngine, visible fallback for missing assets; links Qt6::Svg
+- icons on buttons, header Settings, import tiles, source picker, saved locations rows, report rows, empty results state
+- tests: tst_icons
+
+fix(gui): dialogs frameless with working window controls and on-screen placement
+
+- widgets/framelessdialog: shared base for Settings, Import and About; custom title bar with Close button, drag via startSystemMove, Esc closes
+- placeOnScreen: centre over parent window, clamp into the screen's available area, cap size to the desktop; re-run on every show
+- tests: tst_dialogs (placement near screen edges, close button, Esc, reopen after being moved away)
+
+fix(gui): stray Enter no longer activates buttons or closes dialogs
+
+- Root cause: ChamferButton was an autoDefault QPushButton and QLineEdit ignores Enter after returnPressed, so the dialog clicked an implicit default (Browse/Add/row buttons, About Close, main Start Scan); dialogs also focused the first button on open
+- ChamferButton: autoDefault off; Enter/Return activate only when focus came from Tab/Shortcut, never from mouse or auto-focus (Space unchanged)
+- FramelessDialog: neutral focus anchor so no action button is focused on open; Import tiles autoDefault off; About Close and Start Scan lose setDefault; main window starts with neutral focus
+- tests: tst_dialogs (Enter/Return on Settings, Done click, Esc, button keyboard rule, Import Enter + 1/2/3 shortcuts, suggestion Enter, inline rename Enter/Esc)
+
+feat(properties): advanced image properties (roadmap milestone 1)
+
+- engine: `properties` command, imaging/properties.py + exif_fields.py (dimensions, megapixels, aspect, size, format, colour mode, ICC, DPI, EXIF, orientation); absent metadata is null
+- GUI: PropertiesDialog (Ctrl+I, Readout button) + propertiesmodel; missing metadata shown as "Not available"
+- tests: tests/test_properties.py, gui/tests/tst_properties.cpp; docs/ROADMAP.md plan for all four milestones
+
+chore(build): live stage-by-stage output in run.bat
+
+- run.bat: 9 stages with PENDING/RUNNING/DONE/FAILED/SKIPPED, timestamps, summary, last completed stage on failure
+- scripts/launcher/runstage.ps1: streams command output line by line to console and logs/run.log, elapsed time and silence heartbeat (no fake progress)
+- exit codes, /nolaunch, /push, /commit, venv and requirements-stamp behaviour unchanged
+
+feat(analytics): resolution analytics (roadmap milestone 2)
+
+- engine: imaging/analytics.py (collection, resolution, category, orientation, format statistics; failed images never counted as analyzed, missing values null), imaging/collection.py (shared gather + analyze), `analytics` command; `scan` result gains `analytics`
+- reports: optional "Analytics summary" in the TXT report (--txt-analytics, off by default); CSV and default TXT unchanged
+- GUI: phase 04 Analytics (AnalyticsPanel, ShareChart, PixelSpan, analyticsmodel), failure banner, Refresh, links from highest/lowest/largest/smallest to Properties and folder, GUI switch for the TXT section
+- tests: tests/test_analytics.py, gui/tests/tst_analytics.cpp; docs/ANALYTICS.md
+
+feat(compare): image comparison workspace (roadmap milestone 3)
+
+- GUI: ComparisonWorkspace (A/B slots, replace from disk or collection, swap, clear), ImagePane/ComparisonViewer (fit, actual size, zoom, pan, sync toggles), ComparisonTable (differences + insights), entry buttons and Ctrl+Shift+C
+- backend/comparison: deltas and insights from existing `properties` output; previewloader: capped, read-only Qt preview decoding on worker threads
+- tests: gui/tests/tst_comparison.cpp; docs/MILESTONE.md entry
+
+feat(duplicates): duplicate image finder (roadmap milestone 4)
+
+- engine: `duplicates` command; duplicates/ package (sources with exclusions, size pre-grouping, streaming SHA-256 exact groups, 128-bit dHash similar groups with anchor clustering and aspect guard, SQLite fingerprint cache keyed by path/size/mtime, savings arithmetic); imaging/discovery gains an optional `exclude`
+- GUI: DuplicateFinder dialog (multiple folders, exclusions, subfolders, imported collection, threshold, progress/cancel, exact vs similar groups, thumbnails, Open / Folder / Compare) + duplicatesmodel; button and Ctrl+Shift+D; read-only, no delete/move
+- tests: tests/test_duplicates.py, gui/tests/tst_duplicates.cpp; boundary test allows the duplicates logic package; docs/DUPLICATES.md, MILESTONE.md entry

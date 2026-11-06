@@ -3,21 +3,8 @@
 #include <QPainter>
 #include <QPixmap>
 
+#include "ui/icons.h"
 #include "ui/theme.h"
-
-namespace {
-struct Cell { int x, y, size; int tone; };  // 16x16 unit grid; tone 0..3 = paper alpha, 4 = ember
-
-constexpr Cell kCells[] = {
-    {0, 0, 8, 0},
-    {8, 0, 4, 1},  {12, 0, 4, 2}, {8, 4, 4, 2},  {12, 4, 4, 3},
-    {0, 8, 4, 1},  {4, 8, 4, 2},  {0, 12, 4, 2}, {4, 12, 4, 3},
-    {8, 8, 4, 3},  {12, 8, 4, 3}, {8, 12, 4, 3},
-    {12, 12, 2, 3}, {14, 12, 2, 3}, {12, 14, 2, 3}, {14, 14, 2, 4},
-};
-constexpr int kAlpha[] = {46, 96, 158, 230};
-constexpr qreal kGap = 0.6;  // units between cells
-}  // namespace
 
 namespace Brand {
 
@@ -29,19 +16,10 @@ QString version() { return QStringLiteral("0.1.0"); }
 void paintMark(QPainter &p, const QRectF &target)
 {
     const qreal side = qMin(target.width(), target.height());
-    const qreal u = side / 16.0;
-    const QPointF o(target.center().x() - side / 2, target.center().y() - side / 2);
-    p.save();
-    p.setPen(Qt::NoPen);
-    for (const Cell &c : kCells) {
-        QColor col = Theme::paper();
-        if (c.tone == 4) col = Theme::ember();
-        else col.setAlpha(kAlpha[c.tone]);
-        p.setBrush(col);
-        p.drawRect(QRectF(o.x() + (c.x + kGap / 2) * u, o.y() + (c.y + kGap / 2) * u,
-                          (c.size - kGap) * u, (c.size - kGap) * u));
-    }
-    p.restore();
+    const qreal dpr = p.device()->devicePixelRatioF();
+    const int px = qMax(1, qRound(side));
+    p.drawPixmap(QPointF(target.center().x() - px / 2.0, target.center().y() - px / 2.0),
+                 Icons::artwork(QStringLiteral("branding/mark"), QSize(px, px), dpr));
 }
 
 QIcon icon()

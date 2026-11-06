@@ -41,3 +41,12 @@ The record always carries the true `width`/`height`, `aspect_ratio` (width/heigh
 
 ## Reports
 CSV: UTF-8 with BOM, one row per file including failures, fixed columns (`reports/csv_report.py:COLUMNS`). TXT: header, summary, breakdowns, file table, problem files. Both are written to a temp name and renamed.
+
+## `properties` command (Milestone 1)
+`python -m scripts.engine properties <path>...` (or params `{"files": [...]}`, max 500) returns `{"images": [...], "duplicates_ignored": N}`.
+Per image (`imaging/properties.py`, header-only, read-only): file (name, path, size, format), displayed + stored dimensions, megapixels,
+aspect ratio/label, layout (portrait/landscape/square), resolution class, colour (mode, bit depth, alpha, ICC profile name),
+DPI (JFIF/PNG/TIFF header, else EXIF XResolution with unit inch/cm; unit "none" is not DPI), EXIF fields (`imaging/exif_fields.py`),
+EXIF orientation (tag, label, whether it swapped width/height), frame count for multi-frame files.
+Absent metadata is `null` (never 0); a bad file is an entry with `status != "ok"`. GPS coordinates are never exposed, only `gps_present`.
+GUI: `PropertiesDialog` (Ctrl+I, or "Image Properties" on the Readout page) via `backend/propertiesmodel`.

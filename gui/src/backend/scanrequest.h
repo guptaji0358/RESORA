@@ -15,6 +15,8 @@ struct ScanRequest
     bool recursive = true;  // folder source only
     QString csvPath;  // empty = no CSV report
     QString txtPath;  // empty = no TXT report
+    bool txtAnalytics = false;  // append the analytics summary to the TXT report
+    QString command = QStringLiteral("scan");  // "scan" or "analytics" (no reports)
 
     bool usesParamsFile() const { return !files.isEmpty(); }
 
@@ -30,9 +32,9 @@ struct ScanRequest
     {
         QStringList args;
         if (usesParamsFile()) {
-            args << QStringLiteral("--params-file") << paramsFile << QStringLiteral("scan");
+            args << QStringLiteral("--params-file") << paramsFile << command;
         } else {
-            args << QStringLiteral("scan") << folder;
+            args << command << folder;
             if (recursive)
                 args << QStringLiteral("--recursive");
         }
@@ -40,6 +42,8 @@ struct ScanRequest
             args << QStringLiteral("--csv") << csvPath;
         if (!txtPath.isEmpty())
             args << QStringLiteral("--txt") << txtPath;
+        if (!txtPath.isEmpty() && txtAnalytics)
+            args << QStringLiteral("--txt-analytics");
         return args;
     }
 };

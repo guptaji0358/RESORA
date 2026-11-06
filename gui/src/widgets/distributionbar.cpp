@@ -16,7 +16,7 @@ const Std kStd[] = {{"8K", 7680, 4320}, {"5K", 5120, 2880}, {"DCI 4K", 4096, 216
 QSize glyphSize(const QString &label)
 {
     if (label.startsWith(QLatin1String("Custom")) || label.startsWith(QLatin1String("Panorama"))
-        || label.startsWith(QLatin1String("Above")))
+        || label.startsWith(QLatin1String("Above")) || label.startsWith(QLatin1String("Below")))
         return {0, 0};   // not a standard: never given a standard's frame
     for (const Std &s : kStd)
         if (label.contains(QLatin1String(s.key)))
@@ -71,6 +71,11 @@ private:
     qint64 total_;
     int rank_;
 };
+
+QSize DistributionBar::standardSize(const QString &label)
+{
+    return glyphSize(label);
+}
 
 DistributionBar::DistributionBar(QWidget *parent) : QWidget(parent), legend_(new QVBoxLayout(this))
 {

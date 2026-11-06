@@ -6,9 +6,10 @@ from .command import Command
 
 
 def build_registry() -> dict[str, Command]:
-    from .commands import contract_test, scan, selfcheck
+    from .commands import analytics, contract_test, duplicates, properties, scan, selfcheck
 
-    commands = [selfcheck.COMMAND, scan.COMMAND, contract_test.COMMAND]
+    commands = [selfcheck.COMMAND, scan.COMMAND, properties.COMMAND, analytics.COMMAND, duplicates.COMMAND,
+                contract_test.COMMAND]
     registry: dict[str, Command] = {}
     for command in commands:
         if command.name in registry:

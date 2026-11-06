@@ -10,6 +10,7 @@
 #include <QPushButton>
 #include "chamferbutton.h"
 #include <QStandardPaths>
+#include "locationsuggester.h"
 
 
 ReportSelector::ReportSelector(const QString &title, const QString &extension,
@@ -25,6 +26,7 @@ ReportSelector::ReportSelector(const QString &title, const QString &extension,
     check_->setToolTip(tr("Also write a .%1 report when the scan finishes").arg(extension));
     edit_->setClearButtonEnabled(true);
     edit_->setAccessibleName(tr("%1 destination").arg(title));
+    static_cast<ChamferButton *>(browse_)->setGlyph(QStringLiteral("folder-open"));
     browse_->setAccessibleName(tr("Browse for %1 destination").arg(title));
     browse_->setToolTip(tr("Choose where to save the .%1 report").arg(extension));
 
@@ -75,6 +77,13 @@ QString ReportSelector::validationError() const
     if (QFileInfo(edit_->text().trimmed()).isDir())
         return tr("The .%1 destination is a folder; enter a file name.").arg(extension_);
     return {};
+}
+
+void ReportSelector::setLocationStore(const LocationStore *store)
+{
+    if (suggester_ || !store)
+        return;
+    suggester_ = new LocationSuggester(edit_, store, {LocationRecommender::Kind::ReportFile, extension_});
 }
 
 void ReportSelector::setBusy(bool busy)

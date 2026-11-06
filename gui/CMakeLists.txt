@@ -4,20 +4,43 @@ project(ImageResolutionAnalyzer LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Test)
+# Visual assets live in the repository-level Assets/ directory (see Assets/README.md).
+set(RESORA_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/../Assets)
+
+find_package(Qt6 REQUIRED COMPONENTS Widgets Svg Test)
 
 # Everything except main(), so the tests link the same code as the app.
 add_library(imgan_core STATIC
     src/mainwindow.cpp
+    src/backend/analyticsmodel.cpp
     src/backend/backendlocator.cpp
     src/backend/backendprocess.cpp
+    src/backend/comparison.cpp
+    src/backend/duplicatesmodel.cpp
+    src/widgets/duplicatefinder.cpp
+    src/widgets/duplicatefinder_results.cpp
+    src/backend/previewloader.cpp
+    src/widgets/imagepane.cpp
+    src/widgets/comparisonviewer.cpp
+    src/widgets/comparisontable.cpp
+    src/widgets/comparisonworkspace.cpp
+    src/widgets/comparisonworkspace_ui.cpp
     src/backend/importselection.cpp
+    src/backend/propertiesmodel.cpp
     src/backend/protocolparser.cpp
+    src/locations/savedlocation.cpp
+    src/locations/locationstore.cpp
+    src/locations/locationrecommender.cpp
     src/ui/brand.cpp
+    src/ui/icons.cpp
     src/ui/theme.cpp
     src/ui/uiformat.cpp
     src/widgets/aboutdialog.cpp
+    src/widgets/analyticspanel.cpp
+    src/widgets/pixelspan.cpp
+    src/widgets/sharechart.cpp
     src/widgets/appheader.cpp
     src/widgets/brandlockup.cpp
     src/widgets/distributionbar.cpp
@@ -26,23 +49,30 @@ add_library(imgan_core STATIC
     src/widgets/toggleswitch.cpp
     src/widgets/phaserail.cpp
     src/widgets/elidedlabel.cpp
+    src/widgets/framelessdialog.cpp
     src/widgets/importdialog.cpp
+    src/widgets/locationrow.cpp
+    src/widgets/locationsuggester.cpp
+    src/widgets/savedlocationspanel.cpp
+    src/widgets/settingsdialog.cpp
     src/widgets/metriccard.cpp
     src/widgets/progresspanel.cpp
+    src/widgets/propertiesdialog.cpp
     src/widgets/reportselector.cpp
     src/widgets/resultspanel.cpp
     src/widgets/sectioncard.cpp
     src/widgets/sourcepicker.cpp
+    ${RESORA_ASSETS}/resora.qrc
 )
 target_include_directories(imgan_core PUBLIC src)
-target_link_libraries(imgan_core PUBLIC Qt6::Widgets)
+target_link_libraries(imgan_core PUBLIC Qt6::Widgets Qt6::Svg)
 
 # Executable keeps its file name (run.bat, tooling); the Windows resource carries the RESORA
 # icon and display name (ProductName / FileDescription).
 set(RESORA_RC "")
 if(WIN32)
-    set(RESORA_RC assets/resora.rc)
-    set_source_files_properties(${RESORA_RC} PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/assets/resora.ico)
+    set(RESORA_RC ${RESORA_ASSETS}/app/resora.rc)
+    set_source_files_properties(${RESORA_RC} PROPERTIES OBJECT_DEPENDS ${RESORA_ASSETS}/app/resora.ico)
 endif()
 qt_add_executable(ImageResolutionAnalyzer WIN32 src/main.cpp ${RESORA_RC})
 target_link_libraries(ImageResolutionAnalyzer PRIVATE imgan_core)

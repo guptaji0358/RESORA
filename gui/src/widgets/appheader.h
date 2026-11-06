@@ -13,6 +13,9 @@ public:
     void setState(const QString &text, const QString &state);   // state: idle/running/succeeded/failed/...
     QString stateText() const;
 
+signals:
+    void settingsRequested();
+
 protected:
     void paintEvent(QPaintEvent *) override;
     void mousePressEvent(QMouseEvent *e) override;

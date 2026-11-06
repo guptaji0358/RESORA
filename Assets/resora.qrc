@@ -1,0 +1,28 @@
+<RCC>
+    <qresource prefix="/">
+        <file>branding/mark-mono.svg</file>
+        <file>branding/mark.svg</file>
+        <file>icons/add.svg</file>
+        <file>icons/bookmark.svg</file>
+        <file>icons/check.svg</file>
+        <file>icons/csv.svg</file>
+        <file>icons/error.svg</file>
+        <file>icons/folder-open.svg</file>
+        <file>icons/folder.svg</file>
+        <file>icons/image.svg</file>
+        <file>icons/images.svg</file>
+        <file>icons/import.svg</file>
+        <file>icons/open-report.svg</file>
+        <file>icons/refresh.svg</file>
+        <file>icons/remove.svg</file>
+        <file>icons/rename.svg</file>
+        <file>icons/report.svg</file>
+        <file>icons/scan.svg</file>
+        <file>icons/settings.svg</file>
+        <file>icons/stop.svg</file>
+        <file>icons/swap.svg</file>
+        <file>icons/txt.svg</file>
+        <file>icons/warning.svg</file>
+        <file>illustrations/empty-results.svg</file>
+    </qresource>
+</RCC>

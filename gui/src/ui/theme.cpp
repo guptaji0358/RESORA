@@ -25,8 +25,9 @@ QLabel[role="error"] { color: @alert; font-size: 11pt; }
 QLabel[role="message"] { font-size: 15pt; font-weight: 600; }
 QLabel[role="mono"] { font-family: "Cascadia Mono", "Consolas", monospace; color: @mute; }
 QLabel[role="metricValue"] { font-size: 30pt; font-weight: 600; letter-spacing: 1px; }
-QLabel[role="metricValue"][tone="good"] { color: @signal; }
-QLabel[role="metricValue"][tone="bad"] { color: @alert; }
+QLabel[role="metricValueSm"] { font-size: 19pt; font-weight: 600; letter-spacing: 0.5px; }
+QLabel[role="metricValue"][tone="good"], QLabel[role="metricValueSm"][tone="good"] { color: @signal; }
+QLabel[role="metricValue"][tone="bad"], QLabel[role="metricValueSm"][tone="bad"] { color: @alert; }
 QLabel[role="state"] { font-size: 8pt; font-weight: 700; letter-spacing: 3px; color: @mute; }
 QLabel[role="state"][state="running"], QLabel[role="state"][state="starting"] { color: @ember; }
 QLabel[role="state"][state="succeeded"] { color: @signal; }
