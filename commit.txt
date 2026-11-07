@@ -103,3 +103,10 @@ refactor(gui): split C++ sources into include/, src/ and main/
 - CMake: headers listed as sources (AUTOMOC), include dir and executable path updated
 - docs/GUI.md directory layout; AgentsMemory decision and state
 - includes the pending ToolRail / independent tool organization work
+
+
+refactor(gui): move tool navigation from left rail into the title bar
+
+- ToolNav (widgets/toolnav) replaces ToolRail: compact horizontal tabs inside AppHeader, ember underline on the active tool, icon-only below 1160 px
+- Ctrl+1..4 shortcuts unchanged; window controls and drag area unchanged
+- remove ToolRail; docs/GUI.md and AgentsMemory updated

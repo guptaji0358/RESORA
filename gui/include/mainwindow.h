@@ -26,7 +26,6 @@ class AnalyticsPanel;
 class ComparisonWorkspace;
 class DuplicateFinder;
 class PropertiesDialog;
-class ToolRail;
 class ChamferButton;
 class QCheckBox;
 
@@ -103,7 +102,6 @@ private:
     ComparisonWorkspace *compare_ = nullptr;
     DuplicateFinder *dup_ = nullptr;
     PropertiesDialog *props_ = nullptr;
-    ToolRail *tools_ = nullptr;
     QStackedWidget *toolStack_ = nullptr;
     QWidget *analyzerPage_ = nullptr, *analyticsPage_ = nullptr;
     SourcePicker *aSource_ = nullptr;

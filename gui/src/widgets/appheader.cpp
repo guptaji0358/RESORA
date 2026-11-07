@@ -10,6 +10,7 @@
 #include "ui/icons.h"
 #include "ui/theme.h"
 #include "widgets/brandlockup.h"
+#include "widgets/toolnav.h"
 
 namespace {
 // Painted caption button: kind 0 minimise, 1 maximise/restore, 2 close.
@@ -90,7 +91,7 @@ private:
 
 }  // namespace
 
-AppHeader::AppHeader(QWidget *parent) : QWidget(parent), chip_(new QLabel(this))
+AppHeader::AppHeader(QWidget *parent) : QWidget(parent), chip_(new QLabel(this)), nav_(new ToolNav(this))
 {
     setObjectName(QStringLiteral("header"));
     setFixedHeight(48);
@@ -110,6 +111,8 @@ AppHeader::AppHeader(QWidget *parent) : QWidget(parent), chip_(new QLabel(this))
     row->setContentsMargins(18, 0, 0, 0);
     row->setSpacing(12);
     row->addWidget(new BrandLockup(this));
+    row->addSpacing(14);
+    row->addWidget(nav_);
     row->addStretch(1);
     row->addWidget(settings);
     row->addSpacing(8);
@@ -148,6 +151,13 @@ void AppHeader::mouseDoubleClickEvent(QMouseEvent *e)
 {
     if (e->button() == Qt::LeftButton)
         toggleMaximized();
+}
+
+void AppHeader::resizeEvent(QResizeEvent *e)
+{
+    QWidget::resizeEvent(e);
+    // Narrow windows: icon-only tools so nothing overlaps the settings, state and window controls.
+    nav_->setCompact(width() < 1160);
 }
 
 void AppHeader::paintEvent(QPaintEvent *)

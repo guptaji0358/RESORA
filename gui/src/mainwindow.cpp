@@ -36,7 +36,7 @@
 #include "widgets/chamferbutton.h"
 #include "widgets/flowlayout.h"
 #include "widgets/phaserail.h"
-#include "widgets/toolrail.h"
+#include "widgets/toolnav.h"
 #include "widgets/toggleswitch.h"
 #include "widgets/sourcepicker.h"
 #include "ui/brand.h"
@@ -274,7 +274,6 @@ void MainWindow::buildUi()
     aLay->addWidget(rail_);
     aLay->addWidget(stack_, 1);
 
-    tools_ = new ToolRail;
     toolStack_ = new QStackedWidget;
     toolStack_->addWidget(analyzerPage_);  // Tool::Analyzer
     toolStack_->addWidget(analyticsPage_); // Tool::Analytics
@@ -286,17 +285,13 @@ void MainWindow::buildUi()
     shellLayout->setContentsMargins(0, 0, 0, 0);
     shellLayout->setSpacing(0);
     shellLayout->addWidget(header_);
-    auto *body = new QHBoxLayout;
-    body->setSpacing(0);
-    body->addWidget(tools_);
-    body->addWidget(toolStack_, 1);
-    shellLayout->addLayout(body, 1);
+    shellLayout->addWidget(toolStack_, 1);
     setCentralWidget(shell);
     // Start with focus on the neutral shell, not on an action button: a stray Enter does nothing.
     shell->setFocusPolicy(Qt::ClickFocus);
     shell->setFocus(Qt::OtherFocusReason);
 
-    connect(tools_, &ToolRail::toolRequested, this, [this](int t) { showTool(Tool(t)); });
+    connect(header_->toolNav(), &ToolNav::toolRequested, this, [this](int t) { showTool(Tool(t)); });
     connect(start_, &QPushButton::clicked, this, &MainWindow::startScan);
     connect(analytics_, &AnalyticsPanel::refreshRequested, this, &MainWindow::startAnalytics);
     connect(analytics_, &AnalyticsPanel::propertiesRequested, this,
@@ -353,7 +348,7 @@ Tool MainWindow::currentTool() const
 void MainWindow::showTool(Tool tool)
 {
     toolStack_->setCurrentIndex(int(tool));
-    tools_->setCurrent(tool);
+    header_->toolNav()->setCurrent(tool);
 }
 
 // Hand-off between independent tools. Each tool works without it; this only pre-loads context.

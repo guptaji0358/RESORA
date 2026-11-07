@@ -1,6 +1,6 @@
 #pragma once
 // Analyzer step strip: the Image Analyzer's own steps (Source, Scan, Readout, Properties) as a
-// horizontal row of custom-painted tabs. This is NOT app navigation (that is ToolRail); it only
+// horizontal row of custom-painted tabs. This is NOT app navigation (that is ToolNav); it only
 // moves inside the Analyzer workspace. Scan and Readout are enabled once reachable.
 #include <QWidget>
 

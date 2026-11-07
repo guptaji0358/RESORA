@@ -69,7 +69,7 @@ add_library(imgan_core STATIC
     src/widgets/chamferbutton.cpp
     src/widgets/toggleswitch.cpp
     src/widgets/phaserail.cpp
-    src/widgets/toolrail.cpp
+    src/widgets/toolnav.cpp
     src/widgets/elidedlabel.cpp
     src/widgets/flowlayout.cpp
     src/widgets/framelessdialog.cpp

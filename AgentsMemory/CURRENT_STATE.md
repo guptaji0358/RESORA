@@ -32,3 +32,5 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 
 ## 2026-11-07 C++ layout [V]
 - GUI now `gui/include` + `gui/src` + `gui/main` (see docs/GUI.md, DECISIONS.md). `run.bat /nolaunch` exit 0, ctest 12/12 passed (automated). Not visually/manually verified; not committed. `commit.txt` not updated for this.
+
+- [V] 2026-11-07 [U] Left ToolRail removed; tool navigation moved into the title bar (ToolNav inside AppHeader). Built + ctest OK; NOT visually inspected.

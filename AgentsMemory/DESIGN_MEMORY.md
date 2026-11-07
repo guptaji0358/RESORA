@@ -29,4 +29,4 @@ Bars (resolution classes), donuts + text legend (orientation, formats), horizont
 Specific user design rejections from earlier conversations (beyond what docs record) are not recoverable from the repo.
 
 ## 2026-11-07 Navigation
-Left ToolRail (icon + name, ember accent on active) = app navigation; Analyzer's horizontal step strip (PhaseRail) = Analyzer-internal only. Hand-offs are contextual "Open in …" actions, not primary promo buttons.
+ToolNav in the title bar (AppHeader; icon + name, ember underline on active, icon-only below 1160 px; replaced the left ToolRail 2026-11-07 per user) = app navigation; Analyzer's horizontal step strip (PhaseRail) = Analyzer-internal only. Hand-offs are contextual "Open in …" actions, not primary promo buttons.
