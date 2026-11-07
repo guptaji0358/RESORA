@@ -1,4 +1,4 @@
-#include "resolutionchart.h"
+#include "widgets/resolutionchart.h"
 
 #include <QLocale>
 #include <QPainter>

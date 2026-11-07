@@ -11,7 +11,7 @@
 #include <QObject>
 #include <QStringList>
 
-#include "savedlocation.h"
+#include "locations/savedlocation.h"
 
 class LocationStore : public QObject
 {

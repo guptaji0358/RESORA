@@ -1,4 +1,4 @@
-#include "imagepane.h"
+#include "widgets/imagepane.h"
 
 #include <QMouseEvent>
 #include <QPainter>

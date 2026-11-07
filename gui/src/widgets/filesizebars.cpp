@@ -1,4 +1,4 @@
-#include "filesizebars.h"
+#include "widgets/filesizebars.h"
 
 #include <QLocale>
 #include <QPainter>

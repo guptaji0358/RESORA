@@ -1,4 +1,4 @@
-#include "importdialog.h"
+#include "widgets/importdialog.h"
 
 #include <QDir>
 #include <QFileDialog>
@@ -8,12 +8,12 @@
 #include <QLineEdit>
 #include <QPushButton>
 
-#include "chamferbutton.h"
+#include "widgets/chamferbutton.h"
 #include <QShortcut>
 #include <QVBoxLayout>
 
 #include "locations/locationstore.h"
-#include "locationsuggester.h"
+#include "widgets/locationsuggester.h"
 #include "ui/icons.h"
 #include "ui/theme.h"
 

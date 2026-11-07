@@ -1,4 +1,4 @@
-#include "duplicatesmodel.h"
+#include "backend/duplicatesmodel.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>

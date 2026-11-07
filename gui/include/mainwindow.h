@@ -1,11 +1,13 @@
 #pragma once
 // Presentation only: gathers input, starts a BackendProcess, shows progress and results.
 #include <QElapsedTimer>
+#include <QJsonObject>
 #include <QMainWindow>
 #include <QPointer>
 
 #include "backend/backendlocator.h"
 #include "backend/scanrequest.h"
+#include "ui/toolrequest.h"
 
 class AppHeader;
 class LocationStore;
@@ -22,6 +24,11 @@ class ReportSelector;
 class ResultsPanel;
 class AnalyticsPanel;
 class ComparisonWorkspace;
+class DuplicateFinder;
+class PropertiesDialog;
+class ToolRail;
+class ChamferButton;
+class QCheckBox;
 
 class MainWindow : public QMainWindow
 {
@@ -38,6 +45,12 @@ public:
     AnalyticsPanel *analyticsPanel() const { return analytics_; }
     ComparisonWorkspace *comparison() const { return compare_; }
     bool isComparing() const;
+    DuplicateFinder *duplicates() const { return dup_; }
+    PropertiesDialog *properties() const { return props_; }
+    SourcePicker *analyticsSource() const { return aSource_; }
+    Tool currentTool() const;
+    void showTool(Tool tool);
+    void route(const ToolRequest &request);  // hand-off between independent tools
 
 protected:
 #ifdef Q_OS_WIN
@@ -54,7 +67,9 @@ private:
     void openProperties(); // Ctrl+I
     void openComparison(); // Ctrl+Shift+C
     void openDuplicates(); // Ctrl+Shift+D
-    void closeComparison();
+    void openInAnalytics();  // Readout hand-off: reuse the scan's analytics
+    void syncCollections();
+    ProgressPanel *activeProgress() const;
     void startScan();
     void startAnalytics();  // Refresh in the Analytics view: same import, no reports
     void launch(ScanRequest request);
@@ -86,7 +101,16 @@ private:
     ResultsPanel *results_ = nullptr;
     AnalyticsPanel *analytics_ = nullptr;
     ComparisonWorkspace *compare_ = nullptr;
-    int compareReturn_ = 0;  // stack page to return to from the comparison workspace
+    DuplicateFinder *dup_ = nullptr;
+    PropertiesDialog *props_ = nullptr;
+    ToolRail *tools_ = nullptr;
+    QStackedWidget *toolStack_ = nullptr;
+    QWidget *analyzerPage_ = nullptr, *analyticsPage_ = nullptr;
+    SourcePicker *aSource_ = nullptr;
+    QCheckBox *aRecursive_ = nullptr;
+    ProgressPanel *aProgress_ = nullptr;
+    QPushButton *aCancel_ = nullptr;
+    QJsonObject lastScan_;  // data of the last completed scan (for the Analytics hand-off)
 
     QPointer<BackendProcess> job_;
     QTemporaryFile *paramsFile_ = nullptr;  // selected-image list for the running scan

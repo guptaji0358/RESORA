@@ -26,3 +26,9 @@ Dashboard milestone (2026-11-06): `run.bat /nolaunch` — engine selfcheck, Pyth
 - User reviews/approves the Dashboard milestone; user manually verifies unverified milestones.
 - Clarify with the user the status of the Insights work (finish, document in MILESTONE.md/commit.txt).
 - Do not start another milestone before approval [U].
+
+## 2026-11-07 update
+Independent-feature organization implemented (ToolRail, hosted Duplicates/Properties pages, Analytics own source, hand-offs). `run.bat /nolaunch`: ctest 12/12. NOT manually/visually verified; nothing committed. Details: docs/MILESTONE.md, docs/GUI.md. Note: git was clean at session start, so earlier "uncommitted work" notes above are stale (those commits exist).
+
+## 2026-11-07 C++ layout [V]
+- GUI now `gui/include` + `gui/src` + `gui/main` (see docs/GUI.md, DECISIONS.md). `run.bat /nolaunch` exit 0, ctest 12/12 passed (automated). Not visually/manually verified; not committed. `commit.txt` not updated for this.

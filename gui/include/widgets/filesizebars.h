@@ -2,7 +2,7 @@
 // File size comparison: two proportional horizontal bars on one shared scale from 0, with the
 // absolute and percentage difference. Zero sizes draw an empty bar; missing sizes are labelled
 // "Not available" and excluded from the scale.
-#include "insightcanvas.h"
+#include "widgets/insightcanvas.h"
 
 class FileSizeBars : public InsightCanvas
 {

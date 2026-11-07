@@ -1,4 +1,4 @@
-#include "framelessdialog.h"
+#include "widgets/framelessdialog.h"
 
 #include <QAbstractButton>
 #include <QGuiApplication>
@@ -103,9 +103,30 @@ FramelessDialog::FramelessDialog(const QString &title, QWidget *parent)
     outer->addWidget(body, 1);
 }
 
+void FramelessDialog::setEmbedded(bool embedded)
+{
+    embedded_ = embedded;
+    if (!embedded)
+        return;
+    setWindowFlags(Qt::Widget);
+    setModal(false);
+    setAttribute(Qt::WA_StyledBackground, true);
+    setMinimumSize(0, 0);
+    titleBar_->hide();
+}
+
+void FramelessDialog::done(int result)
+{
+    if (embedded_)
+        return;  // an embedded page is never dismissed (Esc / Done do nothing)
+    QDialog::done(result);
+}
+
 void FramelessDialog::paintEvent(QPaintEvent *e)
 {
     QDialog::paintEvent(e);
+    if (embedded_)
+        return;
     QPainter p(this);
     p.setPen(Theme::line());
     p.drawRect(rect().adjusted(0, 0, -1, -1));
@@ -114,7 +135,8 @@ void FramelessDialog::paintEvent(QPaintEvent *e)
 void FramelessDialog::showEvent(QShowEvent *e)
 {
     QDialog::showEvent(e);
-    placeOnScreen();
+    if (!embedded_)
+        placeOnScreen();
 }
 
 // QDialog focuses the first focusable child on show, which may be an action button. Opening a dialog

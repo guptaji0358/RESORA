@@ -164,10 +164,10 @@ private slots:
         QVERIFY(!s.commandArguments().contains("--txt-analytics"));
     }
 
-    void railHasAnalyticsAvailableFromStart()
+    void analyzerStepsStartWithSourceOnly()
     {
         PhaseRail rail;
-        QVERIFY(rail.isPhaseAvailable(PhaseRail::Analytics));
+        QVERIFY(rail.isPhaseAvailable(PhaseRail::Properties));
         QVERIFY(!rail.isPhaseAvailable(PhaseRail::Readout));
     }
 };

@@ -1,16 +1,16 @@
-#include "reportselector.h"
+#include "widgets/reportselector.h"
 
 #include <QCheckBox>
-#include "toggleswitch.h"
+#include "widgets/toggleswitch.h"
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QPushButton>
-#include "chamferbutton.h"
+#include "widgets/chamferbutton.h"
 #include <QStandardPaths>
-#include "locationsuggester.h"
+#include "widgets/locationsuggester.h"
 
 
 ReportSelector::ReportSelector(const QString &title, const QString &extension,

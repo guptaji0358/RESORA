@@ -1,15 +1,15 @@
-#include "insightsview.h"
+#include "widgets/insightsview.h"
 
 #include <QLabel>
 #include <QVBoxLayout>
 
-#include "aspectindicator.h"
-#include "collapsiblesection.h"
-#include "dimensiondiagram.h"
-#include "filesizebars.h"
-#include "metadatacompare.h"
-#include "resolutionchart.h"
-#include "sectioncard.h"
+#include "widgets/aspectindicator.h"
+#include "widgets/collapsiblesection.h"
+#include "widgets/dimensiondiagram.h"
+#include "widgets/filesizebars.h"
+#include "widgets/metadatacompare.h"
+#include "widgets/resolutionchart.h"
+#include "widgets/sectioncard.h"
 
 namespace {
 QLabel *label(const QString &t, const QString &style)

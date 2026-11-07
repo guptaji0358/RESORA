@@ -1,4 +1,4 @@
-#include "donutchart.h"
+#include "widgets/donutchart.h"
 
 #include <QPainter>
 #include <QPainterPath>

@@ -1,4 +1,4 @@
-#include "elidedlabel.h"
+#include "widgets/elidedlabel.h"
 
 #include <QFontMetrics>
 

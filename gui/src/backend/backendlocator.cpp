@@ -1,4 +1,4 @@
-#include "backendlocator.h"
+#include "backend/backendlocator.h"
 
 #include <QDir>
 #include <QFileInfo>

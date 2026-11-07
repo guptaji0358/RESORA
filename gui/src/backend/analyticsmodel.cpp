@@ -1,4 +1,4 @@
-#include "analyticsmodel.h"
+#include "backend/analyticsmodel.h"
 
 #include <QJsonArray>
 #include <QJsonValue>

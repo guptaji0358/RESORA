@@ -1,4 +1,4 @@
-#include "savedlocation.h"
+#include "locations/savedlocation.h"
 
 #include <QCoreApplication>
 #include <QDir>

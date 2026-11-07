@@ -162,7 +162,10 @@ int main(int argc, char **argv)
         w.resize(wh[0].toInt(), wh[1].toInt());
         w.show();
         pump(300);
-        auto *stack = w.findChild<QStackedWidget *>();
+        QStackedWidget *stack = nullptr;  // the Analyzer's phase stack (page 3 = hosted Properties)
+        for (auto *st : w.findChildren<QStackedWidget *>())
+            if (st->count() == 4 && st->widget(3) == w.properties())
+                stack = st;
         shot(&w, "main_empty_" + sz);
         w.sourcePicker()->setSelection(sel);
         pump(100);
@@ -185,7 +188,7 @@ int main(int argc, char **argv)
         pump(200);
         shot(&w, "main_results_" + sz);
 
-        stack->setCurrentIndex(3);
+        w.showTool(Tool::Analytics);
         w.analyticsPanel()->clear();
         pump(100);
         shot(&w, "main_analytics_empty_" + sz);
@@ -205,7 +208,7 @@ int main(int argc, char **argv)
 
         w.comparison()->setImage(ComparisonWorkspace::Left, imgs[0]);
         w.comparison()->setImage(ComparisonWorkspace::Right, imgs[1]);
-        stack->setCurrentWidget(w.comparison());
+        w.showTool(Tool::Compare);
         pump(1500);
         shot(&w, "main_compare_" + sz);
         w.comparison()->clearImage(ComparisonWorkspace::Left);

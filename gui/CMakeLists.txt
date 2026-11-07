@@ -11,8 +11,13 @@ set(RESORA_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/../Assets)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg Test)
 
+# Headers live in include/ (apart from their .cpp in src/); listing them as sources lets AUTOMOC
+# find Q_OBJECT classes. Re-globbed on every build so new headers are picked up.
+file(GLOB_RECURSE RESORA_HEADERS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
+
 # Everything except main(), so the tests link the same code as the app.
 add_library(imgan_core STATIC
+    ${RESORA_HEADERS}
     src/mainwindow.cpp
     src/backend/analyticsmodel.cpp
     src/backend/backendlocator.cpp
@@ -64,6 +69,7 @@ add_library(imgan_core STATIC
     src/widgets/chamferbutton.cpp
     src/widgets/toggleswitch.cpp
     src/widgets/phaserail.cpp
+    src/widgets/toolrail.cpp
     src/widgets/elidedlabel.cpp
     src/widgets/flowlayout.cpp
     src/widgets/framelessdialog.cpp
@@ -81,7 +87,7 @@ add_library(imgan_core STATIC
     src/widgets/sourcepicker.cpp
     ${RESORA_ASSETS}/resora.qrc
 )
-target_include_directories(imgan_core PUBLIC src)
+target_include_directories(imgan_core PUBLIC include)
 target_link_libraries(imgan_core PUBLIC Qt6::Widgets Qt6::Svg)
 
 # Executable keeps its file name (run.bat, tooling); the Windows resource carries the RESORA
@@ -91,7 +97,7 @@ if(WIN32)
     set(RESORA_RC ${RESORA_ASSETS}/app/resora.rc)
     set_source_files_properties(${RESORA_RC} PROPERTIES OBJECT_DEPENDS ${RESORA_ASSETS}/app/resora.ico)
 endif()
-qt_add_executable(ImageResolutionAnalyzer WIN32 src/main.cpp ${RESORA_RC})
+qt_add_executable(ImageResolutionAnalyzer WIN32 main/main.cpp ${RESORA_RC})
 target_link_libraries(ImageResolutionAnalyzer PRIVATE imgan_core)
 
 enable_testing()

@@ -1,4 +1,4 @@
-#include "comparisonviewer.h"
+#include "widgets/comparisonviewer.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>

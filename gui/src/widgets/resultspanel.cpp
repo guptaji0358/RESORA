@@ -1,4 +1,4 @@
-#include "resultspanel.h"
+#include "widgets/resultspanel.h"
 
 #include <QDesktopServices>
 #include <QDir>
@@ -8,13 +8,13 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
-#include "chamferbutton.h"
+#include "widgets/chamferbutton.h"
 #include <QUrl>
 #include <QVBoxLayout>
 
-#include "distributionbar.h"
-#include "elidedlabel.h"
-#include "metriccard.h"
+#include "widgets/distributionbar.h"
+#include "widgets/elidedlabel.h"
+#include "widgets/metriccard.h"
 #include "ui/icons.h"
 #include "ui/theme.h"
 #include "ui/uiformat.h"

@@ -1,7 +1,7 @@
 #pragma once
 // Vertical bar chart (resolution categories): one slot per class, count above the bar, name and
 // percentage below, three gridlines on a "nice" axis. Zero classes keep their slot.
-#include "chartbase.h"
+#include "widgets/chartbase.h"
 
 class BarChart : public ChartBase
 {

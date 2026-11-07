@@ -1,4 +1,4 @@
-#include "locationsuggester.h"
+#include "widgets/locationsuggester.h"
 
 #include <QApplication>
 #include <QEvent>

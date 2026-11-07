@@ -5,7 +5,7 @@
 // off each pane is fully independent.
 #include <QWidget>
 
-#include "imagepane.h"
+#include "widgets/imagepane.h"
 
 class ComparisonViewer : public QWidget
 {

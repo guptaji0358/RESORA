@@ -1,4 +1,4 @@
-#include "previewloader.h"
+#include "backend/previewloader.h"
 
 #include <QFileInfo>
 #include <QImageReader>

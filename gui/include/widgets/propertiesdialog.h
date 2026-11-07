@@ -7,7 +7,7 @@
 #include <QStringList>
 
 #include "backend/propertiesmodel.h"
-#include "framelessdialog.h"
+#include "widgets/framelessdialog.h"
 
 class BackendProcess;
 class ChamferButton;
@@ -32,6 +32,12 @@ public:
     int currentIndex() const { return index_; }
     QString currentText() const;
     bool isLoading() const { return job_ != nullptr; }
+    // Hosted as an Analyzer page: no "Done" button (the page is never dismissed).
+    void setHosted();
+
+signals:
+    // Hand-off: the user wants the shown image in Image Comparison.
+    void compareRequested(const QString &path);
 
 private:
     void chooseImages();
@@ -48,6 +54,8 @@ private:
     ChamferButton *prev_ = nullptr;
     ChamferButton *next_ = nullptr;
     ChamferButton *copy_ = nullptr;
+    ChamferButton *compare_ = nullptr;
+    ChamferButton *done_ = nullptr;
     QWidget *cards_ = nullptr;
     QVBoxLayout *cardsLayout_ = nullptr;
 

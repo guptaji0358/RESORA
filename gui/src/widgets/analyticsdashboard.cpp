@@ -1,4 +1,4 @@
-#include "analyticsdashboard.h"
+#include "widgets/analyticsdashboard.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -6,12 +6,12 @@
 #include <QVBoxLayout>
 
 #include "backend/dashboardmodel.h"
-#include "barchart.h"
-#include "donutchart.h"
-#include "hbarchart.h"
-#include "metriccard.h"
-#include "pixelspan.h"
-#include "sectioncard.h"
+#include "widgets/barchart.h"
+#include "widgets/donutchart.h"
+#include "widgets/hbarchart.h"
+#include "widgets/metriccard.h"
+#include "widgets/pixelspan.h"
+#include "widgets/sectioncard.h"
 #include "ui/theme.h"
 #include "ui/uiformat.h"
 

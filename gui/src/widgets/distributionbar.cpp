@@ -1,4 +1,4 @@
-#include "distributionbar.h"
+#include "widgets/distributionbar.h"
 
 #include <QPainter>
 #include <algorithm>

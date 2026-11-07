@@ -6,7 +6,7 @@
 #include <QPointer>
 
 #include "backend/duplicatesmodel.h"
-#include "framelessdialog.h"
+#include "widgets/framelessdialog.h"
 
 class BackendProcess;
 class ChamferButton;
@@ -30,6 +30,10 @@ public:
                     QWidget *parent = nullptr);
     ~DuplicateFinder() override;
 
+    // Hosted as a tool page: no title bar, never closes.
+    void setHosted() { setEmbedded(true); }
+    // Convenience from the host: images of the last Analyzer import (never required).
+    void setCollection(const QStringList &images, const QString &startFolder);
     void addFolder(const QString &path);
     void addExclusion(const QString &path);
     void setUseCollection(bool on);

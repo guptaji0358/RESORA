@@ -1,4 +1,4 @@
-#include "chamferbutton.h"
+#include "widgets/chamferbutton.h"
 
 #include <QFocusEvent>
 #include <QKeyEvent>

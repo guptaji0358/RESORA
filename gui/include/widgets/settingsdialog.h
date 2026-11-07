@@ -1,6 +1,6 @@
 #pragma once
 // RESORA Settings (header "SETTINGS" or Ctrl+,). One section today: Saved Locations.
-#include "framelessdialog.h"
+#include "widgets/framelessdialog.h"
 
 class LocationStore;
 class SavedLocationsPanel;

@@ -36,6 +36,7 @@
 #include "widgets/chamferbutton.h"
 #include "widgets/flowlayout.h"
 #include "widgets/phaserail.h"
+#include "widgets/toolrail.h"
 #include "widgets/toggleswitch.h"
 #include "widgets/sourcepicker.h"
 #include "ui/brand.h"
@@ -171,18 +172,6 @@ void MainWindow::buildUi()
     start_->setMinimumHeight(46);
     auto *go = new FlowLayout;
     go->addWidget(start_);
-    auto *compareSrc = new ChamferButton(tr("Compare Images"));
-    compareSrc->setGlyph(QStringLiteral("swap"));
-    compareSrc->setMinimumHeight(46);
-    compareSrc->setToolTip(tr("Compare two images side by side; no scan needed (Ctrl+Shift+C)"));
-    connect(compareSrc, &QPushButton::clicked, this, &MainWindow::openComparison);
-    go->addWidget(compareSrc);
-    auto *dupSrc = new ChamferButton(tr("Find Duplicates"));
-    dupSrc->setGlyph(QStringLiteral("images"));
-    dupSrc->setMinimumHeight(46);
-    dupSrc->setToolTip(tr("Find identical and visually similar images (Ctrl+Shift+D); never deletes anything"));
-    connect(dupSrc, &QPushButton::clicked, this, &MainWindow::openDuplicates);
-    go->addWidget(dupSrc);
     src->addLayout(go);
 
     // --- 02 Scan ---
@@ -211,31 +200,86 @@ void MainWindow::buildUi()
     props->setGlyph(QStringLiteral("image"));
     props->setToolTip(tr("Detailed properties of an image (Ctrl+I)"));
     connect(props, &QPushButton::clicked, this, &MainWindow::openProperties);
-    auto *analyticsBtn = new ChamferButton(tr("Analytics"));
-    analyticsBtn->setGlyph(QStringLiteral("scan"));
-    analyticsBtn->setToolTip(tr("Statistics for this collection (Ctrl+4)"));
-    connect(analyticsBtn, &QPushButton::clicked, this, [this] { showPhase(PhaseRail::Analytics); });
     auto *outRow = new FlowLayout;
     outRow->addWidget(again_);
     outRow->addWidget(props);
-    outRow->addWidget(analyticsBtn);
-    auto *compareOut = new ChamferButton(tr("Compare Images"));
-    compareOut->setGlyph(QStringLiteral("swap"));
-    compareOut->setToolTip(tr("Compare two images side by side (Ctrl+Shift+C)"));
-    connect(compareOut, &QPushButton::clicked, this, &MainWindow::openComparison);
-    outRow->addWidget(compareOut);
+    // Contextual hand-offs for this scanned collection (each tool also opens on its own from the rail).
+    auto *toAnalytics = new ChamferButton(tr("Open in Analytics"));
+    toAnalytics->setGlyph(QStringLiteral("scan"));
+    toAnalytics->setToolTip(tr("Show statistics for this scanned collection in Analytics"));
+    connect(toAnalytics, &QPushButton::clicked, this, &MainWindow::openInAnalytics);
+    outRow->addWidget(toAnalytics);
+    auto *toDup = new ChamferButton(tr("Open in Duplicates"));
+    toDup->setGlyph(QStringLiteral("images"));
+    toDup->setToolTip(tr("Look for duplicates in this collection"));
+    connect(toDup, &QPushButton::clicked, this, [this] { route({Tool::Duplicates, {}}); });
+    outRow->addWidget(toDup);
     out->addLayout(outRow);
 
-    // --- 04 Analytics ---
+    // --- Properties (Analyzer step): the properties view hosted as a page ---
+    props_ = new PropertiesDialog(QStringList(), nullptr);
+    props_->setHosted();
+    stack_->addWidget(props_);
+    connect(props_, &PropertiesDialog::compareRequested, this,
+            [this](const QString &path) { route({Tool::Compare, {path}}); });
+
+    // --- Tool: Analytics (own source, own progress; usable without the Analyzer) ---
     QVBoxLayout *ana = nullptr;
-    stack_->addWidget(makePage(tr("04 — ANALYTICS"), tr("Collection analytics."), QString(), &ana, 1020));
+    analyticsPage_ = makePage(tr("ANALYTICS"), tr("Collection analytics."),
+                              tr("Pick any folder or images; no scan or report needed."), &ana, 1020);
+    aSource_ = new SourcePicker;
+    aSource_->setLocationStore(locations_);
+    aRecursive_ = new ToggleSwitch(tr("Include subfolders"));
+    aRecursive_->setChecked(true);
+    auto *useLast = new ChamferButton(tr("Use Analyzer import"));
+    useLast->setGlyph(QStringLiteral("import"));
+    useLast->setCompact(true);
+    useLast->setToolTip(tr("Copy the folder or images imported in the Analyzer"));
+    connect(useLast, &QPushButton::clicked, this, [this] {
+        if (source_->validationError().isEmpty())
+            aSource_->setSelection(source_->selection());
+    });
+    aProgress_ = new ProgressPanel;
+    aProgress_->hide();
+    aCancel_ = new ChamferButton(tr("Cancel"));
+    static_cast<ChamferButton *>(aCancel_)->setGlyph(QStringLiteral("stop"));
+    Theme::setProperty(aCancel_, "variant", QStringLiteral("danger"));
+    aCancel_->hide();
     analytics_ = new AnalyticsPanel;
+    auto *aRow = new QHBoxLayout;
+    aRow->addWidget(aRecursive_);
+    aRow->addStretch(1);
+    aRow->addWidget(useLast);
+    ana->addWidget(aSource_);
+    ana->addLayout(aRow);
+    ana->addWidget(aProgress_);
+    ana->addWidget(aCancel_, 0, Qt::AlignLeft);
     ana->addWidget(analytics_);
 
-    // --- 05 Compare (workspace, reached by button / Ctrl+Shift+C; not a scan phase) ---
+    // --- Tool: Compare and Duplicates (independent workspaces) ---
     compare_ = new ComparisonWorkspace;
-    stack_->addWidget(compare_);
-    connect(compare_, &ComparisonWorkspace::backRequested, this, &MainWindow::closeComparison);
+    dup_ = new DuplicateFinder(QStringList(), QString(),
+                               QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)
+                                   + QStringLiteral("/duplicates-cache.sqlite"),
+                               nullptr);
+    dup_->setHosted();
+    connect(dup_, &DuplicateFinder::compareRequested, this,
+            [this](const QString &a, const QString &b) { route({Tool::Compare, {a, b}}); });
+
+    // --- Analyzer workspace = step strip + its phase stack ---
+    analyzerPage_ = new QWidget;
+    auto *aLay = new QVBoxLayout(analyzerPage_);
+    aLay->setContentsMargins(0, 0, 0, 0);
+    aLay->setSpacing(0);
+    aLay->addWidget(rail_);
+    aLay->addWidget(stack_, 1);
+
+    tools_ = new ToolRail;
+    toolStack_ = new QStackedWidget;
+    toolStack_->addWidget(analyzerPage_);  // Tool::Analyzer
+    toolStack_->addWidget(analyticsPage_); // Tool::Analytics
+    toolStack_->addWidget(compare_);       // Tool::Compare
+    toolStack_->addWidget(dup_);           // Tool::Duplicates
 
     auto *shell = new QWidget;
     auto *shellLayout = new QVBoxLayout(shell);
@@ -244,52 +288,55 @@ void MainWindow::buildUi()
     shellLayout->addWidget(header_);
     auto *body = new QHBoxLayout;
     body->setSpacing(0);
-    body->addWidget(rail_);
-    body->addWidget(stack_, 1);
+    body->addWidget(tools_);
+    body->addWidget(toolStack_, 1);
     shellLayout->addLayout(body, 1);
     setCentralWidget(shell);
     // Start with focus on the neutral shell, not on an action button: a stray Enter does nothing.
     shell->setFocusPolicy(Qt::ClickFocus);
     shell->setFocus(Qt::OtherFocusReason);
 
+    connect(tools_, &ToolRail::toolRequested, this, [this](int t) { showTool(Tool(t)); });
     connect(start_, &QPushButton::clicked, this, &MainWindow::startScan);
     connect(analytics_, &AnalyticsPanel::refreshRequested, this, &MainWindow::startAnalytics);
-    connect(analytics_, &AnalyticsPanel::propertiesRequested, this, [this](const QString &path) {
-        PropertiesDialog(QStringList{path}, this).exec();
-    });
+    connect(analytics_, &AnalyticsPanel::propertiesRequested, this,
+            [this](const QString &path) { route({Tool::Analyzer, {path}}); });
     connect(cancel_, &QPushButton::clicked, this, &MainWindow::cancelScan);
+    connect(aCancel_, &QPushButton::clicked, this, &MainWindow::cancelScan);
     connect(again_, &QPushButton::clicked, this, [this] { showPhase(PhaseRail::Source); });
     connect(progress_, &ProgressPanel::stateChanged, header_, &AppHeader::setState);
+    connect(aProgress_, &ProgressPanel::stateChanged, header_, &AppHeader::setState);
     connect(rail_, &PhaseRail::phaseRequested, this, [this](int p) { stack_->setCurrentIndex(p); });
     auto *open = new QShortcut(QKeySequence::Open, this);  // Ctrl+O
     connect(open, &QShortcut::activated, this, &MainWindow::importSources);
     connect(source_, &SourcePicker::selectionChanged, this, [this] {
-        analytics_->setStale(true);
-        updateAnalyticsControls();
         setNotice(QString());
         recursive_->setEnabled(!isScanning() && source_->selection().kind == ImportSelection::Folder);
         recursive_->setToolTip(source_->selection().kind == ImportSelection::Folder
                                    ? tr("Also analyze images inside every folder below the selected one")
                                    : tr("Applies to folder imports only"));
+        syncCollections();
+    });
+    connect(aSource_, &SourcePicker::selectionChanged, this, [this] {
+        analytics_->setStale(true);
+        updateAnalyticsControls();
     });
     connect(header_, &AppHeader::settingsRequested, this, &MainWindow::openSettings);
-    auto *settings = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma), this);
-    connect(settings, &QShortcut::activated, this, &MainWindow::openSettings);
-    auto *propsKey = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_I), this);
-    connect(propsKey, &QShortcut::activated, this, &MainWindow::openProperties);
-    auto *cmpKey = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C), this);
-    connect(cmpKey, &QShortcut::activated, this, &MainWindow::openComparison);
-    auto *dupKey = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_D), this);
-    connect(dupKey, &QShortcut::activated, this, &MainWindow::openDuplicates);
+    auto addKey = [this](const QKeySequence &k, auto fn) {
+        auto *sc = new QShortcut(k, this);
+        connect(sc, &QShortcut::activated, this, fn);
+    };
+    addKey(QKeySequence(Qt::CTRL | Qt::Key_Comma), &MainWindow::openSettings);
+    addKey(QKeySequence(Qt::CTRL | Qt::Key_I), &MainWindow::openProperties);
+    addKey(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C), &MainWindow::openComparison);
+    addKey(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_D), &MainWindow::openDuplicates);
     auto *about = new QShortcut(QKeySequence(Qt::Key_F1), this);
     connect(about, &QShortcut::activated, this, [this] { AboutDialog(this).exec(); });
     for (int i = 0; i < 4; ++i) {
         auto *sc = new QShortcut(QKeySequence(Qt::CTRL | (Qt::Key_1 + i)), this);
-        connect(sc, &QShortcut::activated, this, [this, i] {
-            if (rail_->isPhaseAvailable(PhaseRail::Phase(i)))
-                showPhase(i);
-        });
+        connect(sc, &QShortcut::activated, this, [this, i] { showTool(Tool(i)); });
     }
+    rail_->setAvailable(PhaseRail::Properties, true);
 }
 
 void MainWindow::showPhase(int phase)
@@ -298,10 +345,65 @@ void MainWindow::showPhase(int phase)
     rail_->setCurrent(PhaseRail::Phase(phase));
 }
 
+Tool MainWindow::currentTool() const
+{
+    return Tool(toolStack_->currentIndex());
+}
+
+void MainWindow::showTool(Tool tool)
+{
+    toolStack_->setCurrentIndex(int(tool));
+    tools_->setCurrent(tool);
+}
+
+// Hand-off between independent tools. Each tool works without it; this only pre-loads context.
+void MainWindow::route(const ToolRequest &request)
+{
+    switch (request.target) {
+    case Tool::Analyzer:
+        showTool(Tool::Analyzer);
+        if (!request.paths.isEmpty()) {
+            props_->setFiles(request.paths.mid(0, 500));
+            showPhase(PhaseRail::Properties);
+        }
+        break;
+    case Tool::Compare:
+        showTool(Tool::Compare);
+        for (int s = 0; s < 2 && s < request.paths.size(); ++s)
+            compare_->setImage(ComparisonWorkspace::Side(s), request.paths.at(s));
+        // A single image goes to the first free slot.
+        if (request.paths.size() == 1 && !compare_->path(ComparisonWorkspace::Left).isEmpty()
+            && compare_->path(ComparisonWorkspace::Left) != request.paths.first())
+            compare_->setImage(ComparisonWorkspace::Right, request.paths.first());
+        break;
+    case Tool::Duplicates:
+    case Tool::Analytics:
+        showTool(request.target);
+        break;
+    }
+}
+
+// Convenience only: Compare's "From collection" and Duplicates' "imported collection" follow the
+// Analyzer's last import. Neither tool needs it.
+void MainWindow::syncCollections()
+{
+    const ImportSelection sel = source_->selection();
+    compare_->setCollection(sel, recursive_->isChecked());
+    dup_->setCollection(sel.kind == ImportSelection::Folder ? QStringList() : sel.files,
+                        sel.kind == ImportSelection::Folder ? sel.folder : QString());
+    if (sel.kind == ImportSelection::Folder && !sel.folder.isEmpty())
+        dup_->addFolder(sel.folder);
+}
+
 void MainWindow::importSources()
 {
     if (isScanning())
         return;
+    if (currentTool() == Tool::Analytics) {
+        aSource_->openImportDialog();
+        return;
+    }
+    showTool(Tool::Analyzer);
     if (stack_->currentIndex() != PhaseRail::Source)
         showPhase(PhaseRail::Source);
     source_->openImportDialog();
@@ -312,62 +414,48 @@ void MainWindow::openSettings()
     SettingsDialog(locations_, this).exec();
 }
 
-void MainWindow::openProperties()
+void MainWindow::openProperties()  // Ctrl+I
 {
     // Preselect the imported images (single/multiple); a folder import asks the user to choose.
     QStringList files = source_->selection().files;
     if (source_->selection().kind == ImportSelection::Folder)
         files.clear();
-    PropertiesDialog(files.mid(0, 500), this).exec();
+    showTool(Tool::Analyzer);
+    if (!files.isEmpty())
+        props_->setFiles(files.mid(0, 500));
+    showPhase(PhaseRail::Properties);
 }
 
 void MainWindow::openDuplicates()  // Ctrl+Shift+D
 {
-    const ImportSelection sel = source_->selection();
-    const QString cache = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)
-                          + QStringLiteral("/duplicates-cache.sqlite");
-    const QStringList images = sel.kind == ImportSelection::Folder ? QStringList() : sel.files;
-    DuplicateFinder dlg(images, sel.kind == ImportSelection::Folder ? sel.folder : QString(), cache, this);
-    if (sel.kind == ImportSelection::Folder)
-        dlg.addFolder(sel.folder);
-    else
-        dlg.setUseCollection(true);
-    QString left, right;
-    connect(&dlg, &DuplicateFinder::compareRequested, &dlg, [&](const QString &a, const QString &b) {
-        left = a;
-        right = b;
-        dlg.accept();
-    });
-    dlg.exec();
-    if (!left.isEmpty() && !right.isEmpty() && !isComparing()) {
-        openComparison();
-        compare_->setImage(ComparisonWorkspace::Left, left);
-        compare_->setImage(ComparisonWorkspace::Right, right);
-    }
+    showTool(Tool::Duplicates);
 }
 
 bool MainWindow::isComparing() const
 {
-    return stack_->currentWidget() == compare_;
+    return toolStack_->currentWidget() == compare_;
 }
 
-void MainWindow::openComparison()
+void MainWindow::openComparison()  // Ctrl+Shift+C
 {
-    if (isComparing())
+    showTool(Tool::Compare);
+}
+
+void MainWindow::openInAnalytics()
+{
+    showTool(Tool::Analytics);
+    if (lastScan_.isEmpty())
         return;
-    compareReturn_ = stack_->currentIndex();
-    compare_->setCollection(source_->selection(), recursive_->isChecked());
-    // Empty slots start from the imported images (single / multiple), if any; no scan involved.
-    const QStringList files = source_->selection().kind == ImportSelection::Folder ? QStringList() : source_->selection().files;
-    for (int s = 0; s < 2 && s < files.size(); ++s)
-        if (compare_->path(ComparisonWorkspace::Side(s)).isEmpty())
-            compare_->setImage(ComparisonWorkspace::Side(s), files.at(s));
-    stack_->setCurrentWidget(compare_);
+    aSource_->setSelection(source_->selection());
+    aRecursive_->setChecked(recursive_->isChecked());
+    analytics_->showAnalytics(lastScan_);
+    analytics_->setStale(false);
+    updateAnalyticsControls();
 }
 
-void MainWindow::closeComparison()
+ProgressPanel *MainWindow::activeProgress() const
 {
-    stack_->setCurrentIndex(compareReturn_);
+    return analyticsJob_ ? aProgress_ : progress_;
 }
 
 void MainWindow::setNotice(const QString &text)
@@ -411,13 +499,19 @@ void MainWindow::setRunning(bool running)
     csv_->setBusy(running);
     txt_->setBusy(running);
     txtAnalytics_->setEnabled(!running);
+    if (aSource_) {
+        aSource_->setBusy(running);
+        aRecursive_->setEnabled(!running && aSource_->selection().kind == ImportSelection::Folder);
+        aCancel_->setVisible(running && analyticsJob_);
+        aCancel_->setEnabled(running);
+    }
     if (analytics_)
         updateAnalyticsControls();
 }
 
 void MainWindow::updateAnalyticsControls()
 {
-    analytics_->setRefreshEnabled(!isScanning() && source_->validationError().isEmpty());
+    analytics_->setRefreshEnabled(!isScanning() && aSource_->validationError().isEmpty());
 }
 
 bool MainWindow::confirmOverwrite(const QString &path)
@@ -479,16 +573,17 @@ void MainWindow::startAnalytics()
 {
     if (isScanning())
         return;
-    const QString error = source_->validationError();
+    const QString error = aSource_->validationError();
     if (!error.isEmpty()) {
-        setNotice(error);
+        aProgress_->show();
+        aProgress_->setNotice(error, true);
         return;
     }
     ScanRequest request;
-    const ImportSelection selection = source_->selection();
+    const ImportSelection selection = aSource_->selection();
     if (selection.kind == ImportSelection::Folder) {
         request.folder = selection.folder;
-        request.recursive = recursive_->isChecked();
+        request.recursive = aRecursive_->isChecked();
     } else {
         request.files = selection.files;
         request.recursive = false;
@@ -524,11 +619,15 @@ void MainWindow::launch(ScanRequest request)
     setNotice(QString());
     if (!analyticsJob_) {
         results_->clear();
+        lastScan_ = QJsonObject();
         rail_->setAvailable(PhaseRail::Readout, false);
+        rail_->setAvailable(PhaseRail::Scan, true);
+        showTool(Tool::Analyzer);
+        showPhase(PhaseRail::Scan);
+    } else {
+        aProgress_->show();
     }
-    rail_->setAvailable(PhaseRail::Scan, true);
-    showPhase(PhaseRail::Scan);
-    progress_->setStarting();  // indeterminate until the backend reports a total
+    activeProgress()->setStarting();  // indeterminate until the backend reports a total
     sinceProgress_.invalidate();
 
     job_ = new BackendProcess(this);
@@ -545,7 +644,8 @@ void MainWindow::cancelScan()
     if (!isScanning())
         return;
     cancel_->setEnabled(false);
-    progress_->setCancelling();
+    aCancel_->setEnabled(false);
+    activeProgress()->setCancelling();
     job_->cancel();
 }
 
@@ -555,7 +655,7 @@ void MainWindow::onProgress(qint64 done, qint64 total, const QString &message)
     if (sinceProgress_.isValid() && sinceProgress_.elapsed() < kProgressIntervalMs && !last)
         return;
     sinceProgress_.restart();
-    progress_->setProgress(done, total, message);
+    activeProgress()->setProgress(done, total, message);
 }
 
 void MainWindow::jobEnded()
@@ -571,14 +671,14 @@ void MainWindow::jobEnded()
 
 void MainWindow::onSucceeded(const QJsonValue &data)
 {
-    analytics_->showAnalytics(data.toObject());
-    updateAnalyticsControls();
-    if (analyticsJob_) {  // refresh: the scan readout and reports stay as they were
-        progress_->setSucceeded(tr("Analytics refreshed."));
-        showPhase(PhaseRail::Analytics);
+    if (analyticsJob_) {  // Analytics refresh: the Analyzer's readout and reports stay as they were
+        analytics_->showAnalytics(data.toObject());
+        updateAnalyticsControls();
+        aProgress_->setSucceeded(tr("Analytics refreshed."));
         jobEnded();
         return;
     }
+    lastScan_ = data.toObject();
     results_->showResult(data.toObject(), !request_.csvPath.isEmpty(), !request_.txtPath.isEmpty());
     const int total = data.toObject().value(QStringLiteral("summary")).toObject().value(QStringLiteral("total")).toInt();
     progress_->setSucceeded(tr("Scan complete: %1 file(s) processed.").arg(total));
@@ -596,13 +696,13 @@ void MainWindow::onFailed(const QString &code, const QString &message, int exitC
         text = (analyticsJob_ ? tr("Analytics failed [%1]: %2") : tr("Scan failed [%1]: %2")).arg(code, text);
     if (exitCode > 0)
         text += tr(" (exit code %1)").arg(exitCode);
-    progress_->setFailed(text, stderrTail);
+    activeProgress()->setFailed(text, stderrTail);
     jobEnded();
 }
 
 void MainWindow::onCancelled()
 {
-    progress_->setCancelled(analyticsJob_ ? tr("Analytics refresh cancelled.")
+    activeProgress()->setCancelled(analyticsJob_ ? tr("Analytics refresh cancelled.")
                                           : tr("Scan cancelled. Reports from a cancelled scan are not valid."));
     jobEnded();
 }

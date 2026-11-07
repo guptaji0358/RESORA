@@ -2,7 +2,7 @@
 // Horizontal bar chart (storage by format): label, bar of the share of storage, "size · percent" in
 // text. A paper tick on each bar marks that class's share of *images*, so heavy-but-rare formats stand
 // out. Zero rows stay visible.
-#include "chartbase.h"
+#include "widgets/chartbase.h"
 
 class HBarChart : public ChartBase
 {

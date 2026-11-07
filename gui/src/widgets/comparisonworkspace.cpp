@@ -1,4 +1,4 @@
-#include "comparisonworkspace.h"
+#include "widgets/comparisonworkspace.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -13,8 +13,8 @@
 
 #include "backend/backendlocator.h"
 #include "backend/backendprocess.h"
-#include "comparisontable.h"
-#include "comparisonviewer.h"
+#include "widgets/comparisontable.h"
+#include "widgets/comparisonviewer.h"
 
 namespace {
 constexpr int kMaxCollectionFiles = 5000;

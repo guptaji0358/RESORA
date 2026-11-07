@@ -1,9 +1,9 @@
-#include "metadatacompare.h"
+#include "widgets/metadatacompare.h"
 
 #include <QGridLayout>
 #include <QLabel>
 
-#include "insightcanvas.h"
+#include "widgets/insightcanvas.h"
 #include "ui/theme.h"
 
 namespace {

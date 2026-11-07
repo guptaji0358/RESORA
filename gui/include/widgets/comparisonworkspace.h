@@ -54,7 +54,6 @@ public:
     void replaceFromCollection(Side side);  // collection picker
 
 signals:
-    void backRequested();
     void changed();  // selection, previews or comparison updated
 
 private:

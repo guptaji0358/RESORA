@@ -12,10 +12,10 @@
 #include <QVBoxLayout>
 
 #include "backend/previewloader.h"
-#include "chamferbutton.h"
-#include "duplicatefinder.h"
-#include "elidedlabel.h"
-#include "metriccard.h"
+#include "widgets/chamferbutton.h"
+#include "widgets/duplicatefinder.h"
+#include "widgets/elidedlabel.h"
+#include "widgets/metriccard.h"
 #include "ui/theme.h"
 #include "ui/uiformat.h"
 

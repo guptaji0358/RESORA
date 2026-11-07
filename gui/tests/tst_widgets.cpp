@@ -286,6 +286,22 @@ private slots:
         QVERIFY(d.windowTitle().contains("RESORA"));
     }
 
+    void toolsAreIndependentAndRouted()
+    {
+        MainWindow w;
+        QCOMPARE(w.currentTool(), Tool::Analyzer);
+        for (Tool t : {Tool::Analytics, Tool::Compare, Tool::Duplicates, Tool::Analyzer}) {  // each opens first, no scan
+            w.showTool(t);
+            QCOMPARE(w.currentTool(), t);
+        }
+        QVERIFY(w.duplicates() && w.analyticsSource() && w.properties());
+        w.route({Tool::Compare, {QStringLiteral("nope-a.png"), QStringLiteral("nope-b.png")}});
+        QCOMPARE(w.currentTool(), Tool::Compare);
+        QVERIFY(w.isComparing());
+        w.route({Tool::Duplicates, {}});
+        QCOMPARE(w.currentTool(), Tool::Duplicates);
+    }
+
     void mainWindowInitialState()
     {
         MainWindow w;

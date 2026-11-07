@@ -2,7 +2,7 @@
 // Aspect ratio comparison: both ratios as text, plus a logarithmic "shape scale" (1:3 … 1:1 … 3:1)
 // with a marker per image so the distance between the shapes is visible. Identical ratios (within
 // 0.5 %) are stated plainly; differences under 2 % are called near-identical, never alarming.
-#include "insightcanvas.h"
+#include "widgets/insightcanvas.h"
 
 class AspectIndicator : public InsightCanvas
 {

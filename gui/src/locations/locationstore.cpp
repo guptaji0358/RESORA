@@ -1,4 +1,4 @@
-#include "locationstore.h"
+#include "locations/locationstore.h"
 
 #include <QCoreApplication>
 #include <QDateTime>

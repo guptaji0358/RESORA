@@ -1,4 +1,4 @@
-#include "uiformat.h"
+#include "ui/uiformat.h"
 
 #include <QLocale>
 

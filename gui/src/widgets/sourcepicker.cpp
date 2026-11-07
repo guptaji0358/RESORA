@@ -1,4 +1,4 @@
-#include "sourcepicker.h"
+#include "widgets/sourcepicker.h"
 
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -9,9 +9,9 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include "chamferbutton.h"
-#include "elidedlabel.h"
-#include "importdialog.h"
+#include "widgets/chamferbutton.h"
+#include "widgets/elidedlabel.h"
+#include "widgets/importdialog.h"
 #include "ui/icons.h"
 #include "ui/theme.h"
 

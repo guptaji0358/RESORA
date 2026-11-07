@@ -2,7 +2,7 @@
 // RESORA's import chooser (Ctrl+O): three tiles - folder, single image, multiple images. Each tile
 // opens the matching native file dialog; the dialog closes once a usable choice exists.
 #include "backend/importselection.h"
-#include "framelessdialog.h"
+#include "widgets/framelessdialog.h"
 
 class LocationStore;
 class QLineEdit;

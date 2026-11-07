@@ -7,8 +7,8 @@
 #include <QStringList>
 #include <QTimer>
 
-#include "backendlocator.h"
-#include "protocolparser.h"
+#include "backend/backendlocator.h"
+#include "backend/protocolparser.h"
 
 class QProcess;
 

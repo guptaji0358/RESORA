@@ -1,4 +1,4 @@
-#include "segmentedswitch.h"
+#include "widgets/segmentedswitch.h"
 
 #include <QKeyEvent>
 #include <QMouseEvent>

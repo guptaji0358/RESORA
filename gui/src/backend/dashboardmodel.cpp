@@ -1,4 +1,4 @@
-#include "dashboardmodel.h"
+#include "backend/dashboardmodel.h"
 
 #include <QObject>
 

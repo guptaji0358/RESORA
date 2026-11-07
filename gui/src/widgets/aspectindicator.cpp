@@ -1,4 +1,4 @@
-#include "aspectindicator.h"
+#include "widgets/aspectindicator.h"
 
 #include <QLocale>
 #include <QPainter>

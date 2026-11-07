@@ -1,4 +1,4 @@
-#include "duplicatefinder.h"
+#include "widgets/duplicatefinder.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -17,10 +17,10 @@
 
 #include "backend/backendlocator.h"
 #include "backend/backendprocess.h"
-#include "chamferbutton.h"
-#include "metriccard.h"
-#include "sectioncard.h"
-#include "toggleswitch.h"
+#include "widgets/chamferbutton.h"
+#include "widgets/metriccard.h"
+#include "widgets/sectioncard.h"
+#include "widgets/toggleswitch.h"
 #include "ui/uiformat.h"
 
 DuplicateFinder::DuplicateFinder(const QStringList &collection, const QString &startFolder, const QString &cachePath,
@@ -254,6 +254,17 @@ void DuplicateFinder::pickExclusion()
     const QString d = QFileDialog::getExistingDirectory(this, tr("Folder to skip"), startFolder_);
     if (!d.isEmpty())
         addExclusion(d);
+}
+
+void DuplicateFinder::setCollection(const QStringList &images, const QString &startFolder)
+{
+    collection_ = images;
+    startFolder_ = startFolder;
+    useCollection_->setText(tr("Scan the imported collection (%1 images)").arg(collection_.size()));
+    useCollection_->setEnabled(!collection_.isEmpty() && !isRunning());
+    if (collection_.isEmpty())
+        useCollection_->setChecked(false);
+    refreshControls();
 }
 
 void DuplicateFinder::setUseCollection(bool on)

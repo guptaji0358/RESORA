@@ -4,7 +4,7 @@
 #include <QList>
 #include <QString>
 
-#include "savedlocation.h"
+#include "locations/savedlocation.h"
 
 namespace LocationRecommender {
 

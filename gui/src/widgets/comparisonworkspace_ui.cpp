@@ -11,13 +11,13 @@
 #include <QVBoxLayout>
 
 #include "backend/propertiesmodel.h"
-#include "chamferbutton.h"
-#include "comparisontable.h"
-#include "comparisonviewer.h"
-#include "comparisonworkspace.h"
-#include "elidedlabel.h"
-#include "framelessdialog.h"
-#include "toggleswitch.h"
+#include "widgets/chamferbutton.h"
+#include "widgets/comparisontable.h"
+#include "widgets/comparisonviewer.h"
+#include "widgets/comparisonworkspace.h"
+#include "widgets/elidedlabel.h"
+#include "widgets/framelessdialog.h"
+#include "widgets/toggleswitch.h"
 #include "ui/theme.h"
 
 namespace {
@@ -36,12 +36,11 @@ ChamferButton *button(const QString &text, const QString &glyph, const QString &
 void ComparisonWorkspace::buildUi()
 {
     setObjectName(QStringLiteral("comparisonWorkspace"));
-    auto *eyebrow = new QLabel(tr("05 — COMPARE"));
+    auto *eyebrow = new QLabel(tr("COMPARE"));
     eyebrow->setProperty("role", QStringLiteral("eyebrow"));
     auto *title = new QLabel(tr("Image comparison."));
     title->setFont(Theme::display(22, QFont::DemiBold));
 
-    auto *back = button(tr("Back"), QString(), tr("Return to the previous RESORA view (Esc)"));
     swap_ = button(tr("Swap"), QStringLiteral("swap"), tr("Swap A and B (Ctrl+Shift+X)"));
     auto *fit = button(tr("Fit both"), QString(), tr("Fit each image to its pane (Ctrl+Shift+F)"));
     auto *actual = button(tr("Actual size"), QString(), tr("Show both at 100 % (Ctrl+Shift+1)"));
@@ -54,7 +53,6 @@ void ComparisonWorkspace::buildUi()
     syncPan->setToolTip(tr("Pan both images together. Off: each image pans on its own."));
 
     viewer_ = new ComparisonViewer;
-    connect(back, &QPushButton::clicked, this, &ComparisonWorkspace::backRequested);
     connect(swap_, &QPushButton::clicked, this, &ComparisonWorkspace::swapImages);
     connect(fit, &QPushButton::clicked, viewer_, &ComparisonViewer::fitBoth);
     connect(actual, &QPushButton::clicked, viewer_, &ComparisonViewer::actualSizeBoth);
@@ -64,8 +62,6 @@ void ComparisonWorkspace::buildUi()
 
     auto *bar = new QHBoxLayout;
     bar->setSpacing(10);
-    bar->addWidget(back);
-    bar->addSpacing(8);
     bar->addWidget(swap_);
     bar->addWidget(fit);
     bar->addWidget(actual);
@@ -117,7 +113,6 @@ void ComparisonWorkspace::buildUi()
         sc->setContext(Qt::WidgetWithChildrenShortcut);
         connect(sc, &QShortcut::activated, this, fn);
     };
-    addKey(QKeySequence(Qt::Key_Escape), [this] { emit backRequested(); });
     addKey(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_X), [this] { swapImages(); });
     addKey(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F), [this] { viewer_->fitBoth(); });
     addKey(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_1), [this] { viewer_->actualSizeBoth(); });

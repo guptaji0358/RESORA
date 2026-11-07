@@ -1,12 +1,12 @@
-#include "settingsdialog.h"
+#include "widgets/settingsdialog.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include "chamferbutton.h"
-#include "savedlocationspanel.h"
+#include "widgets/chamferbutton.h"
+#include "widgets/savedlocationspanel.h"
 #include "ui/icons.h"
 #include "ui/theme.h"
 

@@ -1,4 +1,4 @@
-#include "brand.h"
+#include "ui/brand.h"
 
 #include <QPainter>
 #include <QPixmap>

@@ -1,4 +1,4 @@
-#include "chartbase.h"
+#include "widgets/chartbase.h"
 
 #include <QHelpEvent>
 #include <QKeyEvent>

@@ -1,4 +1,4 @@
-#include "toggleswitch.h"
+#include "widgets/toggleswitch.h"
 
 #include <QPainter>
 

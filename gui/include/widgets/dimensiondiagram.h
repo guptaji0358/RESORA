@@ -5,7 +5,7 @@
 // rectangle gets its own scale and the diagram says so.
 #include <QRectF>
 
-#include "insightcanvas.h"
+#include "widgets/insightcanvas.h"
 
 class DimensionDiagram : public InsightCanvas
 {

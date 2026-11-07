@@ -1,10 +1,10 @@
-#include "aboutdialog.h"
+#include "widgets/aboutdialog.h"
 
 #include <QLabel>
 #include <QPainter>
 #include <QPushButton>
 
-#include "chamferbutton.h"
+#include "widgets/chamferbutton.h"
 #include <QVBoxLayout>
 
 #include "ui/brand.h"

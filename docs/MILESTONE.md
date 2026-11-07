@@ -211,6 +211,21 @@ Live interaction in the running app (splitter resizing, scrolling, keyboard focu
 
 ---
 
+## Milestone: Independent feature organization (ToolRail)
+Scope: four first-class tools (Analyzer/Properties, Analytics, Compare, Duplicates) with a ToolRail, own workspaces and sources, and contextual hand-offs via `ToolRequest`. Duplicates and Properties moved from modals to hosted pages; Compare lost its Back button; the old phase rail became the Analyzer's horizontal step strip; promotional buttons removed from Source. No engine/backend change; `main.py` untouched. Decisions taken by assistant on approval: independent sources (with "Use Analyzer import" convenience) and inline Properties.
+### 1. Automated verification
+`run.bat /nolaunch` (2026-11-07): build OK, 12/12 ctest suites incl. new `toolsAreIndependentAndRouted` (tst_widgets) and adapted `tst_analytics`; engine selfcheck and Python tests passed.
+### 2. Manual verification
+None. The running app and the new layout were NOT visually inspected (no screenshot taken; `grab_screens` updated to compile but not run).
+### 3. Known defects
+None confirmed. Likely to check: embedded Duplicates/Properties minimum sizes in small windows; Analytics backend-not-found error appears on the Analyzer's Source notice.
+### 4. Unverified items
+Look and feel of ToolRail and step strip, all hand-offs by hand, keyboard shortcuts, Analytics progress/cancel, scan -> "Open in Analytics".
+### 5. Final status
+**NOT FINISHED** - implemented and automatically tested; awaiting manual review. Nothing committed or pushed.
+
+---
+
 ## Template for the next milestone
 
 ```

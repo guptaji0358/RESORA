@@ -7,7 +7,7 @@
 #include <QString>
 #include <QStringList>
 
-#include "analyticsmodel.h"
+#include "backend/analyticsmodel.h"
 
 struct ChartItem
 {

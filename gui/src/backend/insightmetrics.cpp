@@ -1,10 +1,10 @@
-#include "insightmetrics.h"
+#include "backend/insightmetrics.h"
 
 #include <QLocale>
 #include <cmath>
 
-#include "comparison.h"
-#include "propertiesmodel.h"
+#include "backend/comparison.h"
+#include "backend/propertiesmodel.h"
 
 namespace {
 QString n(double v, int d = 0)

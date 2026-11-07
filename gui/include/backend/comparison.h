@@ -8,8 +8,8 @@
 #include <QString>
 #include <QStringList>
 
-#include "insightmetrics.h"
-#include "propertiesmodel.h"
+#include "backend/insightmetrics.h"
+#include "backend/propertiesmodel.h"
 
 struct InsightNote
 {

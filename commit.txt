@@ -86,3 +86,20 @@ feat(gui): visual Image Comparison insights
 - QPainter visuals: paired MP bars, file-size bars, true-proportion dimension diagram, aspect-ratio scale, metadata table
 - existing explanations kept, grouped, in a collapsible section; zero/missing values handled without misleading scales
 - tests: tst_insights; grab_screens insights renders; docs/MILESTONE.md entry
+
+feat(gui): independent tool organization with ToolRail
+
+- Add ToolRail (Analyzer, Analytics, Compare, Duplicates) and ToolRequest hand-offs
+- Host Duplicates and Properties as pages (FramelessDialog::setEmbedded)
+- Analytics gets its own source, progress and cancel
+- Analyzer step strip replaces the app-level phase rail; remove Compare Back button
+- Add routing test, adapt analytics test and grab_screens
+
+
+refactor(gui): split C++ sources into include/, src/ and main/
+
+- move all headers to gui/include/<module>/, implementations stay in gui/src/<module>/, entry point to gui/main/main.cpp
+- rewrite sibling includes to module-qualified form ("widgets/x.h"); include root is gui/include
+- CMake: headers listed as sources (AUTOMOC), include dir and executable path updated
+- docs/GUI.md directory layout; AgentsMemory decision and state
+- includes the pending ToolRail / independent tool organization work

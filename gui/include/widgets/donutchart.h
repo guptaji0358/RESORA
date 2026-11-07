@@ -2,7 +2,7 @@
 // Donut chart with a text legend (name, count, percent per row, so colour is never the only cue).
 // The legend sits beside the ring, or under it when the widget is narrow. Zero-count classes stay in
 // the legend (muted) but get no segment.
-#include "chartbase.h"
+#include "widgets/chartbase.h"
 
 class DonutChart : public ChartBase
 {

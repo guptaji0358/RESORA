@@ -1,7 +1,7 @@
 #pragma once
 // Resolution comparison: paired horizontal bars (megapixels, one shared scale from 0) with
 // dimensions, relative pixel count, absolute MP difference and percentage difference.
-#include "insightcanvas.h"
+#include "widgets/insightcanvas.h"
 
 class ResolutionChart : public InsightCanvas
 {

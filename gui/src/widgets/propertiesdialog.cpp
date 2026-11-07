@@ -1,4 +1,4 @@
-#include "propertiesdialog.h"
+#include "widgets/propertiesdialog.h"
 
 #include <QClipboard>
 #include <QCoreApplication>
@@ -20,8 +20,8 @@
 #include "backend/backendlocator.h"
 #include "backend/backendprocess.h"
 #include "backend/importselection.h"
-#include "chamferbutton.h"
-#include "sectioncard.h"
+#include "widgets/chamferbutton.h"
+#include "widgets/sectioncard.h"
 #include "ui/icons.h"
 #include "ui/theme.h"
 
@@ -93,6 +93,15 @@ PropertiesDialog::PropertiesDialog(const QStringList &files, QWidget *parent)
     copy_->setToolTip(tr("Copy these properties as text"));
     copy_->setAutoDefault(false);
     copy_->setEnabled(false);
+    compare_ = new ChamferButton(tr("Open in Compare"));
+    compare_->setGlyph(QStringLiteral("swap"));
+    compare_->setToolTip(tr("Open this image in Image Comparison"));
+    compare_->setAutoDefault(false);
+    compare_->setEnabled(false);
+    connect(compare_, &QPushButton::clicked, this, [this] {
+        if (index_ >= 0 && index_ < images_.size())
+            emit compareRequested(images_.at(index_).path);
+    });
     connect(choose, &QPushButton::clicked, this, &PropertiesDialog::chooseImages);
     connect(prev_, &QPushButton::clicked, this, [this] { showIndex(index_ - 1); });
     connect(next_, &QPushButton::clicked, this, [this] { showIndex(index_ + 1); });
@@ -105,6 +114,7 @@ PropertiesDialog::PropertiesDialog(const QStringList &files, QWidget *parent)
     bar->addWidget(counter_);
     bar->addWidget(next_);
     bar->addStretch(1);
+    bar->addWidget(compare_);
     bar->addWidget(copy_);
 
     cards_ = new QWidget;
@@ -120,6 +130,7 @@ PropertiesDialog::PropertiesDialog(const QStringList &files, QWidget *parent)
     auto *done = new ChamferButton(tr("Done"));
     done->setProperty("variant", QStringLiteral("primary"));
     done->setAutoDefault(false);
+    done_ = done;
     connect(done, &QPushButton::clicked, this, &QDialog::accept);
 
     auto *col = bodyLayout();
@@ -137,6 +148,12 @@ PropertiesDialog::PropertiesDialog(const QStringList &files, QWidget *parent)
     showMessage(tr("Choose an image to see its dimensions, colour, density and EXIF data."), false);
     if (!files.isEmpty())
         setFiles(files);
+}
+
+void PropertiesDialog::setHosted()
+{
+    setEmbedded(true);
+    done_->hide();
 }
 
 PropertiesDialog::~PropertiesDialog()
@@ -189,6 +206,7 @@ void PropertiesDialog::setFiles(const QStringList &files)
     images_.clear();
     index_ = -1;
     copy_->setEnabled(false);
+    compare_->setEnabled(false);
     prev_->hide();
     next_->hide();
     counter_->hide();
@@ -273,6 +291,7 @@ void PropertiesDialog::showIndex(int index)
     prev_->setEnabled(index > 0);
     next_->setEnabled(index + 1 < images_.size());
     copy_->setEnabled(true);
+    compare_->setEnabled(true);
 
     clearCards();
     if (!p.ok()) {

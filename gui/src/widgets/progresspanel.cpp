@@ -1,4 +1,4 @@
-#include "progresspanel.h"
+#include "widgets/progresspanel.h"
 
 #include <climits>
 
@@ -10,8 +10,8 @@
 #include <QProgressBar>
 #include <QVBoxLayout>
 
-#include "elidedlabel.h"
-#include "viewfinder.h"
+#include "widgets/elidedlabel.h"
+#include "widgets/viewfinder.h"
 #include "ui/theme.h"
 #include "ui/uiformat.h"
 

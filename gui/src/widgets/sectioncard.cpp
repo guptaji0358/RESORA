@@ -1,4 +1,4 @@
-#include "sectioncard.h"
+#include "widgets/sectioncard.h"
 
 #include <QLabel>
 #include <QVBoxLayout>

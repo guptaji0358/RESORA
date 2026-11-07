@@ -1,4 +1,4 @@
-#include "locationrecommender.h"
+#include "locations/locationrecommender.h"
 
 #include <QDir>
 #include <QFileInfo>

@@ -1,4 +1,4 @@
-#include "propertiesmodel.h"
+#include "backend/propertiesmodel.h"
 
 #include <QLocale>
 

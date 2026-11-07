@@ -1,4 +1,4 @@
-#include "icons.h"
+#include "ui/icons.h"
 
 #include <QFile>
 #include <QIconEngine>

@@ -1,4 +1,4 @@
-#include "brandlockup.h"
+#include "widgets/brandlockup.h"
 
 #include <QFontMetrics>
 #include <QPainter>

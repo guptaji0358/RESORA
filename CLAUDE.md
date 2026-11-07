@@ -1,6 +1,6 @@
 # RESORA — Image Resolution Analyzer
 
-Product name RESORA, tagline "See every pixel clearly." Identity (mark, wordmark, icon, About) in `gui/src/ui/brand.*`, [docs/GUI.md](docs/GUI.md). Repo, packages and exe file name (`ImageResolutionAnalyzer.exe`) intentionally keep the old name.
+Product name RESORA, tagline "See every pixel clearly." Identity (mark, wordmark, icon, About) in `gui/{include,src}/ui/brand.*`, [docs/GUI.md](docs/GUI.md). Repo, packages and exe file name (`ImageResolutionAnalyzer.exe`) intentionally keep the old name.
 
 Windows desktop tool: scan a folder, read each image's pixel dimensions from its header (no pixel decoding), classify the resolution (SD … 8K+), export reports. Original images are opened read-only and never modified.
 

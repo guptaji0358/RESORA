@@ -1,4 +1,4 @@
-#include "dimensiondiagram.h"
+#include "widgets/dimensiondiagram.h"
 
 #include <QLocale>
 #include <QPainter>

@@ -26,3 +26,11 @@ Format: decision — reason — source. Dates are those of the evidence; origina
 
 ## Unknown [?]
 Reasons behind some earlier choices (e.g. why phase rail structure) were presumably discussed in conversations not available here.
+
+## 2026-11-07 Independent feature organization [U approved]
+- [U] Option 2 chosen: Analyzer/Properties, Analytics, Compare, Duplicates are independent first-class tools, equal in navigation (ToolRail, Ctrl+1..4), each with its own workspace and source; no feature is a tab/step/promo of another. Cross-feature hand-offs allowed via `ToolRequest`/`MainWindow::route`.
+- [U] "Approve" answered my open questions; I applied my recommendations: independent sources with a "Use Analyzer import" convenience; Properties inline as an Analyzer step. Supersedes the old 4-phase rail (Source/Scan/Readout/Analytics) and the Compare Back button.
+
+## 2026-11-07 C++ directory reorganization [U approved]
+- [U] `gui/` split into `include/` (headers), `src/` (matching .cpp), `main/` (entry point). Subfolders kept. User answered "approve" without choosing the open questions; I applied my recommendations: qualified includes (`"widgets/x.h"`), headers-less split parts (`duplicatefinder_results.cpp`, `comparisonworkspace_ui.cpp`) stay in `src/widgets/`, `grab_screens.cpp` stays in `tests/`.
+- [V] AUTOMOC needs headers listed as target sources (`RESORA_HEADERS` glob in `gui/CMakeLists.txt`); without it Q_OBJECT classes fail to link.

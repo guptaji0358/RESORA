@@ -1,4 +1,4 @@
-#include "metriccard.h"
+#include "widgets/metriccard.h"
 
 #include <QLabel>
 #include <QVBoxLayout>

@@ -2,7 +2,13 @@
 
 Presentation only: it collects options, runs the `scan` command as a child process and renders the NDJSON it emits. No image logic lives here. Contract: [BACKEND_CONTRACT.md](BACKEND_CONTRACT.md).
 
-## Classes (`gui/src/`)
+## Directory layout (`gui/`)
+- `include/<module>/*.h`: all headers (`backend`, `locations`, `ui`, `widgets`, plus `mainwindow.h`). Single include root; always include as `"widgets/foo.h"` (never sibling-relative).
+- `src/<module>/*.cpp`: implementations, mirroring `include/`. A class split over several files keeps the extra parts here (`duplicatefinder_results.cpp`, `comparisonworkspace_ui.cpp`).
+- `main/main.cpp`: executable entry point.
+- `tests/`: Qt Test targets and `grab_screens`. Headers are listed as sources in `gui/CMakeLists.txt` (glob of `include/`) so AUTOMOC finds them.
+
+## Classes (`gui/include/`, `gui/src/`)
 | Class | Responsibility |
 |---|---|
 | `MainWindow` | Layout, input validation, overwrite confirmation, owns one `BackendProcess` per scan, progress/status/result display |
@@ -51,7 +57,9 @@ The executable file name stays `ImageResolutionAnalyzer.exe` (run.bat and toolin
 ## "Darkroom" identity (Milestone 6.6)
 Dark-only, original look: warm black (`#0D0C0B`), paper-white text, one ember safelight accent (`#FF5B2E`), lime for success, rose for failure; Bahnschrift for display text and Cascadia Mono for data. Tokens, fonts and the small stylesheet (line edits, scroll bars, tooltips) live in `ui/theme`.
 
-Structure: a frameless window (custom title strip with painted min/max/close; edge resizing via `WM_NCHITTEST` in `MainWindow::nativeEvent`) with a left **phase rail** (01 Source, 02 Scan, 03 Readout; Ctrl+1/2/3) and one stage that moves through the phases: Start Scan switches to Scan, a completed scan switches to Readout, New Scan returns to Source. Rail entries are enabled only once reachable. Validation problems appear on the Source page.
+Structure: a frameless window (custom title strip with painted min/max/close; edge resizing via `WM_NCHITTEST` in `MainWindow::nativeEvent`) with a left **ToolRail** of four equal, always-available tools: **Analyzer**, **Analytics**, **Compare**, **Duplicates** (Ctrl+1..4). Each tool is its own workspace with its own source and never needs another tool first. The Analyzer keeps its step strip (`PhaseRail`, horizontal: 01 Source, 02 Scan, 03 Readout, 04 Properties): Start Scan switches to Scan, a completed scan to Readout, New Scan returns to Source. Analytics has its own `SourcePicker`, progress and Refresh; Compare and Duplicates (`FramelessDialog::setEmbedded`) are hosted pages. Validation problems appear on the Source page.
+
+**Hand-offs** (`ToolRequest` + `MainWindow::route`; workspaces only emit, never reference each other): Duplicates pair -> Compare, Properties image -> Compare, Analytics extreme image -> Analyzer Properties, Readout -> Analytics (reuses the scan's data) / Duplicates. Ctrl+I opens Analyzer Properties, Ctrl+Shift+C / Ctrl+Shift+D open Compare / Duplicates. Compare and Duplicates also follow the Analyzer's last import as a convenience only.
 
 | Widget | Role |
 |---|---|

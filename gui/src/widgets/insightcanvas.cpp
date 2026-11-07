@@ -1,4 +1,4 @@
-#include "insightcanvas.h"
+#include "widgets/insightcanvas.h"
 
 #include <QPainter>
 

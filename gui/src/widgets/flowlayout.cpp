@@ -1,4 +1,4 @@
-#include "flowlayout.h"
+#include "widgets/flowlayout.h"
 
 #include <QWidget>
 

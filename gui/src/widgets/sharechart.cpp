@@ -1,4 +1,4 @@
-#include "sharechart.h"
+#include "widgets/sharechart.h"
 
 #include <QPainter>
 

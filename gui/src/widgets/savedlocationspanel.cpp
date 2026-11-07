@@ -1,4 +1,4 @@
-#include "savedlocationspanel.h"
+#include "widgets/savedlocationspanel.h"
 
 #include <QDir>
 #include <QFileDialog>
@@ -11,8 +11,8 @@
 #include <QShowEvent>
 #include <QVBoxLayout>
 
-#include "chamferbutton.h"
-#include "locationrow.h"
+#include "widgets/chamferbutton.h"
+#include "widgets/locationrow.h"
 #include "ui/theme.h"
 
 SavedLocationsPanel::SavedLocationsPanel(LocationStore *store, QWidget *parent)

@@ -1,11 +1,11 @@
-#include "comparisontable.h"
+#include "widgets/comparisontable.h"
 
 #include <QGridLayout>
 #include <QLabel>
 #include <QVBoxLayout>
 
-#include "insightsview.h"
-#include "sectioncard.h"
+#include "widgets/insightsview.h"
+#include "widgets/sectioncard.h"
 #include "ui/theme.h"
 
 namespace {

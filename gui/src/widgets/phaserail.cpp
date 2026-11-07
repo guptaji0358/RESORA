@@ -1,8 +1,8 @@
-#include "phaserail.h"
+#include "widgets/phaserail.h"
 
 #include <QAbstractButton>
 #include <QPainter>
-#include <QVBoxLayout>
+#include <QHBoxLayout>
 
 #include "ui/theme.h"
 
@@ -14,11 +14,11 @@ public:
     {
         setCheckable(true);
         setAutoExclusive(false);
-        setFixedHeight(92);
+        setFixedSize(118, 52);
         setCursor(Qt::PointingHandCursor);
         setFocusPolicy(Qt::StrongFocus);
-        setAccessibleName(tr("Phase %1: %2").arg(number).arg(label));
-        setToolTip(tr("%1 (Ctrl+%2)").arg(label).arg(number));
+        setAccessibleName(tr("Step %1: %2").arg(number).arg(label));
+        setToolTip(tr("%1").arg(label));
     }
 protected:
     void paintEvent(QPaintEvent *) override
@@ -27,17 +27,17 @@ protected:
         const bool on = isChecked(), en = isEnabled();
         const QColor c = !en ? QColor(0x4a, 0x44, 0x3d) : (on ? Theme::ember() : (underMouse() ? Theme::paper() : Theme::mute()));
         if (on) {
-            p.fillRect(QRect(0, 8, 3, height() - 16), Theme::ember());
-            p.fillRect(QRect(3, 0, width() - 3, height()), QColor(255, 91, 46, 14));
+            p.fillRect(QRect(8, height() - 3, width() - 16, 3), Theme::ember());
+            p.fillRect(QRect(0, 0, width(), height() - 3), QColor(255, 91, 46, 14));
         }
         p.setPen(c);
-        p.setFont(Theme::display(24, QFont::DemiBold, 1));
-        p.drawText(QRect(0, 14, width(), 36), Qt::AlignHCenter | Qt::AlignVCenter, QStringLiteral("%1").arg(n_, 2, 10, QLatin1Char('0')));
-        p.setFont(Theme::display(7.5, QFont::DemiBold, 2.5));
-        p.drawText(QRect(0, 52, width(), 20), Qt::AlignHCenter | Qt::AlignVCenter, label_.toUpper());
+        p.setFont(Theme::display(15, QFont::DemiBold, 1));
+        p.drawText(QRect(8, 0, 30, height() - 3), Qt::AlignHCenter | Qt::AlignVCenter, QStringLiteral("%1").arg(n_, 2, 10, QLatin1Char('0')));
+        p.setFont(Theme::display(7, QFont::DemiBold, 2));
+        p.drawText(QRect(40, 0, width() - 44, height() - 3), Qt::AlignLeft | Qt::AlignVCenter, label_.toUpper());
         if (hasFocus()) {
             p.setPen(QPen(Theme::ember(), 1, Qt::DotLine));
-            p.drawRect(rect().adjusted(8, 4, -6, -4));
+            p.drawRect(rect().adjusted(4, 4, -4, -6));
         }
     }
     void enterEvent(QEnterEvent *) override { update(); }
@@ -50,10 +50,10 @@ private:
 
 PhaseRail::PhaseRail(QWidget *parent) : QWidget(parent)
 {
-    setFixedWidth(92);
-    const QString names[] = {tr("Source"), tr("Scan"), tr("Readout"), tr("Analytics")};
-    auto *l = new QVBoxLayout(this);
-    l->setContentsMargins(0, 18, 0, 0);
+    setFixedHeight(54);
+    const QString names[] = {tr("Source"), tr("Scan"), tr("Readout"), tr("Properties")};
+    auto *l = new QHBoxLayout(this);
+    l->setContentsMargins(24, 0, 0, 0);
     l->setSpacing(0);
     for (int i = 0; i < 4; ++i) {
         tabs_[i] = new PhaseTab(i + 1, names[i], this);
@@ -65,7 +65,7 @@ PhaseRail::PhaseRail(QWidget *parent) : QWidget(parent)
     }
     l->addStretch(1);
     setAvailable(Scan, false);
-    setAvailable(Readout, false);  // Analytics stays available: it shows an empty state before a scan
+    setAvailable(Readout, false);  // Properties is always available: it works on any image
     setCurrent(Source);
 }
 
@@ -85,7 +85,7 @@ void PhaseRail::paintEvent(QPaintEvent *)
 {
     QPainter p(this);
     p.fillRect(rect(), Theme::ink());
-    p.fillRect(QRect(width() - 1, 0, 1, height()), Theme::line());
+    p.fillRect(QRect(0, height() - 1, width(), 1), Theme::line());
 }
 
 bool PhaseRail::isPhaseAvailable(Phase p) const

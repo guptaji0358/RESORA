@@ -1,4 +1,4 @@
-#include "pixelspan.h"
+#include "widgets/pixelspan.h"
 
 #include <QPainter>
 #include <QPolygon>

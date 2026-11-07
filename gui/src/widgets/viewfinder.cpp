@@ -1,4 +1,4 @@
-#include "viewfinder.h"
+#include "widgets/viewfinder.h"
 
 #include <QPainter>
 #include <QVariantAnimation>

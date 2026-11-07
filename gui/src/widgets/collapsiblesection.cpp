@@ -1,4 +1,4 @@
-#include "collapsiblesection.h"
+#include "widgets/collapsiblesection.h"
 
 #include <QToolButton>
 #include <QVBoxLayout>

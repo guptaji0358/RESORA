@@ -1,4 +1,4 @@
-#include "analyticspanel.h"
+#include "widgets/analyticspanel.h"
 
 #include <QDesktopServices>
 #include <QDir>
@@ -12,15 +12,15 @@
 #include <QVBoxLayout>
 #include <cmath>
 
-#include "analyticsdashboard.h"
-#include "chamferbutton.h"
-#include "distributionbar.h"
-#include "elidedlabel.h"
-#include "metriccard.h"
-#include "pixelspan.h"
-#include "sectioncard.h"
-#include "segmentedswitch.h"
-#include "sharechart.h"
+#include "widgets/analyticsdashboard.h"
+#include "widgets/chamferbutton.h"
+#include "widgets/distributionbar.h"
+#include "widgets/elidedlabel.h"
+#include "widgets/metriccard.h"
+#include "widgets/pixelspan.h"
+#include "widgets/sectioncard.h"
+#include "widgets/segmentedswitch.h"
+#include "widgets/sharechart.h"
 #include "ui/icons.h"
 #include "ui/theme.h"
 #include "ui/uiformat.h"
