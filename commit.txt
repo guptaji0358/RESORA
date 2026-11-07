@@ -110,3 +110,12 @@ refactor(gui): move tool navigation from left rail into the title bar
 - ToolNav (widgets/toolnav) replaces ToolRail: compact horizontal tabs inside AppHeader, ember underline on the active tool, icon-only below 1160 px
 - Ctrl+1..4 shortcuts unchanged; window controls and drag area unchanged
 - remove ToolRail; docs/GUI.md and AgentsMemory updated
+
+
+fix(gui): Duplicates page layout (cards grid, flexible setup column, no clipped rows)
+
+- metric cards: one QGridLayout with shared columns and row spacing instead of two independent HBoxes
+- setup column min 320 / max 360 (was fixed 360); results get stretch 2; member pane min width 340 so rows are never clipped at 960x640
+- group list elides instead of showing a horizontal scrollbar; splitter keeps list width on resize
+- grab_screens: capture the hosted Duplicates page (empty and results)
+- docs/MILESTONE.md and AgentsMemory updated

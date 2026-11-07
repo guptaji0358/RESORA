@@ -206,6 +206,13 @@ int main(int argc, char **argv)
             ap->setViewIndex(0);
         }
 
+        w.showTool(Tool::Duplicates);  // hosted page, as the user sees it
+        pump(200);
+        shot(&w, "main_dup_empty_" + sz);
+        w.duplicates()->showResult(DuplicatesModel::fromJson(QJsonDocument::fromJson(kDup).object()));
+        pump(300);
+        shot(&w, "main_dup_results_" + sz);
+
         w.comparison()->setImage(ComparisonWorkspace::Left, imgs[0]);
         w.comparison()->setImage(ComparisonWorkspace::Right, imgs[1]);
         w.showTool(Tool::Compare);

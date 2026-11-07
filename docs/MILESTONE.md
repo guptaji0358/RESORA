@@ -226,6 +226,22 @@ Look and feel of ToolRail and step strip, all hand-offs by hand, keyboard shortc
 
 ---
 
+## Fix: Duplicates page layout (2026-11-07)
+Scope: GUI layout only (`duplicatefinder.cpp`; hosted-page shots added to `tests/grab_screens.cpp`). No engine/backend change; Duplicate Finder behaviour, controls and styling unchanged.
+Root causes (Qt layout, not spacing): (1) the eight metric cards lived in two independent `QHBoxLayout`s, so the two rows had unrelated column widths and no vertical spacing; now one `QGridLayout` with shared equal column stretch and explicit spacing. (2) The setup column was `setFixedWidth(360)` while `ToggleSwitch` reports its full label width as minimum size; the member `QScrollArea` had horizontal scrolling off and no minimum width, so at the 960x640 window rows and buttons were clipped and nothing scrolled. Now setup column min 320 / max 360 with stretch 1:2 vs results, member pane min width 340 (page scrolls instead of clipping), group list min 180, elided, no horizontal scrollbar, splitter stretch on the member pane.
+### 1. Automated verification
+`run.bat /nolaunch` after the fix: build OK, ctest 12/12, engine selfcheck + Python tests passed.
+### 2. Manual verification
+Claude inspected real renders of the hosted Duplicates page (empty and with sample results) via `build/tests/grab_screens.exe` at 1180x800 and 960x640 (125% scaling): cards aligned, rows/buttons not clipped. Not seen: live scan with real photos, window resizing by hand, other DPI scales. User has not verified.
+### 3. Known defects
+At 960x640 the whole page scrolls vertically (expected; results need more height than 640).
+### 4. Unverified items
+Intermediate window sizes by hand, 100%/150% scaling, very long folder paths in lists.
+### 5. Final status
+**NOT FINISHED** - fixed and visually inspected on sample data; awaiting user review. Nothing committed or pushed.
+
+---
+
 ## Template for the next milestone
 
 ```

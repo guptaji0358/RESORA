@@ -34,3 +34,5 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 - GUI now `gui/include` + `gui/src` + `gui/main` (see docs/GUI.md, DECISIONS.md). `run.bat /nolaunch` exit 0, ctest 12/12 passed (automated). Not visually/manually verified; not committed. `commit.txt` not updated for this.
 
 - [V] 2026-11-07 [U] Left ToolRail removed; tool navigation moved into the title bar (ToolNav inside AppHeader). Built + ctest OK; NOT visually inspected.
+
+- [V] 2026-11-07 Duplicates page layout fix (user-reported mixed-up layout): QGridLayout for the 8 metric cards, flexible setup column (min 320/max 360, stretch 1:2), member pane min width 340, group list elided. `run.bat /nolaunch` ctest 12/12; Claude inspected hosted-page renders (grab_screens, sample data) at 1180x800 and 960x640. User has not verified; nothing committed. See docs/MILESTONE.md.

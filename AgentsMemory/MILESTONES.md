@@ -13,5 +13,6 @@
 | Analytics Dashboard (Dashboard + Detailed) | NOT FINISHED | ctest 11/11; renders inspected | Awaiting review |
 | Comparison Insights redesign (uncommitted) | **[?] unknown / in progress**; not in MILESTONE.md | tst_insights.cpp exists; no recorded run | Not done |
 | Independent feature organization (ToolRail, 2026-11-07) | NOT FINISHED | ctest 12/12, py tests pass | Not done |
+| Fix: Duplicates page layout (2026-11-07) | NOT FINISHED | ctest 12/12; hosted-page renders inspected at 1180x800 and 960x640 (sample data) | Awaiting user review |
 
 Roadmap (docs/ROADMAP.md): all four features implemented, 2–4 awaiting review. Next milestone: none approved [U: don't start before approval].

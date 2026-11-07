@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
@@ -144,17 +145,23 @@ void DuplicateFinder::buildUi()
     resultsBox_ = new QWidget;
     auto *rv = new QVBoxLayout(resultsBox_);
     rv->setContentsMargins(0, 0, 0, 0);
+    rv->setSpacing(12);
     static const char *captions[8] = {"Files scanned", "Exact groups", "Exact duplicate files", "Possible savings",
                                       "Exact files' storage", "Similar groups", "Similar images", "Similar storage"};
-    auto *g1 = new QHBoxLayout, *g2 = new QHBoxLayout;
+    // One grid owns all eight cards: columns are shared by both rows (two independent HBoxes gave each
+    // row its own column widths, so the cards never lined up) and rows get real vertical spacing.
+    auto *stats = new QGridLayout;
+    stats->setHorizontalSpacing(0);
+    stats->setVerticalSpacing(12);
     for (int i = 0; i < 8; ++i) {
         cards_[i] = new MetricCard(tr(captions[i]));
-        (i < 4 ? g1 : g2)->addWidget(cards_[i]);
+        stats->addWidget(cards_[i], i / 4, i % 4);
     }
+    for (int c = 0; c < 4; ++c)
+        stats->setColumnStretch(c, 1);
     cards_[3]->setToolTip(tr("Exact duplicates only: every group keeps one copy, so savings = size × (copies − 1)."));
     cards_[7]->setToolTip(tr("Combined size of visually similar images. These are different files: NOT recoverable space."));
-    rv->addLayout(g1);
-    rv->addLayout(g2);
+    rv->addLayout(stats);
 
     exactTab_ = new ChamferButton(tr("Exact duplicates"));
     similarTab_ = new ChamferButton(tr("Visually similar"));
@@ -175,7 +182,9 @@ void DuplicateFinder::buildUi()
     rv->addWidget(kindNote_);
 
     groups_ = new QListWidget;
-    groups_->setMinimumWidth(200);
+    groups_->setMinimumWidth(180);
+    groups_->setTextElideMode(Qt::ElideRight);  // long names elide instead of forcing a horizontal scrollbar
+    groups_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     connect(groups_, &QListWidget::currentRowChanged, this, &DuplicateFinder::fillMembers);
     membersHost_ = new QWidget;
     membersLayout_ = new QVBoxLayout(membersHost_);
@@ -185,12 +194,14 @@ void DuplicateFinder::buildUi()
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scroll->setMinimumWidth(340);  // a member row (thumbnail + text + buttons) never gets clipped: the page scrolls instead
     scroll->setWidget(membersHost_);
     auto *split = new QSplitter;
     split->addWidget(groups_);
     split->addWidget(scroll);
+    split->setStretchFactor(0, 0);  // group list keeps its width on resize; member rows take the slack
     split->setStretchFactor(1, 1);
-    split->setSizes({230, 620});
+    split->setSizes({260, 560});
     split->setChildrenCollapsible(false);
     split->setMinimumHeight(260);
     rv->addWidget(split, 1);
@@ -210,15 +221,18 @@ void DuplicateFinder::buildUi()
     left->addStretch(1);
     auto *leftHost = new QWidget;
     leftHost->setLayout(left);
-    leftHost->setFixedWidth(360);
+    // Flexible, not fixed: the toggles' label width is the real minimum, 360 the comfortable maximum.
+    // At the smallest window the column shrinks so the results keep room for a member row.
+    leftHost->setMinimumWidth(320);
+    leftHost->setMaximumWidth(360);
     placeholder_ = new QLabel(tr("Add a folder and press Find duplicates.\nIdentical files and visually similar images appear here, grouped."));
     placeholder_->setProperty("role", QStringLiteral("muted"));
     placeholder_->setAlignment(Qt::AlignCenter);
     auto *cols = new QHBoxLayout;
     cols->setSpacing(24);
-    cols->addWidget(leftHost, 0, Qt::AlignTop);
-    cols->addWidget(resultsBox_, 1);
-    cols->addWidget(placeholder_, 1);
+    cols->addWidget(leftHost, 1, Qt::AlignTop);  // 1:2 -> capped at 360 on wide windows, results get the rest
+    cols->addWidget(resultsBox_, 2);
+    cols->addWidget(placeholder_, 2);
     ov->addLayout(cols, 1);
     auto *page = new QScrollArea;
     page->setWidgetResizable(true);

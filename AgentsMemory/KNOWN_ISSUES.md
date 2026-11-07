@@ -1,7 +1,8 @@
 # Known issues, limitations, past problems
 
 ## Open / limitations [R docs/MILESTONE.md]
-- Duplicate Finder: group list elides long summaries; empty folder lists have no placeholder text.
+- Duplicate Finder: group list elides long summaries (no horizontal scrollbar); empty folder lists have no placeholder text. At 960x640 the Duplicates page scrolls vertically.
+- Past layout bug (fixed 2026-11-07): metric cards in two separate HBoxes (misaligned, no row gap) and fixed 360 px setup column + scroll area without min width clipped member rows at 960x640. Rule: related cells share one QGridLayout; a column's min width must honour widgets whose minimumSizeHint is their full text (ToggleSwitch).
 - Properties/Settings dialogs repeat the title in title bar and eyebrow (left as is).
 - Not inspected: display scaling other than 125%, multi-monitor, high-contrast, keyboard traversal after layout changes, real-app hover/pressed/focus, live scans, very large real collections, 360 px real width.
 - Dashboard hover/click/keyboard tested by code only. Duplicate false-match rate on real photos at threshold 90 unmeasured.
