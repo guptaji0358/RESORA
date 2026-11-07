@@ -25,6 +25,15 @@ add_library(imgan_core STATIC
     src/widgets/imagepane.cpp
     src/widgets/comparisonviewer.cpp
     src/widgets/comparisontable.cpp
+    src/backend/insightmetrics.cpp
+    src/widgets/insightcanvas.cpp
+    src/widgets/resolutionchart.cpp
+    src/widgets/filesizebars.cpp
+    src/widgets/dimensiondiagram.cpp
+    src/widgets/aspectindicator.cpp
+    src/widgets/metadatacompare.cpp
+    src/widgets/collapsiblesection.cpp
+    src/widgets/insightsview.cpp
     src/widgets/comparisonworkspace.cpp
     src/widgets/comparisonworkspace_ui.cpp
     src/backend/importselection.cpp
@@ -39,6 +48,13 @@ add_library(imgan_core STATIC
     src/ui/uiformat.cpp
     src/widgets/aboutdialog.cpp
     src/widgets/analyticspanel.cpp
+    src/widgets/analyticsdashboard.cpp
+    src/widgets/chartbase.cpp
+    src/widgets/barchart.cpp
+    src/widgets/donutchart.cpp
+    src/widgets/hbarchart.cpp
+    src/widgets/segmentedswitch.cpp
+    src/backend/dashboardmodel.cpp
     src/widgets/pixelspan.cpp
     src/widgets/sharechart.cpp
     src/widgets/appheader.cpp

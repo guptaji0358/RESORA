@@ -7,16 +7,19 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QProcess>
+#include <QStackedWidget>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <cmath>
 
+#include "analyticsdashboard.h"
 #include "chamferbutton.h"
 #include "distributionbar.h"
 #include "elidedlabel.h"
 #include "metriccard.h"
 #include "pixelspan.h"
 #include "sectioncard.h"
+#include "segmentedswitch.h"
 #include "sharechart.h"
 #include "ui/icons.h"
 #include "ui/theme.h"
@@ -192,14 +195,39 @@ AnalyticsPanel::AnalyticsPanel(QWidget *parent)
     fmtCard->body()->addWidget(formats_);
     fmtCard->body()->addWidget(otherFormats_);
 
+    detailed_ = new QWidget(content_);
+    auto *dl = new QVBoxLayout(detailed_);
+    dl->setContentsMargins(0, 0, 0, 0);
+    dl->setSpacing(18);
+    dl->addWidget(basis_);
+    for (QWidget *w : {static_cast<QWidget *>(collection), static_cast<QWidget *>(resolution), static_cast<QWidget *>(catCard),
+                       static_cast<QWidget *>(orCard), static_cast<QWidget *>(fmtCard)})
+        dl->addWidget(w);
+    dashboard_ = new AnalyticsDashboard(content_);
+    views_ = new QStackedWidget(content_);
+    views_->addWidget(dashboard_);
+    views_->addWidget(detailed_);
+    viewSwitch_ = new SegmentedSwitch({tr("Dashboard"), tr("Detailed View")}, content_);
+    // A stack is as tall as its tallest page; let only the visible page size it, and keep content at the top.
+    auto syncPages = [this](int index) {
+        views_->setCurrentIndex(index);
+        for (int i = 0; i < views_->count(); ++i)
+            views_->widget(i)->setSizePolicy(QSizePolicy::Preferred, i == index ? QSizePolicy::Preferred : QSizePolicy::Ignored);
+        views_->updateGeometry();
+    };
+    connect(viewSwitch_, &SegmentedSwitch::currentChanged, this, syncPages);
+    syncPages(0);
+    dl->addStretch(1);
+
     auto *cl = new QVBoxLayout(content_);
     cl->setContentsMargins(0, 0, 0, 0);
     cl->setSpacing(18);
-    cl->addWidget(basis_);
+    auto *switchRow = new QHBoxLayout;
+    switchRow->addWidget(viewSwitch_);
+    switchRow->addStretch(1);
+    cl->addLayout(switchRow);
     cl->addWidget(failBanner_);
-    for (QWidget *w : {static_cast<QWidget *>(collection), static_cast<QWidget *>(resolution), static_cast<QWidget *>(catCard),
-                       static_cast<QWidget *>(orCard), static_cast<QWidget *>(fmtCard)})
-        cl->addWidget(w);
+    cl->addWidget(views_);
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -222,6 +250,7 @@ AnalyticsPanel::AnalyticsPanel(QWidget *parent)
 void AnalyticsPanel::clear()
 {
     data_ = AnalyticsData();
+    dashboard_->clear();
     source_.clear();
     sourceLabel_->setText(tr("No collection analyzed."));
     staleLabel_->hide();
@@ -308,6 +337,7 @@ void AnalyticsPanel::showFailures()
 
 void AnalyticsPanel::populate()
 {
+    dashboard_->setData(data_);
     const auto AM = [] { return AnalyticsModel::notAvailable(); };
     const AnalyticsData &d = data_;
     auto tile = [this](const char *key, const QString &text, const QString &hint,
@@ -388,3 +418,6 @@ void AnalyticsPanel::populate()
     otherFormats_->setVisible(!other.isEmpty());
     formats_->setVisible(!rows.isEmpty());
 }
+
+int AnalyticsPanel::viewIndex() const { return views_->currentIndex(); }
+void AnalyticsPanel::setViewIndex(int index) { viewSwitch_->setCurrent(index); }

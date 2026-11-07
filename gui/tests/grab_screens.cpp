@@ -19,7 +19,14 @@
 #include "ui/theme.h"
 #include "widgets/aboutdialog.h"
 #include "widgets/analyticspanel.h"
+#include <QJsonArray>
+#include <QLayout>
+
+#include "backend/comparison.h"
+#include "widgets/collapsiblesection.h"
+#include "widgets/comparisontable.h"
 #include "widgets/comparisonworkspace.h"
+#include "widgets/insightsview.h"
 #include "widgets/duplicatefinder.h"
 #include "widgets/importdialog.h"
 #include "widgets/progresspanel.h"
@@ -66,6 +73,49 @@ const char *kProps = R"({"path":"C:/Photos/Holiday/IMG_20240812_093412.jpg","nam
  "color":{"mode":"RGB","mode_name":"RGB","channels":3,"bits_per_channel":8,"has_alpha":false,"icc_profile":"sRGB IEC61966-2.1"},
  "dpi":null,"exif":{"available":true,"fields":[],"gps_present":false,"orientation":1},"frames":null,
  "dimensions":{"stored_width":4032,"stored_height":3024,"width":4032,"height":3024,"orientation_tag":1,"orientation_label":"Normal","exif_rotated":false}})";
+QJsonObject sampleProps(const QString &name, int w, int h, qint64 bytes, const QString &label, bool exif, bool icc)
+{
+    QJsonObject o = QJsonDocument::fromJson(kProps).object();
+    o["name"] = name;
+    o["path"] = "C:/Photos/" + name;
+    o["file_size"] = bytes < 0 ? QJsonValue() : QJsonValue(bytes);
+    o["aspect_ratio"] = h > 0 ? double(w) / h : 0.0;
+    o["aspect_label"] = label;
+    o["megapixels"] = double(w) * h / 1e6;
+    QJsonObject d = o["dimensions"].toObject();
+    d["width"] = w;
+    d["height"] = h;
+    o["dimensions"] = d;
+    QJsonObject c = o["color"].toObject();
+    c["icc_profile"] = icc ? QJsonValue("sRGB IEC61966-2.1") : QJsonValue();
+    o["color"] = c;
+    o["exif"] = QJsonObject{{"available", exif}, {"fields", QJsonArray()}, {"gps_present", false}, {"orientation", QJsonValue()}};
+    return o;
+}
+
+// Image Comparison Insights in several situations and widths (whole content, not the viewport).
+void grabInsights()
+{
+    struct Scenario { QString name; QJsonObject a, b; };
+    const QList<Scenario> scenarios = {
+        {"different", sampleProps("IMG_0412.jpg", 4032, 3024, 4812345, "4:3", true, true), sampleProps("scan_final.png", 1920, 1080, 1250000, "16:9", false, false)},
+        {"identical", sampleProps("a.png", 1920, 1080, 500000, "16:9", true, true), sampleProps("b.png", 1920, 1080, 500000, "16:9", true, true)},
+        {"sameaspect", sampleProps("photo_big.jpg", 3840, 2160, 3500000, "16:9", true, false), sampleProps("photo_small.jpg", 960, 540, 90000, "16:9", false, false)},
+        {"invalid", sampleProps("zero.png", 0, 0, 0, "", false, false), sampleProps("nosize.png", 800, 600, -1, "4:3", false, false)},
+        {"extreme", sampleProps("huge.tif", 12000, 9000, 90000000, "4:3", true, true), sampleProps("icon.png", 32, 24, 1500, "4:3", false, false)},
+    };
+    for (const Scenario &s : scenarios)
+        for (int width : {900, 520, 340}) {
+            ComparisonTable t;
+            t.setComparison(ComparisonModel::compare(s.a, s.b));
+            t.insights()->explanations()->setExpanded(width == 900);
+            t.resize(width, 400);
+            pump(100);
+            t.resize(width, qMax(400, t.layout()->hasHeightForWidth() ? t.layout()->heightForWidth(width) : t.sizeHint().height()));
+            pump(100);
+            t.grab().save(gOut + QString("/insights_%1_%2.png").arg(s.name).arg(width));
+        }
+}
 }  // namespace
 
 int main(int argc, char **argv)
@@ -77,6 +127,10 @@ int main(int argc, char **argv)
     QTemporaryDir tmp;
     const QStringList sizes = {"1180x800", "960x640"};
 
+    if (argc > 2 && QString(argv[2]) == "insights") {  // quick path: only the Insights renders
+        grabInsights();
+        return 0;
+    }
     QStringList imgs;
     for (int i = 0; i < 2; ++i) {
         QImage im(i ? 1280 : 1920, i ? 720 : 1080, QImage::Format_RGB32);
@@ -139,6 +193,15 @@ int main(int argc, char **argv)
             w.analyticsPanel()->showAnalytics(analytics);
         pump(300);
         shot(&w, "main_analytics_" + sz);
+        {  // whole panel, not only the visible viewport (both views)
+            auto *ap = w.analyticsPanel();
+            for (int v = 0; v < 2; ++v) {
+                ap->setViewIndex(v);
+                pump(200);
+                ap->grab().save(gOut + QString("/panel_analytics_v%1_%2.png").arg(v).arg(sz));
+            }
+            ap->setViewIndex(0);
+        }
 
         w.comparison()->setImage(ComparisonWorkspace::Left, imgs[0]);
         w.comparison()->setImage(ComparisonWorkspace::Right, imgs[1]);

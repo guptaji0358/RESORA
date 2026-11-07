@@ -5,6 +5,7 @@
 
 #include "backend/comparison.h"
 
+class InsightsView;
 class QVBoxLayout;
 
 class ComparisonTable : public QWidget
@@ -17,10 +18,12 @@ public:
     void setComparison(const Comparison &c);
     int rowCount() const { return rows_; }
     int highlightedRows() const { return highlighted_; }
+    InsightsView *insights() const { return insights_; }  // null until a comparison is shown
 
 private:
     void clear();
 
+    InsightsView *insights_ = nullptr;
     QVBoxLayout *layout_;
     int rows_ = 0;
     int highlighted_ = 0;

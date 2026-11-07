@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 
+#include "insightsview.h"
 #include "sectioncard.h"
 #include "ui/theme.h"
 
@@ -32,6 +33,7 @@ ComparisonTable::ComparisonTable(QWidget *parent) : QWidget(parent)
 void ComparisonTable::clear()
 {
     rows_ = highlighted_ = 0;
+    insights_ = nullptr;
     while (QLayoutItem *item = layout_->takeAt(0)) {
         delete item->widget();
         delete item;
@@ -62,12 +64,8 @@ void ComparisonTable::setComparison(const Comparison &c)
     const QString paper = QStringLiteral("color:#EFE9DD;"), muted = QStringLiteral("color:#9A9186; font-style:italic;"),
                   hot = QStringLiteral("color:#FF5B2E; font-weight:600;"), dim = QStringLiteral("color:#9A9186;");
 
-    auto *insights = new SectionCard(tr("INSIGHTS"), tr("Differences in pixel count and file size; not a quality judgement."));
-    for (const QString &s : c.insights) {
-        auto *l = text(QStringLiteral("•  ") + s, paper);
-        insights->body()->addWidget(l);
-    }
-    layout_->addWidget(insights);
+    insights_ = new InsightsView(c);
+    layout_->addWidget(insights_);
 
     auto *card = new SectionCard(tr("PROPERTIES"),
                                  tr("%n difference(s) highlighted. Missing metadata is not a difference between two images that both lack it.", nullptr,

@@ -167,6 +167,50 @@ Display scaling other than 125 %, multi-monitor boundary handling, high-contrast
 
 ---
 
+## Milestone: Analytics Dashboard (Dashboard + Detailed View)
+Scope: Analytics view gets two switchable views over the same `AnalyticsData`: **Dashboard** (default; stat tiles, resolution bar chart, orientation and format donuts, storage-by-format horizontal bars, megapixel span, insights) and **Detailed View** (the previous numeric view, unchanged). No engine, protocol, report or `main.py` change; switching never rescans.
+
+### Chart technology
+Custom **QPainter** widgets (`ChartBase` + `BarChart`, `DonutChart`, `HBarChart`, `SegmentedSwitch`), data shaping in Qt-Core-only `backend/dashboardmodel`. Qt Charts exists on this machine only as a static `libQt6Charts.a` (GPLv3/commercial licence, extra module, stock look that would need heavy restyling to match RESORA); Matplotlib would add a Python dependency and a rendering process to an interactive GUI. QPainter adds no dependency, matches the identity and gives exact control of labels, hover and accessibility.
+
+### Chart choices
+Bars: resolution classes (count above, name and percent below, nice axis). Donut + text legend: orientation, formats. Horizontal bars: storage by format (bar = share of storage, tick = share of images). Tiles: totals, averages. Every chart repeats labels, counts and percentages as text (colour is never the only cue); hover shows exact values; click or Left/Right/Esc selects a category and reveals its statistics under the chart; empty states per chart; zero classes stay visible; unknown file sizes give an empty storage chart, not zeros.
+
+### Files
+New: `gui/src/backend/dashboardmodel.{h,cpp}`, `gui/src/widgets/{chartbase,barchart,donutchart,hbarchart,segmentedswitch,analyticsdashboard}.{h,cpp}`, `gui/tests/tst_dashboard.cpp`. Changed: `analyticspanel.{h,cpp}`, `gui/CMakeLists.txt`, `gui/tests/CMakeLists.txt`, `gui/tests/grab_screens.cpp` (full-panel grabs).
+
+### 1. Automated verification
+`run.bat /nolaunch` (2026-11-06): engine self-check, Python tests and ctest 11/11 passed (new `tst_dashboard`: chart items vs engine values and denominators, empty/missing data, axis/bar/sweep math, Dashboard default and view switching without data loss, same values in both views, selection detail and reset, keyboard switch, a 12,000,000-image collection, grabs at 1100/520/360 px wide). Existing `tst_analytics` still passes unchanged.
+
+### 2. Visual verification (actual rendering)
+`grab_screens.exe` rendered the real MainWindow/panel with sample data (3 analyzed, 2 failed) at 1180x800 and 960x640; both views were inspected as PNGs. Seen: tiles, bar chart, donuts with legends, storage bars, span, insights, failure banner, Detailed View intact; two defects found this way (axis labels 0/0/1, blank gap above the Detailed page) were fixed and re-rendered.
+
+### 3. Known defects
+None confirmed.
+
+### 4. Unverified items
+Hover tooltips, click selection and keyboard use were tested by code only, not by a person with a mouse. Empty-collection and very large collections were not visually inspected. No inspection at 360 px real width, other display scaling, or a live scan. Only one resolution/format set was rendered (no 8-class ladder).
+
+### 5. Final status
+**NOT FINISHED** - implemented and automatically tested; awaiting manual review. Nothing committed or pushed.
+
+---
+
+## Refinement: Image Comparison Insights (visual analytics)
+Scope: Insights section of Image Comparison now leads with a Quick Verdict and native QPainter visuals (paired MP bars, file-size bars, true-proportion dimension rectangles, aspect-ratio scale, A/B metadata table); the previous written explanations are kept, grouped, in a collapsed "Detailed explanations" section. No engine/backend change; `main.py` untouched.
+### 1. Automated verification
+`run.bat /nolaunch` (2026-11-06): build OK, 12/12 ctest suites pass incl. new `tst_insights` (metrics for different/identical resolutions and sizes, zero/missing/invalid values, aspect identical/nearly/different, metadata unavailable-vs-zero, rectangle proportions and common scale, rendering at 220-1600 px wide) and the unchanged `tst_comparison`. Engine selfcheck and Python tests passed.
+### 2. Visual verification (actual rendering)
+`grab_screens.exe <dir> insights` (real Windows platform plugin) rendered the Insights for five scenarios (different, identical, same aspect, invalid/missing, extreme size gap) at 900/520/340 px; PNGs were inspected. A clipped footer in the file-size chart at 340 px was found this way and fixed. Not inspected inside the running main window with real loaded images.
+### 3. Known defects
+Very small shares print as "0.0% of the larger" instead of "<0.1%".
+### 4. Unverified items
+Live interaction in the running app (splitter resizing, scrolling, keyboard focus on the collapsible header), other DPI scaling, real photos with EXIF/ICC.
+### 5. Final status
+**NOT FINISHED** - implemented and tested; awaiting manual review. Nothing committed or pushed.
+
+---
+
 ## Template for the next milestone
 
 ```

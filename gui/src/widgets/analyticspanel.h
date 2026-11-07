@@ -8,7 +8,10 @@
 
 #include "backend/analyticsmodel.h"
 
+class AnalyticsDashboard;
 class ChamferButton;
+class QStackedWidget;
+class SegmentedSwitch;
 class MetricCard;
 class PixelSpan;
 class QFrame;
@@ -26,6 +29,9 @@ public:
     void clear();
     // `result` is the data of a `scan` or `analytics` result (source info + "analytics").
     void showAnalytics(const QJsonObject &result);
+    // 0 = Dashboard (default), 1 = Detailed View. Switching never rescans.
+    int viewIndex() const;
+    void setViewIndex(int index);
     bool hasData() const { return data_.valid; }
     const AnalyticsData &data() const { return data_; }
     QString sourceText() const;
@@ -49,7 +55,10 @@ private:
     AnalyticsData data_;
     QString source_;
     QLabel *emptyArt_, *empty_, *sourceLabel_, *staleLabel_, *basis_;
-    QWidget *content_;
+    QWidget *content_, *detailed_;
+    AnalyticsDashboard *dashboard_;
+    QStackedWidget *views_;
+    SegmentedSwitch *viewSwitch_;
     ChamferButton *refresh_;
     QFrame *failBanner_;
     QLabel *failText_, *failList_;

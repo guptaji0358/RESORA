@@ -70,3 +70,19 @@ refactor(gui): UI refinement of layouts, spacing and buttons
 - imagepane: fix doubled percent sign; analytics grid spacing
 - tests: FlowLayout test in tst_widgets; grab_screens developer tool; docs/MILESTONE.md entry
 
+
+feat(gui): analytics dashboard with Dashboard and Detailed views
+
+- native QPainter charts: resolution bar chart, orientation/format donuts, storage horizontal bars
+- Dashboard (default) and Detailed View switch over the same analytics data, no rescan
+- hover tooltips, click/keyboard selection with category detail, per-chart empty states
+- backend/dashboardmodel (Qt Core) shapes engine values into chart items and insights
+- tests: tst_dashboard; grab_screens saves full-panel images; docs/MILESTONE.md entry
+
+
+feat(gui): visual Image Comparison insights
+
+- backend/insightmetrics (Qt Core): data-derived quick verdict, pixel/size/aspect metrics, A/B metadata rows; Comparison gains metrics and grouped notes
+- QPainter visuals: paired MP bars, file-size bars, true-proportion dimension diagram, aspect-ratio scale, metadata table
+- existing explanations kept, grouped, in a collapsible section; zero/missing values handled without misleading scales
+- tests: tst_insights; grab_screens insights renders; docs/MILESTONE.md entry

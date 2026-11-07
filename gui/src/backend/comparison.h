@@ -8,7 +8,13 @@
 #include <QString>
 #include <QStringList>
 
+#include "insightmetrics.h"
 #include "propertiesmodel.h"
+
+struct InsightNote
+{
+    QString section, text;
+};
 
 struct CompareRow
 {
@@ -23,7 +29,9 @@ struct Comparison
 {
     ImageProperties left, right;
     QList<CompareRow> rows;
-    QStringList insights;
+    QStringList insights;               // flat list of the detailed explanations (unchanged)
+    QList<InsightNote> notes;           // the same explanations, grouped into short sections
+    InsightMetrics metrics;             // data behind the visual comparison (valid when complete)
     bool complete = false;  // both images readable
 
     int differenceCount() const;

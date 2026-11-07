@@ -14,7 +14,9 @@ imgan_add_test(tst_icons)
 imgan_add_test(tst_dialogs)
 imgan_add_test(tst_properties)
 imgan_add_test(tst_analytics)
+imgan_add_test(tst_dashboard)
 imgan_add_test(tst_comparison)
+imgan_add_test(tst_insights)
 imgan_add_test(tst_duplicates)
 
 # Developer tool: renders windows/dialogs to PNG on the real platform plugin (not run by ctest).

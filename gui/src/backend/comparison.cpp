@@ -73,47 +73,56 @@ QString signedInt(qint64 v)
     return (v > 0 ? QStringLiteral("+") : QString()) + QLocale(QLocale::English).toString(v);
 }
 
+// Records one explanation in the flat list and in its display section.
+void note(Comparison &c, const QString &section, const QString &text)
+{
+    c.insights << text;
+    c.notes << InsightNote{section, text};
+}
+
 void addInsights(Comparison &c, const QJsonObject &lo, const QJsonObject &ro)
 {
+    const QString secPixels = QObject::tr("Pixels"), secFile = QObject::tr("File"), secShape = QObject::tr("Shape"),
+                  secQuality = QObject::tr("About quality");
     const Facts a = facts(lo), b = facts(ro);
     const QString ln = c.left.name, rn = c.right.name;
     if (a.haveSize && b.haveSize) {
         const qint64 pa = a.w * a.h, pb = b.w * b.h;
         if (pa == pb)
-            c.insights << QObject::tr("Both images have the same pixel count (%1 px).").arg(n(double(pa)));
+            note(c, secPixels, QObject::tr("Both images have the same pixel count (%1 px).").arg(n(double(pa))));
         else {
             const bool leftBigger = pa > pb;
             const double big = double(qMax(pa, pb)), small = double(qMin(pa, pb));
-            c.insights << QObject::tr("%1 has the greater pixel count: %2 vs %3 px (%4× the pixels, %5 MP difference).")
-                              .arg(leftBigger ? ln : rn, n(big), n(small), n(big / small, 2), n(std::abs(a.mp - b.mp), 2));
+            note(c, secPixels, QObject::tr("%1 has the greater pixel count: %2 vs %3 px (%4× the pixels, %5 MP difference).")
+                                   .arg(leftBigger ? ln : rn, n(big), n(small), n(big / small, 2), n(std::abs(a.mp - b.mp), 2)));
         }
-        c.insights << QObject::tr("Width difference: %1 px. Height difference: %2 px (right minus left).")
-                          .arg(signedInt(b.w - a.w), signedInt(b.h - a.h));
+        note(c, secPixels, QObject::tr("Width difference: %1 px. Height difference: %2 px (right minus left).")
+                               .arg(signedInt(b.w - a.w), signedInt(b.h - a.h)));
     }
     if (a.haveBytes && b.haveBytes) {
         if (a.bytes == b.bytes)
-            c.insights << QObject::tr("Both files are the same size (%1).").arg(PropertiesModel::formatBytes(a.bytes));
+            note(c, secFile, QObject::tr("Both files are the same size (%1).").arg(PropertiesModel::formatBytes(a.bytes)));
         else {
             const bool leftBigger = a.bytes > b.bytes;
-            c.insights << QObject::tr("%1 has the larger file: %2 bigger%3.")
-                              .arg(leftBigger ? ln : rn, PropertiesModel::formatBytes(std::abs(a.bytes - b.bytes)),
-                                   [&] {
-                                       const QString p = ComparisonModel::percentChange(double(qMin(a.bytes, b.bytes)),
-                                                                                         double(qMax(a.bytes, b.bytes)));
-                                       return p.isEmpty() ? QString() : QObject::tr(" (%1)").arg(p);
-                                   }());
+            note(c, secFile, QObject::tr("%1 has the larger file: %2 bigger%3.")
+                                 .arg(leftBigger ? ln : rn, PropertiesModel::formatBytes(std::abs(a.bytes - b.bytes)),
+                                      [&] {
+                                          const QString p = ComparisonModel::percentChange(double(qMin(a.bytes, b.bytes)),
+                                                                                            double(qMax(a.bytes, b.bytes)));
+                                          return p.isEmpty() ? QString() : QObject::tr(" (%1)").arg(p);
+                                      }()));
         }
     }
     if (a.haveAspect && b.haveAspect) {
         const double diff = std::abs(a.aspect - b.aspect);
         if (diff < 0.005)
-            c.insights << QObject::tr("The aspect ratios match (%1).").arg(c.left.sections.isEmpty() ? QString() : lo.value(QLatin1String("aspect_label")).toString());
+            note(c, secShape, QObject::tr("The aspect ratios match (%1).").arg(c.left.sections.isEmpty() ? QString() : lo.value(QLatin1String("aspect_label")).toString()));
         else
-            c.insights << QObject::tr("Aspect ratios differ: %1 vs %2 (difference %3). Images are shown at their own proportions, never stretched.")
-                              .arg(lo.value(QLatin1String("aspect_label")).toString(), ro.value(QLatin1String("aspect_label")).toString(), n(diff, 3));
+            note(c, secShape, QObject::tr("Aspect ratios differ: %1 vs %2 (difference %3). Images are shown at their own proportions, never stretched.")
+                                  .arg(lo.value(QLatin1String("aspect_label")).toString(), ro.value(QLatin1String("aspect_label")).toString(), n(diff, 3)));
     }
-    c.insights << QObject::tr("Higher resolution is not the same as better quality: pixel count says nothing about sharpness, "
-                              "noise, compression or colour. Judge quality by inspecting the images.");
+    note(c, secQuality, QObject::tr("Higher resolution is not the same as better quality: pixel count says nothing about sharpness, "
+                                    "noise, compression or colour. Judge quality by inspecting the images."));
 }
 }  // namespace
 
@@ -172,6 +181,7 @@ Comparison compare(const QJsonObject &lo, const QJsonObject &ro)
         addRow(c, exif, label, findRow(c.left, exif, label), findRow(c.right, exif, label));
 
     addInsights(c, lo, ro);
+    c.metrics = InsightMetricsBuilder::build(lo, ro, c);
     return c;
 }
 
