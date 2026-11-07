@@ -253,3 +253,10 @@ Scope: <one or two lines>
 ### 4. Unverified items
 ### 5. Final status             (FINISHED / NOT FINISHED, with reason)
 ```
+
+## Duplicates page redesign (2026-11-07) - NOT FINISHED
+1. Automated: `run.bat /nolaunch` exit 0, ctest 12/12 (after change). Detection logic untouched.
+2. Manual: none by the user. Claude inspected `grab_screens` renders (empty/results) at 1180x800 and 960x640; real running app not driven.
+3. Known: at 960x640 the page scrolls vertically; Find button pinned in setup column may sit below the fold.
+4. Unverified: real thumbnails (sample data has none), live scan.
+5. Status: NOT FINISHED, uncommitted (user asked to hold the commit).

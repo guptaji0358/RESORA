@@ -30,3 +30,6 @@ Specific user design rejections from earlier conversations (beyond what docs rec
 
 ## 2026-11-07 Navigation
 ToolNav in the title bar (AppHeader; icon + name, ember underline on active, icon-only below 1160 px; replaced the left ToolRail 2026-11-07 per user) = app navigation; Analyzer's horizontal step strip (PhaseRail) = Analyzer-internal only. Hand-offs are contextual "Open in …" actions, not primary promo buttons.
+
+## 2026-11-07 Duplicates page structure [U]
+Sections must be separated, not crowded: header (title + description), setup column (Sources, Options; action pinned), results (grouped stat rows with headings, tabs, groups|members). Long paths elide, no horizontal scrollbars in lists.

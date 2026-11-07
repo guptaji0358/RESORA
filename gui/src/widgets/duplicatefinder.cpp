@@ -55,11 +55,15 @@ void DuplicateFinder::buildUi()
     note->setWordWrap(true);
 
     // --- sources ---
-    auto *src = new SectionCard(tr("Where to look"));
+    auto *src = new SectionCard(tr("Sources"), tr("Folders to search, and any to leave out."));
     folders_ = new QListWidget;
-    folders_->setMinimumHeight(72);
-    folders_->setMaximumHeight(110);
+    folders_->setMinimumHeight(60);
+    folders_->setMaximumHeight(90);
     excludes_ = new QListWidget;
+    for (auto *l : {folders_, excludes_}) {  // long paths elide in the middle instead of a horizontal scrollbar
+        l->setTextElideMode(Qt::ElideMiddle);
+        l->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    }
     excludes_->setMinimumHeight(48);
     excludes_->setMaximumHeight(72);
     auto *add = new ChamferButton(tr("Add folder…"));
@@ -86,7 +90,7 @@ void DuplicateFinder::buildUi()
     r2->addWidget(excl);
     r2->addWidget(exclRem);
     r2->addStretch(1);
-    useCollection_ = new ToggleSwitch(tr("Scan the imported collection (%1 images)").arg(collection_.size()));
+    useCollection_ = new ToggleSwitch(tr("Use imported collection (%1)").arg(collection_.size()));
     useCollection_->setEnabled(!collection_.isEmpty());
     recursive_ = new ToggleSwitch(tr("Include subfolders"));
     recursive_->setChecked(true);
@@ -109,10 +113,11 @@ void DuplicateFinder::buildUi()
     src->body()->addWidget(new QLabel(tr("Folders to skip")));
     src->body()->addWidget(excludes_);
     src->body()->addLayout(r2);
-    src->body()->addWidget(useCollection_);
-    src->body()->addWidget(recursive_);
-    src->body()->addWidget(similar_);
-    src->body()->addLayout(thr);
+    auto *opts = new SectionCard(tr("Options"), tr("How the scan behaves."));
+    opts->body()->addWidget(useCollection_);
+    opts->body()->addWidget(recursive_);
+    opts->body()->addWidget(similar_);
+    opts->body()->addLayout(thr);
 
     start_ = new ChamferButton(tr("Find duplicates"));
     start_->setProperty("variant", QStringLiteral("primary"));
@@ -150,13 +155,28 @@ void DuplicateFinder::buildUi()
                                       "Exact files' storage", "Similar groups", "Similar images", "Similar storage"};
     // One grid owns all eight cards: columns are shared by both rows (two independent HBoxes gave each
     // row its own column widths, so the cards never lined up) and rows get real vertical spacing.
+    // Semantic grouping: a heading per group, its own row, generous gaps. Row 0 = scan overview + exact
+    // results; row 1 = similar results. Files scanned leads the exact row as the overview number.
     auto *stats = new QGridLayout;
-    stats->setHorizontalSpacing(0);
-    stats->setVerticalSpacing(12);
-    for (int i = 0; i < 8; ++i) {
-        cards_[i] = new MetricCard(tr(captions[i]));
-        stats->addWidget(cards_[i], i / 4, i % 4);
-    }
+    stats->setHorizontalSpacing(4);
+    stats->setVerticalSpacing(6);
+    for (int i = 0; i < 8; ++i)
+        { cards_[i] = new MetricCard(tr(captions[i])); cards_[i]->setMinimumWidth(80); }
+    auto heading = [](const QString &t) {
+        auto *l = new QLabel(t.toUpper());
+        l->setProperty("role", QStringLiteral("caption"));
+        return l;
+    };
+    stats->addWidget(heading(tr("Exact duplicates · identical content")), 0, 0, 1, 4);
+    const int exactOrder[4] = {1, 2, 4, 3};
+    for (int k = 0; k < 4; ++k)
+        stats->addWidget(cards_[exactOrder[k]], 1, k);
+    stats->setRowMinimumHeight(2, 8);
+    stats->addWidget(heading(tr("Visually similar · not proven identical")), 3, 0, 1, 3);
+    stats->addWidget(heading(tr("Scan")), 3, 3);
+    for (int k = 0; k < 3; ++k)
+        stats->addWidget(cards_[5 + k], 4, k);
+    stats->addWidget(cards_[0], 4, 3);
     for (int c = 0; c < 4; ++c)
         stats->setColumnStretch(c, 1);
     cards_[3]->setToolTip(tr("Exact duplicates only: every group keeps one copy, so savings = size × (copies − 1)."));
@@ -182,7 +202,7 @@ void DuplicateFinder::buildUi()
     rv->addWidget(kindNote_);
 
     groups_ = new QListWidget;
-    groups_->setMinimumWidth(180);
+    groups_->setMinimumWidth(140);
     groups_->setTextElideMode(Qt::ElideRight);  // long names elide instead of forcing a horizontal scrollbar
     groups_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     connect(groups_, &QListWidget::currentRowChanged, this, &DuplicateFinder::fillMembers);
@@ -194,46 +214,77 @@ void DuplicateFinder::buildUi()
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setMinimumWidth(340);  // a member row (thumbnail + text + buttons) never gets clipped: the page scrolls instead
+    scroll->setMinimumWidth(320);  // a member row (thumbnail + text + buttons) never gets clipped: the page scrolls instead
     scroll->setWidget(membersHost_);
     auto *split = new QSplitter;
     split->addWidget(groups_);
     split->addWidget(scroll);
     split->setStretchFactor(0, 0);  // group list keeps its width on resize; member rows take the slack
     split->setStretchFactor(1, 1);
-    split->setSizes({260, 560});
+    split->setSizes({150, 600});
     split->setChildrenCollapsible(false);
-    split->setMinimumHeight(260);
+    split->setMinimumHeight(220);
     rv->addWidget(split, 1);
     resultsBox_->hide();
 
     auto *outer = new QWidget;
     auto *ov = new QVBoxLayout(outer);
-    ov->setContentsMargins(0, 0, 0, 0);
-    ov->setSpacing(12);
-    ov->addWidget(eyebrow);
+    ov->setContentsMargins(0, 0, 4, 0);
+    ov->setSpacing(10);
+    outer->setMinimumHeight(380);
+    // Page header: eyebrow, title, one readable description line block (capped width), then a rule.
+    auto *title = new QLabel(tr("Find duplicate images"));
+    title->setProperty("role", QStringLiteral("message"));
+    note->setMaximumWidth(900);
+    auto *rule = new QFrame;
+    rule->setFrameShape(QFrame::HLine);
+    rule->setStyleSheet(QStringLiteral("color:#2A2622; background:#2A2622; max-height:1px;"));
+    auto *head = new QHBoxLayout;
+    head->setSpacing(14);
+    head->addWidget(title);
+    head->addWidget(eyebrow, 0, Qt::AlignBottom);
+    head->addStretch(1);
+    ov->addLayout(head);
     ov->addWidget(note);
-    // Setup on the left (fixed width), outcome on the right: the groups get the room they need.
+    ov->addWidget(rule);
+    // Setup column: scrolling sections on top, the run action pinned below (always visible).
     auto *left = new QVBoxLayout;
-    left->setSpacing(12);
+    left->setSpacing(14);
     left->addWidget(src);
-    left->addLayout(go);
+    left->addWidget(opts);
     left->addStretch(1);
+    auto *setupHost = new QWidget;
+    setupHost->setLayout(left);
+    left->setContentsMargins(0, 0, 10, 0);
+    auto *setupScroll = new QScrollArea;
+    setupScroll->setWidgetResizable(true);
+    setupScroll->setFrameShape(QFrame::NoFrame);
+    setupScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setupScroll->setWidget(setupHost);
+    auto *actionBox = new QFrame;
+    actionBox->setStyleSheet(QStringLiteral("QFrame#dupAction{border-top:1px solid #2A2622;}"));
+    actionBox->setObjectName(QStringLiteral("dupAction"));
+    auto *ab = new QVBoxLayout(actionBox);
+    ab->setContentsMargins(0, 12, 10, 0);
+    ab->addLayout(go);
     auto *leftHost = new QWidget;
-    leftHost->setLayout(left);
-    // Flexible, not fixed: the toggles' label width is the real minimum, 360 the comfortable maximum.
-    // At the smallest window the column shrinks so the results keep room for a member row.
-    leftHost->setMinimumWidth(320);
-    leftHost->setMaximumWidth(360);
+    auto *lh = new QVBoxLayout(leftHost);
+    lh->setContentsMargins(0, 0, 0, 0);
+    lh->setSpacing(0);
+    lh->addWidget(setupScroll, 1);
+    lh->addWidget(actionBox);
+    leftHost->setMinimumWidth(270);
+    leftHost->setMaximumWidth(370);
     placeholder_ = new QLabel(tr("Add a folder and press Find duplicates.\nIdentical files and visually similar images appear here, grouped."));
     placeholder_->setProperty("role", QStringLiteral("muted"));
     placeholder_->setAlignment(Qt::AlignCenter);
     auto *cols = new QHBoxLayout;
-    cols->setSpacing(24);
-    cols->addWidget(leftHost, 1, Qt::AlignTop);  // 1:2 -> capped at 360 on wide windows, results get the rest
+    cols->setSpacing(20);
+    cols->addWidget(leftHost, 1);  // 1:2 -> capped at 380 on wide windows, results get the rest
     cols->addWidget(resultsBox_, 2);
     cols->addWidget(placeholder_, 2);
     ov->addLayout(cols, 1);
+    // Only scrolls when the window is below the content's minimum (page-level safety net).
     auto *page = new QScrollArea;
     page->setWidgetResizable(true);
     page->setFrameShape(QFrame::NoFrame);
@@ -274,7 +325,7 @@ void DuplicateFinder::setCollection(const QStringList &images, const QString &st
 {
     collection_ = images;
     startFolder_ = startFolder;
-    useCollection_->setText(tr("Scan the imported collection (%1 images)").arg(collection_.size()));
+    useCollection_->setText(tr("Use imported collection (%1)").arg(collection_.size()));
     useCollection_->setEnabled(!collection_.isEmpty() && !isRunning());
     if (collection_.isEmpty())
         useCollection_->setChecked(false);

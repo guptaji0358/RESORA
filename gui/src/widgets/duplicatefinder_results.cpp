@@ -21,7 +21,7 @@
 
 namespace {
 constexpr int kMaxRows = 100;  // members rendered per group (bounded widget count)
-constexpr int kThumb = 96;
+constexpr int kThumb = 72;
 
 void revealInFolder(const QString &path)
 {
@@ -128,8 +128,8 @@ QWidget *DuplicateFinder::memberRow(const DupGroup &g, int index)
     row->setStyleSheet(QStringLiteral("#dupRow{border:1px solid %1; border-left:3px solid %2;}")
                            .arg(Theme::line().name(), g.exact ? Theme::alert().name() : Theme::ember().name()));
     auto *h = new QHBoxLayout(row);
-    h->setContentsMargins(12, 10, 12, 10);
-    h->setSpacing(14);
+    h->setContentsMargins(10, 10, 10, 10);
+    h->setSpacing(12);
     auto *thumb = new QLabel(tr("…"));
     thumb->setFixedSize(kThumb, kThumb);
     thumb->setAlignment(Qt::AlignCenter);
@@ -180,8 +180,8 @@ QWidget *DuplicateFinder::memberRow(const DupGroup &g, int index)
     col->addWidget(badge);
     h->addLayout(col, 1);
 
-    auto *btns = new QVBoxLayout;
-    btns->setSpacing(6);
+    auto *btns = new QHBoxLayout;
+    btns->setSpacing(4);
     auto *open = new ChamferButton(tr("Open"));
     auto *folder = new ChamferButton(tr("Folder"));
     auto *cmp = new ChamferButton(tr("Compare"));
@@ -198,7 +198,8 @@ QWidget *DuplicateFinder::memberRow(const DupGroup &g, int index)
     connect(folder, &QPushButton::clicked, this, [path] { revealInFolder(path); });
     const QString other = g.files.size() > 1 ? g.files.at(index == 0 ? 1 : 0).path : QString();
     connect(cmp, &QPushButton::clicked, this, [this, path, other] { emit compareRequested(path, other); });
-    h->addLayout(btns);
-    h->setAlignment(btns, Qt::AlignTop);
+    btns->addStretch(1);
+    col->addSpacing(4);
+    col->addLayout(btns);
     return row;
 }

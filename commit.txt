@@ -119,3 +119,8 @@ fix(gui): Duplicates page layout (cards grid, flexible setup column, no clipped 
 - group list elides instead of showing a horizontal scrollbar; splitter keeps list width on resize
 - grab_screens: capture the hosted Duplicates page (empty and results)
 - docs/MILESTONE.md and AgentsMemory updated
+
+refactor(gui): restructure Duplicates page into header, setup sections, grouped results
+
+- Sources/Options sections in a scrolling setup column with the Find action pinned below
+- stat cards grouped under Exact / Visually similar / Scan headings; member buttons below text; list paths elide
