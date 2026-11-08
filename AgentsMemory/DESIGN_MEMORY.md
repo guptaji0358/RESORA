@@ -33,3 +33,6 @@ ToolNav in the title bar (AppHeader; icon + name, ember underline on active, ico
 
 ## 2026-11-07 Duplicates page structure [U]
 Sections must be separated, not crowded: header (title + description), setup column (Sources, Options; action pinned), results (grouped stat rows with headings, tabs, groups|members). Long paths elide, no horizontal scrollbars in lists.
+
+## 2026-11-08 Duplicates results hierarchy [U]
+Results = one scrolling column: prominent group header (red for exact, ember for similar; "GROUP n — N IDENTICAL FILES") then numbered, indented image entries. Classification is stated once in the header, never repeated on every image. Entries stay clean: thin separator only, no box per element. Counts always come from the scan result (caps: 100 groups, 100 images/group).

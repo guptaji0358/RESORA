@@ -37,7 +37,7 @@ If a memory write fails: don't claim success, name the file that failed, report 
 - `run.bat` = launcher (kills only `ImageResolutionAnalyzer.exe`, venv, selfcheck, unittest, build, ctest, launch). `run.bat /nolaunch` builds and checks only. Log: `logs/run.log`. Never invent other launch commands.
 - Engine tests: `.venv\Scripts\python -m unittest discover -s tests`. GUI tests: ctest via run.bat. Prefer focused tests for what changed.
 - Qt 6.12.0 MinGW at `D:\Apps\Qt6\6.12.0\mingw_64`; use Qt's MinGW, not MSYS2 g++. Use `python` not `py -3`.
-- `gui/tests/grab_screens.cpp` renders real windows to PNGs for visual inspection (sample data) [R].
+- `gui/tests/grab_screens.cpp` renders real windows to PNGs for visual inspection (sample data) [R].  `grab_screens <outdir> dup` renders only the Duplicates states.
 
 ## Git [V]
 Check `git status` first. No commit without explicit permission. `.venv/ build/ logs/` ignored.

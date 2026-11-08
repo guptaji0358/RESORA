@@ -124,3 +124,17 @@ refactor(gui): restructure Duplicates page into header, setup sections, grouped 
 
 - Sources/Options sections in a scrolling setup column with the Find action pinned below
 - stat cards grouped under Exact / Visually similar / Scan headings; member buttons below text; list paths elide
+
+feat(resora): add .resora container foundation (Phase 1)
+
+- Qt-Core-only resora_format library: header/directory/trailer layout, SHA-256 integrity, bounds-checked reader, atomic streaming writer
+- tst_resorafile covers round-trip and invalid-file rejection
+- docs/RESORA_FORMAT.md, implement.md phase tracker and decision, AgentsMemory and docs/MILESTONE.md updated
+
+
+feat(resora): add Bundled and Linked data export (Phases 2-3)
+
+- Bundled export: images stored in the container; atomic temp -> verify -> finalizeDestination pipeline (ReplaceFileW failure handling)
+- Linked export: external references with size/mtime/SHA-256 identity, absolute/relative path policy, duplicate-name flags; every source is rehashed before finalizing and a mismatch aborts with a Changed issue
+- shared exportcommon.* (hashing, common JSON resources); tst_bundledexport, tst_linkedexport
+- docs/RESORA_FORMAT.md, JSON schemas, implement.md, docs/MILESTONE.md and AgentsMemory updated; Duplicates GUI test/layout tweaks included

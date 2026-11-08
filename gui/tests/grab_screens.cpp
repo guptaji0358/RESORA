@@ -131,6 +131,30 @@ int main(int argc, char **argv)
         grabInsights();
         return 0;
     }
+    if (argc > 2 && QString(argv[2]) == "dup") {  // quick path: Duplicates results states (one group / many / empty)
+        const QJsonObject full = QJsonDocument::fromJson(kDup).object();
+        QJsonObject one = full, none = full;
+        one["exact_groups"] = QJsonArray{full["exact_groups"].toArray().at(1)};
+        one["similar_groups"] = QJsonArray();
+        none["exact_groups"] = QJsonArray();
+        none["similar_groups"] = QJsonArray();
+        const QList<QPair<QString, QJsonObject>> cases = {{"one", one}, {"many", full}, {"empty", none}};
+        for (const auto &c : cases) {
+            MainWindow w(nullptr, tmp.path() + "/locs.json");
+            w.resize(1180, 800);
+            w.show();
+            w.showTool(Tool::Duplicates);
+            w.duplicates()->showResult(DuplicatesModel::fromJson(c.second));
+            pump(400);
+            shot(&w, "dup_" + c.first);
+            if (c.first == "many") {
+                w.duplicates()->showKind(false);
+                pump(300);
+                shot(&w, "dup_many_similar");
+            }
+        }
+        return 0;
+    }
     QStringList imgs;
     for (int i = 0; i < 2; ++i) {
         QImage im(i ? 1280 : 1920, i ? 720 : 1080, QImage::Format_RGB32);

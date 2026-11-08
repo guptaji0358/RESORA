@@ -22,6 +22,8 @@
 namespace {
 constexpr int kMaxRows = 100;  // members rendered per group (bounded widget count)
 constexpr int kThumb = 72;
+constexpr int kMaxGroups = 100;  // groups rendered (bounded widget count); the rest is reported as a count
+constexpr int kIndent = 24;      // image entries sit indented under their group header
 
 void revealInFolder(const QString &path)
 {
@@ -80,56 +82,91 @@ void DuplicateFinder::showKind(bool exact)
     fillGroups();
 }
 
-int DuplicateFinder::groupCount() const { return groups_->count(); }
-int DuplicateFinder::memberRowCount() const { return membersLayout_->count() - 1; }  // minus the stretch
-void DuplicateFinder::selectGroup(int row) { groups_->setCurrentRow(row); }
-
-void DuplicateFinder::fillGroups()
+namespace {
+int countNamed(const QLayout *l, const QString &objectName)
 {
-    groups_->blockSignals(true);
-    groups_->clear();
-    const QList<DupGroup> &list = showExact_ ? result_.exact : result_.similar;
-    for (const DupGroup &g : list) {
-        const QString detail = g.exact ? tr("saves %1").arg(DuplicatesModel::bytesText(g.savingsBytes))
-                                       : tr("%1 · ≥ %2").arg(g.category, DuplicatesModel::similarityText(g.lowest));
-        groups_->addItem(QStringLiteral("%1\n%2 · %3").arg(DuplicatesModel::groupTitle(g), g.files.value(0).name, detail));
-    }
-    groups_->blockSignals(false);
-    groups_->setCurrentRow(list.isEmpty() ? -1 : 0);
-    fillMembers(list.isEmpty() ? -1 : 0);
+    int n = 0;
+    for (int i = 0; i < l->count(); ++i)
+        if (QWidget *w = l->itemAt(i)->widget(); w && w->objectName() == objectName)
+            ++n;
+    return n;
 }
+}  // namespace
 
-void DuplicateFinder::fillMembers(int row)
+int DuplicateFinder::groupCount() const { return countNamed(membersLayout_, QStringLiteral("dupGroupHeader")); }
+int DuplicateFinder::memberRowCount() const { return countNamed(membersLayout_, QStringLiteral("dupRow")); }
+
+// Rebuilds the whole column from the parsed result: [header, numbered indented rows] per group.
+void DuplicateFinder::fillGroups()
 {
     while (QLayoutItem *item = membersLayout_->takeAt(0)) {
         delete item->widget();
         delete item;
     }
     const QList<DupGroup> &list = showExact_ ? result_.exact : result_.similar;
-    if (row < 0 || row >= list.size()) {
+    if (list.isEmpty()) {
         auto *empty = new QLabel(showExact_ ? tr("No exact duplicates found.") : tr("No visually similar images found."));
         empty->setProperty("role", QStringLiteral("muted"));
         membersLayout_->addWidget(empty);
-    } else {
-        const DupGroup &g = list.at(row);
+    }
+    for (int gi = 0; gi < list.size() && gi < kMaxGroups; ++gi) {
+        const DupGroup &g = list.at(gi);
+        if (gi > 0)
+            membersLayout_->addSpacing(14);
+        membersLayout_->addWidget(groupHeader(g, gi + 1));
         for (int i = 0; i < g.files.size() && i < kMaxRows; ++i)
             membersLayout_->addWidget(memberRow(g, i));
-        if (g.files.size() > kMaxRows)
-            membersLayout_->addWidget(new QLabel(tr("… and %1 more files in this group.").arg(g.files.size() - kMaxRows)));
+        if (g.files.size() > kMaxRows) {
+            auto *more = new QLabel(tr("… and %1 more files in this group.").arg(g.files.size() - kMaxRows));
+            more->setContentsMargins(kIndent, 0, 0, 0);
+            membersLayout_->addWidget(more);
+        }
     }
+    if (list.size() > kMaxGroups)
+        membersLayout_->addWidget(new QLabel(tr("… and %1 more groups not shown.").arg(list.size() - kMaxGroups)));
     membersLayout_->addStretch(1);
+}
+
+QWidget *DuplicateFinder::groupHeader(const DupGroup &g, int number)
+{
+    const QColor accent = g.exact ? Theme::alert() : Theme::ember();
+    auto *head = new QFrame;
+    head->setObjectName(QStringLiteral("dupGroupHeader"));
+    head->setStyleSheet(QStringLiteral("#dupGroupHeader{background:%1; border:1px solid %2; border-left:4px solid %3;}")
+                            .arg(QColor(accent.red(), accent.green(), accent.blue(), 34).name(QColor::HexArgb), accent.name(), accent.name()));
+    auto *h = new QHBoxLayout(head);
+    h->setContentsMargins(14, 10, 14, 10);
+    h->setSpacing(12);
+    auto *title = new QLabel(tr("GROUP %1 — %2").arg(number).arg(DuplicatesModel::groupTitle(g).toUpper()));
+    title->setStyleSheet(QStringLiteral("color:%1; font-weight:700; letter-spacing:1px; background:transparent; border:none;")
+                             .arg(accent.name()));
+    h->addWidget(title);
+    h->addStretch(1);
+    const QString detail = g.exact ? tr("Exact · saves %1").arg(DuplicatesModel::bytesText(g.savingsBytes))
+                                   : tr("%1 · ≥ %2 match").arg(g.category, DuplicatesModel::similarityText(g.lowest));
+    auto *d = new QLabel(detail);
+    d->setProperty("role", QStringLiteral("muted"));
+    d->setStyleSheet(QStringLiteral("background:transparent; border:none;"));
+    h->addWidget(d);
+    return head;
 }
 
 QWidget *DuplicateFinder::memberRow(const DupGroup &g, int index)
 {
     const DupFile &f = g.files.at(index);
+    // Outer wrapper provides the indent; the row itself only has a thin separator underneath.
     auto *row = new QFrame;
     row->setObjectName(QStringLiteral("dupRow"));
-    row->setStyleSheet(QStringLiteral("#dupRow{border:1px solid %1; border-left:3px solid %2;}")
-                           .arg(Theme::line().name(), g.exact ? Theme::alert().name() : Theme::ember().name()));
+    row->setStyleSheet(QStringLiteral("#dupRow{border:none; border-bottom:1px solid %1;}").arg(Theme::line().name()));
     auto *h = new QHBoxLayout(row);
-    h->setContentsMargins(10, 10, 10, 10);
+    h->setContentsMargins(kIndent, 8, 4, 10);
     h->setSpacing(12);
+    auto *num = new QLabel(QString::number(index + 1));
+    num->setFixedWidth(22);
+    num->setAlignment(Qt::AlignRight | Qt::AlignTop);
+    num->setFont(Theme::display(12, QFont::DemiBold));
+    num->setProperty("role", QStringLiteral("muted"));
+    h->addWidget(num);
     auto *thumb = new QLabel(tr("…"));
     thumb->setFixedSize(kThumb, kThumb);
     thumb->setAlignment(Qt::AlignCenter);
@@ -161,23 +198,20 @@ QWidget *DuplicateFinder::memberRow(const DupGroup &g, int index)
     full->setProperty("role", QStringLiteral("muted"));
     auto *info = new QLabel(facts(f));
     info->setWordWrap(true);
-    auto *badge = new QLabel;
-    badge->setWordWrap(true);
-    if (g.exact) {
-        badge->setText(tr("EXACT DUPLICATE · identical content"));
-        badge->setStyleSheet(QStringLiteral("color:%1; font-weight:600;").arg(Theme::alert().name()));
-    } else {
-        badge->setText(f.anchor ? tr("VISUALLY SIMILAR · comparison base (not a preferred copy)")
-                                : tr("VISUALLY SIMILAR · %1 · %2 match").arg(f.category, DuplicatesModel::similarityText(f.similarity)));
+    col->addWidget(name);
+    col->addWidget(full);
+    col->addWidget(info);
+    // Exact groups state their classification once, in the group header. Similar images only add their own score.
+    if (!g.exact) {
+        auto *badge = new QLabel(f.anchor ? tr("Comparison base (not a preferred copy)")
+                                          : tr("%1 · %2 match").arg(f.category, DuplicatesModel::similarityText(f.similarity)));
+        badge->setWordWrap(true);
         badge->setStyleSheet(QStringLiteral("color:%1; font-weight:600;").arg(Theme::ember().name()));
         if (f.identicalCopies > 0)
             info->setText(info->text() + tr("  ·  %1 more identical cop%2 listed under Exact")
                                               .arg(f.identicalCopies).arg(f.identicalCopies == 1 ? tr("y") : tr("ies")));
+        col->addWidget(badge);
     }
-    col->addWidget(name);
-    col->addWidget(full);
-    col->addWidget(info);
-    col->addWidget(badge);
     h->addLayout(col, 1);
 
     auto *btns = new QHBoxLayout;

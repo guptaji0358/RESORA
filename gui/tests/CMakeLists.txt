@@ -19,6 +19,19 @@ imgan_add_test(tst_comparison)
 imgan_add_test(tst_insights)
 imgan_add_test(tst_duplicates)
 
+# Container library test: links only the Qt-Core-only library (proves no widgets dependency).
+qt_add_executable(tst_resorafile tst_resorafile.cpp)
+target_link_libraries(tst_resorafile PRIVATE resora_format Qt6::Test)
+add_test(NAME tst_resorafile COMMAND tst_resorafile)
+
+qt_add_executable(tst_bundledexport tst_bundledexport.cpp)
+target_link_libraries(tst_bundledexport PRIVATE resora_format Qt6::Test)
+add_test(NAME tst_bundledexport COMMAND tst_bundledexport)
+
+qt_add_executable(tst_linkedexport tst_linkedexport.cpp)
+target_link_libraries(tst_linkedexport PRIVATE resora_format Qt6::Test)
+add_test(NAME tst_linkedexport COMMAND tst_linkedexport)
+
 # Developer tool: renders windows/dialogs to PNG on the real platform plugin (not run by ctest).
 qt_add_executable(grab_screens grab_screens.cpp)
 target_link_libraries(grab_screens PRIVATE imgan_core)

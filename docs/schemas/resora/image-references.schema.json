@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resora.local/schemas/resora/1/image-references.schema.json",
+  "title": "RESORA image references (resource id: images-index)",
+  "description": "Schema v1. DOCUMENTATION ONLY. One record per image; exactly one of 'bundled' (Bundled mode) or 'linked' (Linked mode) is present. Link identity and relink rules are finalised in Phases 3-4 (x-phase). Resource ids are flat container ids, never paths.",
+  "type": "object",
+  "required": ["schema_version", "images"],
+  "$defs": {
+    "resourceId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"},
+    "sha256hex": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["image_id", "name", "metadata"],
+        "properties": {
+          "image_id": {"type": "string", "description": "Stable id within this document"},
+          "name": {"type": "string", "description": "Display file name only"},
+          "metadata": {"$ref": "metadata.schema.json"},
+          "thumbnail": {"oneOf": [{"$ref": "#/$defs/resourceId"}, {"type": "null"}]},
+          "bundled": {
+            "type": "object",
+            "required": ["resource"],
+            "x-phase": 2,
+            "properties": {"resource": {"$ref": "#/$defs/resourceId"}, "sha256": {"$ref": "#/$defs/sha256hex"}}
+          },
+          "linked": {
+            "type": "object",
+            "required": ["path", "sha256", "size"],
+            "properties": {
+              "path": {"type": "string", "description": "Absolute, '/' separators"},
+              "relative_path": {"type": ["string", "null"], "description": "Relative to manifest.path_resolution.base; never '..'"},
+              "file_name": {"type": "string"},
+              "size": {"type": "integer", "minimum": 0},
+              "modified_utc": {"type": ["string", "null"], "format": "date-time"},
+              "sha256": {"$ref": "#/$defs/sha256hex"},
+              "width": {"type": ["integer", "null"]},
+              "height": {"type": ["integer", "null"]},
+              "format": {"type": ["string", "null"]},
+              "name_collision": {"type": "boolean"}
+            }
+          }
+        },
+        "oneOf": [{"required": ["bundled"]}, {"required": ["linked"]}],
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

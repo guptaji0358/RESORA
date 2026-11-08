@@ -1,4 +1,5 @@
 #include <QJsonDocument>
+#include <QLabel>
 #include <QPushButton>
 #include <QSignalSpy>
 #include <QtTest>
@@ -73,6 +74,9 @@ private slots:
         dlg.showResult(DuplicatesModel::fromJson(sample()));
         QCOMPARE(dlg.groupCount(), 1);
         QCOMPARE(dlg.memberRowCount(), 3);
+        // The duplicate classification lives in the group header, never repeated per image.
+        for (QLabel *l : dlg.findChildren<QLabel *>())
+            QVERIFY2(!l->text().startsWith("EXACT DUPLICATE ·"), qPrintable(l->text()));
         dlg.showKind(false);
         QCOMPARE(dlg.groupCount(), 1);
         QCOMPARE(dlg.memberRowCount(), 2);

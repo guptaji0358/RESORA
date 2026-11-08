@@ -34,3 +34,18 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 ## 2026-11-07 C++ directory reorganization [U approved]
 - [U] `gui/` split into `include/` (headers), `src/` (matching .cpp), `main/` (entry point). Subfolders kept. User answered "approve" without choosing the open questions; I applied my recommendations: qualified includes (`"widgets/x.h"`), headers-less split parts (`duplicatefinder_results.cpp`, `comparisonworkspace_ui.cpp`) stay in `src/widgets/`, `grab_screens.cpp` stays in `tests/`.
 - [V] AUTOMOC needs headers listed as target sources (`RESORA_HEADERS` glob in `gui/CMakeLists.txt`); without it Q_OBJECT classes fail to link.
+
+## 2026-11-08 `.resora` container in C++/Qt Core [U]
+- [U] Phase 1 of the `.resora` dashboard export (see root `implement.md`): the open C++ vs Python question is resolved in favour of C++ with Qt Core. Reasons: dashboard state, thumbnails and QSaveFile atomicity are GUI-side (no IPC); Qt Core covers streaming, atomic replace and SHA-256; byte hashing is not image analysis; separate Qt-Core-only library `resora_format` keeps it independent of dashboard UI.
+- [V] Format choices (mine, within the brief): little-endian, SHA-256 everywhere, 64-byte header, 128-byte fixed directory entries, 96-byte trailer, flat ids `[a-z0-9][a-z0-9_-]{0,62}`, uncompressed in v1 (zlib code reserved). Spec: docs/RESORA_FORMAT.md.
+- [V] Whole-file hash = SHA-256 over `[0, N-40)` (excludes its own field and end magic; non-circular, no zero-fill). JSON schemas are documentation-only JSON Schema files in `docs/schemas/resora/` (user review 2026-11-08).
+
+## 2026-11-08 Bundled export design [V]
+- Exporter lives in `resora_format`, UI-independent. Source identity (SHA-256+size+mtime) taken in a validation pass; write goes to a temp sibling, is re-verified with the Reader, then swapped in. Compression stays unimplemented (code 0). Writer got an additive progress/cancel callback (justified by the cancel requirement; no format change). Destination equal to a source image is rejected. 2026-11-08 [U review]: the two-rename swap was rejected as not crash-safe; finalization is now `destinationfinalizer.*` (`MoveFileExW` for new, `ReplaceFileW` with backup for existing, retry on sharing violations, `rename(2)` elsewhere); the previous destination is never deleted before success. Same day, after a second review: failure handling must not assume ReplaceFileW keeps original names (1177 moves the replaced file to the backup name); the finalizer observes file state, restores only via non-overwriting move, and on any uncertainty preserves every file (`NeedsAttention`, `keepTemp`) instead of deleting.
+
+## 2026-11-08 Linked export final source rehash [U][V]
+- User review: hashing sources once misses a same-size edit with restored mtime. Decision: `exportLinked` rehashes every source right before finalizing and compares size + SHA-256 with validation values; mismatch -> `Changed`, destination preserved; cancellable; progress stays monotonic, 1000 only after finalize. Bundled unchanged.
+
+## 2026-11-08 Linked export path policy [V]
+- Linked references: absolute path first, then `relative_path` against an explicit base (`folder` image root or `document` folder, only when chosen); never assume the .resora folder is the image folder; relative path only when inside the base (no `..`); identity (size + SHA-256) always decides; duplicate file names flagged, never used as ids. Header flags stay 0 (mode lives in the manifest). Details: docs/RESORA_FORMAT.md.
+

@@ -1,9 +1,11 @@
 @echo off
 rem Development launcher: venv -> deps -> backend checks -> Qt build -> launch.
-rem Usage: run.bat [/nolaunch | /push | /commit]
-rem   /nolaunch = build and check only
+rem Usage: run.bat [/nolaunch | /push | /nocommit]
+rem   AUTO-COMMIT (user request 2026-11-08): after a successful build + tests (+ launch) run.bat commits by default.
+rem   /nocommit = build/launch without committing
+rem   /nolaunch = build and check only (also auto-commits; only one switch is read, so /nolaunch cannot be combined with /nocommit)
 rem   /push     = push the current branch to its upstream (Git only; no build, no launch, never stages or commits)
-rem   /commit   = normal build + launch, then commit everything (git add -A) using the LAST message block of commit.txt
+rem   (commit step) after build + launch, commit everything (git add -A) using the LAST message block of commit.txt
 rem               (exit 67-69, see :gitcommit). Never pushes. Only runs after build, tests and launch succeeded.
 rem Overrides (env): QT_DIR, QT_TOOLS
 rem Every stage prints PENDING/RUNNING/DONE/FAILED/SKIPPED. Long commands run through scripts\launcher\runstage.ps1, which
@@ -20,8 +22,8 @@ set "RUNNER=scripts\launcher\runstage.ps1"
 if not defined QT_DIR set "QT_DIR=D:\Apps\Qt6\6.12.0\mingw_64"
 if not defined QT_TOOLS set "QT_TOOLS=D:\Apps\Qt6\Tools"
 set "NOLAUNCH=0"
-set "DOCOMMIT=0"
-if /i "%~1"=="/commit" set "DOCOMMIT=1"
+set "DOCOMMIT=1"
+if /i "%~1"=="/nocommit" set "DOCOMMIT=0"
 if /i "%~1"=="/nolaunch" set "NOLAUNCH=1"
 if /i "%~1"=="/push" goto :gitpush
 
@@ -130,6 +132,7 @@ if "%NOLAUNCH%"=="1" (
     call :summary
     echo Build OK. Skipping launch.
     echo [%date% %time%] Build OK, launch skipped>> "%LOG%"
+    if "%DOCOMMIT%"=="1" goto :gitcommit
     exit /b 0
 )
 call :begin 9

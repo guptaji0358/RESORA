@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resora.local/schemas/resora/1/analytics.schema.json",
+  "title": "RESORA analytics (resource id: analytics)",
+  "description": "Schema v1. DOCUMENTATION ONLY. 'data' is the analytics object exactly as returned by the engine analytics command (docs/ANALYTICS.md); the format layer never recomputes or reshapes it. Missing values stay null, never 0.",
+  "type": "object",
+  "required": ["schema_version", "data"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "engine_protocol": {"type": ["integer", "null"], "description": "Backend protocol version that produced data", "x-phase": 2},
+    "data": {"type": "object", "description": "Opaque to this schema; defined by docs/ANALYTICS.md"}
+  },
+  "additionalProperties": true
+}

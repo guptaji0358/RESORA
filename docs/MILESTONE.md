@@ -260,3 +260,42 @@ Scope: <one or two lines>
 3. Known: at 960x640 the page scrolls vertically; Find button pinned in setup column may sit below the fold.
 4. Unverified: real thumbnails (sample data has none), live scan.
 5. Status: NOT FINISHED, uncommitted (user asked to hold the commit).
+
+## Duplicates results: group hierarchy (2026-11-08) - NOT FINISHED
+1. Automated: `run.bat /nolaunch` exit 0, ctest 12/12. `tst_duplicates` now also asserts no per-image "EXACT DUPLICATE ·" label. Detection logic/engine untouched.
+2. Manual: none by the user. Claude inspected `grab_screens <dir> dup` renders at 1180x800: one group of 2, two groups (3 and 2 images), similar tab, empty state.
+3. Change: the group list + member pane splitter was replaced by one scrolling column: red/ember group header ("GROUP n — N IDENTICAL FILES"/"... VISUALLY SIMILAR IMAGES"), then numbered, indented image entries (thumbnail, name, path, dimensions/size/format, Open/Folder/Compare) with a thin separator, no per-image duplicate message. Similar images still show their own score. Caps: 100 groups, 100 images per group (remainder reported as a count).
+4. Unverified: real thumbnails and a live scan (sample data has none); behaviour with hundreds of groups; 960x640.
+5. Status: NOT FINISHED, uncommitted.
+
+## `.resora` Phase 1: File Format Foundation (2026-11-08) - NOT FINISHED
+1. Automated: build of all targets succeeded; `ctest --test-dir build` 13/13 passed, including new `tst_resorafile` (round-trip, determinism, atomic write, bad magic, truncation, version, checksums, flipped bytes, bad offsets/overflow/overlap, duplicate/invalid ids, oversized counts, unsupported compression). `run.bat /nolaunch` itself was not run.
+2. Manual: none by the user. No GUI involved.
+3. Change: C++/Qt Core library `resora_format` (container reader/writer, validation); spec in docs/RESORA_FORMAT.md; decision recorded in implement.md and AgentsMemory/DECISIONS.md. No dashboard/UI/export code.
+4. Limitations: temp file is not re-read through the Reader before the atomic rename (QSaveFile hides it); on-disk errors after write are caught on open by the whole-file hash; compression not implemented (code reserved).
+5. Status: NOT FINISHED, uncommitted.
+
+### Review round 1 (2026-11-08)
+- Whole-file SHA-256 clarified (no code change needed, already non-circular): hash over `[0, N-40)`, excludes the hash field and end magic; documented in docs/RESORA_FORMAT.md; new tests `wholeFileHashDefinition`, `modifiedWholeFileHashField`, `writerOutputIsExactlyAccounted`.
+- Writer: pre-commit checks (layout lengths, flush, exact `size()`/`pos()`) cancel the save on mismatch.
+- Formal JSON Schema 2020-12 files added in `docs/schemas/resora/` (6 schemas; documentation only, `x-phase` marks later-phase fields).
+- Automated: `run.bat /nolaunch` built OK and ran ctest 13/13 passed (incl. `tst_resorafile`, 4.6 s); engine self-check and Python tests DONE. Manual: none. Incident: `run.bat /nolaunch /nocommit` auto-committed (only one switch is read); the two local commits were undone with `git reset --mixed`, nothing pushed.
+- Status: Phase 1 remains IN PROGRESS / NOT FINISHED pending user approval.
+
+## `.resora` Phase 2: Bundled Export (2026-11-08)
+1. Automated: `ctest -R "resorafile|bundledexport|duplicates|analytics"` 4/4 passed; `tst_bundledexport` 11 tests (multi-chart, multi-image, duplicate names, 24 MiB streamed image, empty/optional resources, checksums, originals unchanged, missing source, unreadable source, cancel at each stage, failed export keeps existing target, destination-is-source, reopen with Reader and resource set check). `run.bat` was not used (auto-commit).
+2. Manual: none by the user. No GUI involved.
+3. Change: `gui/{include,src}/resora/bundledexport.*` (exporter in `resora_format`), additive `Writer::write` progress/cancel callback + `Error::Cancelled`, `tst_bundledexport`, docs/RESORA_FORMAT.md section. No UI, no Linked export, no import.
+4. Limitations: no compression; images read twice; changes detected not prevented; rename-based swap; no disk-space estimate.
+5. Status: NOT FINISHED (awaiting user verification), uncommitted.
+6. Final verification pass: full ctest 14/14 suites, 184 tests, 0 failed/skipped. `tst_bundledexport` 15 tests incl. source-changed-mid-export (hash + size), locked destination keeps previous file, cancel keeps existing destination at every stage, monotonic progress with 100% only after the swap (`Stage::Done`). Windows swap was rename-based at that point (superseded by item 7). QtTest output is invisible through pipes here (use `-o file,txt`). No manual verification.
+7. Crash-safe replacement (2026-11-08): `gui/{include,src}/resora/destinationfinalizer.*` replaces the two-rename swap. New destination: `MoveFileExW` without overwrite; existing: `ReplaceFileW` with a backup name (old data survives until the call succeeds, backup then removed); sharing/lock/access-denied retried 6x then `FinalizeFailed`, previous file kept; non-Windows `rename(2)`. Limitations: no directory-entry fsync (WRITE_THROUGH unsupported), a crash may leave a stray `*.tmp` but never a lost or partial destination, network shares may not be atomic. Automated: `tst_bundledexport` 21 passed (6 new finalizer tests), full ctest 14/14, 190 passed / 0 failed / 0 skipped. No manual verification. Status stays NOT FINISHED (awaiting review).
+8. ReplaceFileW failure review (2026-11-08): corrected an over-claim (1177 leaves the replaced file under the backup name; temp was deleted unconditionally). Finalizer now observes file state, restores via non-overwriting move, otherwise reports `NeedsAttention` with `keepTemp` and deletes nothing. Documented guarantees vs assumptions: docs/RESORA_FORMAT.md. Automated: `tst_bundledexport` 27 passed (simulated 1175/1176/1177 via test seam), full ctest 14/14, 196 passed / 0 failed / 0 skipped. Real 1175-1177 not reproducible; no manual verification. Status stays NOT FINISHED.
+
+## `.resora` Phase 3: Linked Data Export (2026-11-08)
+1. Automated: `tst_linkedexport` 12/12 passed (incl. final-rehash tests added after review); full ctest 15/15 suites passed (`tst_bundledexport`, `tst_resorafile` unchanged and green after the shared-helper refactor). Covers original bytes absent, references/thumbnails, duplicate names, missing/unreadable/modified sources, absolute/relative/document-relative paths, 1500 images, cancel, existing destination kept, equal common resources vs Bundled, reader round-trip.
+2. Manual: none by the user. `run.bat` not run.
+3. Change: `gui/{include,src}/resora/{linkedexport,exportcommon}.*`, `tst_linkedexport`, docs/RESORA_FORMAT.md, `image-references.schema.json`.
+4. Review fix: before finalizing, every source is re-read and rehashed and its size + SHA-256 compared with validation-time values (`Changed` -> abort, destination preserved, cancellable, monotonic progress). Limitations: a change in the instant between the final rehash and the swap is undetectable; doubled read I/O; dimensions come from caller metadata; no disk-space estimate; no import/relink/UI.
+5. Status: NOT FINISHED (awaiting user verification), uncommitted.
+

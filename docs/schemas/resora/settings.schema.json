@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resora.local/schemas/resora/1/settings.schema.json",
+  "title": "RESORA settings (resource id: config)",
+  "description": "Schema v1. DOCUMENTATION ONLY. Records the analysis options used for the export; the option set is finalised in Phase 2 (x-phase).",
+  "type": "object",
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "recursive": {"type": ["boolean", "null"], "x-phase": 2},
+    "report_options": {"type": ["object", "null"], "x-phase": 2},
+    "scan_filters": {"type": ["object", "null"], "x-phase": 2}
+  },
+  "additionalProperties": true
+}

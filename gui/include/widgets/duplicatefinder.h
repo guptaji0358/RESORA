@@ -45,10 +45,9 @@ public:
 
     // Show a parsed result (also what a successful run does).
     void showResult(const DupResult &result);
-    int groupCount() const;             // groups in the current list
+    int groupCount() const;             // group headers currently shown
     void showKind(bool exact);          // switch the list between exact and similar
-    void selectGroup(int row);
-    int memberRowCount() const;         // rows currently shown for the selected group
+    int memberRowCount() const;         // image entries currently shown (all groups)
     const DupResult &result() const { return result_; }
 
 signals:
@@ -64,12 +63,12 @@ private:
     void onSucceeded(const QJsonValue &data);
     void finish(const QString &text, bool error);
     void fillGroups();
-    void fillMembers(int row);
+    QWidget *groupHeader(const DupGroup &group, int number);
     QWidget *memberRow(const DupGroup &group, int index);
 
     QStringList collection_;
     QString startFolder_, cachePath_;
-    QListWidget *folders_ = nullptr, *excludes_ = nullptr, *groups_ = nullptr;
+    QListWidget *folders_ = nullptr, *excludes_ = nullptr;
     ToggleSwitch *recursive_ = nullptr, *similar_ = nullptr, *useCollection_ = nullptr;
     QSpinBox *threshold_ = nullptr;
     ChamferButton *start_ = nullptr, *cancel_ = nullptr, *exactTab_ = nullptr, *similarTab_ = nullptr;

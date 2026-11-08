@@ -17,3 +17,8 @@
 
 Roadmap (docs/ROADMAP.md): all four features implemented, 2–4 awaiting review. Next milestone: none approved [U: don't start before approval].
 | Redesign: Duplicates page structure (2026-11-07) | NOT FINISHED | ctest 12/12; renders inspected at 1180x800 and 960x640 | Uncommitted; awaiting user review |
+| Redesign: Duplicates results as group hierarchy (2026-11-08) | NOT FINISHED | ctest 12/12; renders inspected (1 group, many groups, similar, empty) | Uncommitted; awaiting user review |
+| `.resora` Phase 1: file format foundation (2026-11-08) | NOT FINISHED | ctest 13/13 (incl. tst_resorafile) | Uncommitted; awaiting user review; implement.md tracker 0/7 |
+| `.resora` Phase 1 (update 2026-11-08) | COMPLETED (user approved) | — | superseded row above |
+| `.resora` Phase 2: bundled export (2026-11-08) | COMPLETED (user-approved) | tst_bundledexport 27/27 (incl. ReplaceFileW 1175/1176/1177 handling via test seam), full ctest 14/14 (196 tests) | Uncommitted; awaiting user verification |
+| `.resora` Phase 3: linked export (2026-11-08) | IN PROGRESS / NOT FINISHED | tst_linkedexport 12/12 (final source rehash), full ctest 15/15 | Uncommitted; awaiting user verification |

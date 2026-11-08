@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resora.local/schemas/resora/1/charts.schema.json",
+  "title": "RESORA charts (resource id: charts)",
+  "description": "Schema v1. DOCUMENTATION ONLY. Chart kinds and series semantics are finalised in Phase 5 (x-phase).",
+  "type": "object",
+  "required": ["schema_version", "charts"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "charts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "series"],
+        "properties": {
+          "id": {"type": "string"},
+          "kind": {"type": "string", "x-phase": 5, "description": "e.g. bar, donut; closed set decided in Phase 5"},
+          "title": {"type": ["string", "null"]},
+          "categories": {"type": ["array", "null"], "items": {"type": "string"}},
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["label", "values"],
+              "properties": {"label": {"type": "string"}, "values": {"type": "array", "items": {"type": ["number", "null"]}}}
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

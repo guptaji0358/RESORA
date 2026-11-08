@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resora.local/schemas/resora/1/metadata.schema.json",
+  "title": "RESORA image metadata (embedded in images-index records)",
+  "description": "Schema v1. DOCUMENTATION ONLY. Mirrors the scan command's per-image fields (docs/IMAGE_ANALYSIS.md). Unknown or unreadable values are null, never 0.",
+  "type": "object",
+  "required": ["format", "width", "height", "file_size", "status"],
+  "properties": {
+    "format": {"type": ["string", "null"]},
+    "width": {"type": ["integer", "null"], "minimum": 1},
+    "height": {"type": ["integer", "null"], "minimum": 1},
+    "file_size": {"type": ["integer", "null"], "minimum": 0},
+    "status": {"type": "string", "description": "Value set owned by the scan command", "x-phase": 2},
+    "category": {"type": ["string", "null"], "description": "SD ... 8K+ classification"},
+    "frames": {"type": ["integer", "null"], "minimum": 1}
+  },
+  "additionalProperties": true
+}

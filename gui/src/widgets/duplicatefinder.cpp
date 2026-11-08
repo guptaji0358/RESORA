@@ -201,30 +201,19 @@ void DuplicateFinder::buildUi()
     rv->addLayout(tabs);
     rv->addWidget(kindNote_);
 
-    groups_ = new QListWidget;
-    groups_->setMinimumWidth(140);
-    groups_->setTextElideMode(Qt::ElideRight);  // long names elide instead of forcing a horizontal scrollbar
-    groups_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    connect(groups_, &QListWidget::currentRowChanged, this, &DuplicateFinder::fillMembers);
+    // One scrolling column: every group is a header followed by its numbered, indented images.
     membersHost_ = new QWidget;
     membersLayout_ = new QVBoxLayout(membersHost_);
     membersLayout_->setContentsMargins(0, 0, 8, 0);
-    membersLayout_->setSpacing(8);
+    membersLayout_->setSpacing(6);
     auto *scroll = new QScrollArea;
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setMinimumWidth(320);  // a member row (thumbnail + text + buttons) never gets clipped: the page scrolls instead
+    scroll->setMinimumWidth(360);  // an image entry (thumbnail + text + buttons) never gets clipped
+    scroll->setMinimumHeight(220);
     scroll->setWidget(membersHost_);
-    auto *split = new QSplitter;
-    split->addWidget(groups_);
-    split->addWidget(scroll);
-    split->setStretchFactor(0, 0);  // group list keeps its width on resize; member rows take the slack
-    split->setStretchFactor(1, 1);
-    split->setSizes({150, 600});
-    split->setChildrenCollapsible(false);
-    split->setMinimumHeight(220);
-    rv->addWidget(split, 1);
+    rv->addWidget(scroll, 1);
     resultsBox_->hide();
 
     auto *outer = new QWidget;

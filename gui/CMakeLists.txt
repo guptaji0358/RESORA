@@ -11,6 +11,17 @@ set(RESORA_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/../Assets)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg Test)
 
+# .resora container library: Qt Core only, no widgets / dashboard code (docs/RESORA_FORMAT.md).
+add_library(resora_format STATIC
+    include/resora/resorafmt.h include/resora/resorareader.h include/resora/resorawriter.h
+    include/resora/bundledexport.h include/resora/destinationfinalizer.h
+    include/resora/exportcommon.h include/resora/linkedexport.h
+    src/resora/resorafmt.cpp src/resora/resorareader.cpp src/resora/resorawriter.cpp
+    src/resora/bundledexport.cpp src/resora/destinationfinalizer.cpp
+    src/resora/exportcommon.cpp src/resora/linkedexport.cpp)
+target_include_directories(resora_format PUBLIC include)
+target_link_libraries(resora_format PUBLIC Qt6::Core)
+
 # Headers live in include/ (apart from their .cpp in src/); listing them as sources lets AUTOMOC
 # find Q_OBJECT classes. Re-globbed on every build so new headers are picked up.
 file(GLOB_RECURSE RESORA_HEADERS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)

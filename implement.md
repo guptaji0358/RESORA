@@ -15,6 +15,20 @@ Labels used throughout: **[CONFIRMED]** = verified in the repository on 2026-11-
 
 ---
 
+## Phase tracker (permanent; update after every phase)
+
+Statuses: NOT STARTED, IN PROGRESS, COMPLETED, BLOCKED. A phase is COMPLETED only when its completion criteria and required tests have passed.
+
+| Total phases | Completed | In progress | Not started | Blocked | Overall completion |
+|---|---|---|---|---|---|
+| 7 | 2 | 1 | 4 | 0 | 28.57% (2/7 completed) |
+
+Phase 1 status: COMPLETED. Formally approved by the user (2026-11-08); evidence in section 14.
+Phase 2 status: COMPLETED (approved by the user 2026-11-08).
+Phase 3 status: IN PROGRESS (started 2026-11-08); implemented and automated tests pass, awaiting user approval.
+
+---
+
 ## 1. Project objective
 
 Let the user export an Analytics dashboard (the result of an analysis, with its layout, charts, configuration, metadata and thumbnails) to a single `.resora` file, and later reopen it in RESORA to reconstruct the same dashboard. Two export modes: **Bundled** (self-contained, includes original images) and **Linked Data** (small, keeps references to the original images). Opening must be safe (no path traversal, integrity-checked) and honest (never silently accept missing, replaced or modified images).
@@ -115,7 +129,7 @@ Each phase lists: Objective, Scope, Expected files/modules, Dependencies, Implem
 ### Phase 1: File Format Foundation
 - **Objective:** a standalone, UI-independent library that reads and writes the `.resora` container.
 - **Scope:** header/directory/trailer layout, versioning, checksums, bounds-checked reader, atomic writer, resource id validation. No dashboard knowledge; resources are opaque bytes.
-- **Expected files:** a new self-contained module, e.g. `gui/include/resora/*.h` + `gui/src/resora/*.cpp` (Qt Core only, no widgets), added to `gui/CMakeLists.txt`. No changes to existing widgets.
+- **Expected files:** a new self-contained module, e.g. `gui/include/resora/*.h` + `gui/src/resora/*.cpp` (Qt Core only, no widgets), added to `gui/CMakeLists.txt` [IMPLEMENTED: `resora_format` library, `resorafmt`/`resorareader`/`resorawriter`]. No changes to existing widgets.
 - **Dependencies:** none.
 - **Requirements:** sections 5 and 9 fully; streaming I/O; typed error codes with messages; deterministic output for identical input (aside from timestamps).
 - **Testing:** new `tst_resorafile` via `imgan_add_test`: round-trip, truncated file, flipped bytes, bad magic, future major version, oversized counts, out-of-range offsets, duplicate/invalid ids, atomic write leaves no partial file on failure.
@@ -191,17 +205,17 @@ A phase is complete only when: (1) its scope is implemented and nothing from lat
 
 - Decided by the user: everything marked [DECISION] above.
 - Repo constraints (**[CONFIRMED]**): C++17 / Qt 6 Widgets, CMake + Ninja, Qt MinGW; no image-analysis logic in C++; the engine is pure Python with no Qt and talks via NDJSON/QProcess; Qt modules are added explicitly in `gui/CMakeLists.txt` (currently Widgets, Svg, Test); AUTOMOC needs headers under `include/`; modules should stay small.
-- **Open decision for Phase 1 (not yet decided; needs user confirmation):** container in C++ (Qt Core: `QFile`, `QSaveFile`, `QCryptographicHash`) versus the Python engine. Recommendation: C++/Qt Core, because dashboard state, thumbnails and `QSaveFile` atomicity already live GUI-side and no IPC is needed. Hashing bytes is not image analysis.
-- Compression: choose in Phase 1 (explicit zlib stream, or uncompressed JSON; avoid `qCompress`'s Qt-specific framing for a long-lived format).
-- Not decided: file association/icon, recent-files list, relative paths in Linked mode.
+- **[DECISION 2026-11-08, user] Container is C++ with Qt Core** (resolves the earlier open C++ vs Python question). Reasoning: dashboard state, thumbnails and `QSaveFile` atomicity already live GUI-side, so no QProcess/NDJSON round trip is needed to save or open a dashboard; `QFile`/`QSaveFile`/`QCryptographicHash` cover streaming, atomic replace and SHA-256 without new dependencies; hashing bytes is not image analysis, so it does not violate "no image logic in C++"; it is built as a separate Qt-Core-only library (`resora_format`) so it stays independent of dashboard UI code and testable without widgets. The Python engine stays free of dashboard persistence.
+- **[DECISION 2026-11-08] Compression:** Phase 1 stores everything uncompressed; compression code 1 is reserved for an explicit zlib stream in a later phase (never `qCompress` framing). Binary layout and rules: [docs/RESORA_FORMAT.md](docs/RESORA_FORMAT.md).
+- Not decided: file association/icon, recent-files list. Relative paths in Linked mode: decided in Phase 3 (docs/RESORA_FORMAT.md, "Path-resolution policy").
 
 ## 14. Current implementation status
 
 | Phase | Status |
 |---|---|
-| Phase 1: File Format Foundation | NOT STARTED |
-| Phase 2: Bundled Export | NOT STARTED |
-| Phase 3: Linked Data Export | NOT STARTED |
+| Phase 1: File Format Foundation | COMPLETED (formally approved by the user 2026-11-08) |
+| Phase 2: Bundled Export | COMPLETED (approved by the user 2026-11-08) |
+| Phase 3: Linked Data Export | IN PROGRESS |
 | Phase 4: Import and Opening Engine | NOT STARTED |
 | Phase 5: Dashboard Integration | NOT STARTED |
 | Phase 6: Export/Import UI | NOT STARTED |
@@ -214,3 +228,24 @@ A phase is complete only when: (1) its scope is implemented and nothing from lat
 - `LocationStore` uses `QSaveFile`, versioned JSON and read-only mode for newer versions (precedent); `scripts/engine/reports/atomic.py` is the engine-side atomic-write precedent.
 - `scripts/engine/duplicates/` uses hashing and a SQLite cache in the engine; no GUI-side hashing exists.
 - No `.resora` code, no `QCryptographicHash` use in the GUI, and no dashboard export/import exists. The feature is entirely [PROPOSED].
+
+### Phase 1 evidence (2026-11-08)
+- Implemented: `gui/include/resora/{resorafmt,resorareader,resorawriter}.h`, `gui/src/resora/*.cpp`, `resora_format` target (Qt Core only), `gui/tests/tst_resorafile.cpp`; spec in docs/RESORA_FORMAT.md.
+- Automated: `ctest -R tst_resorafile` passed (see docs/MILESTONE.md for the exact record). Covers round-trip (incl. 3 MiB streamed file, empty and unknown-type resources), determinism, atomic write, bad magic, truncation, version, header/dir/file/resource checksums, flipped bytes, bad offsets/sizes/overflow/overlap, duplicate/invalid ids, oversized counts, unsupported compression.
+- Review round 1 (2026-11-08): whole-file hash defined precisely (SHA-256 over bytes `[0, N-40)`, excluding the hash field and end magic; non-circular) in docs/RESORA_FORMAT.md with new tests; writer validates layout, flush and exact output size before `commit()`; formal versioned JSON Schemas (dashboard/manifest+layout, charts, settings, analytics, metadata, image-references) added under `docs/schemas/resora/` (documentation only; `x-phase` fields depend on later phases). Section 6 table is the resource overview; the schema files are authoritative for fields.
+- Automated: `run.bat /nolaunch` OK, ctest 13/13 passed (incl. `tst_resorafile`). Not done: no manual verification by the user; user approval pending, so Phase 1 stays IN PROGRESS.
+
+### Phase 2 evidence (2026-11-08)
+- Implemented: `gui/include/resora/bundledexport.h`, `gui/src/resora/bundledexport.cpp` (in `resora_format`), additive `Writer::write` progress/cancel callback and `Error::Cancelled`, `gui/tests/tst_bundledexport.cpp`; API and resource mapping in docs/RESORA_FORMAT.md ("Bundled Export").
+- Automated: `ctest -R "resorafile|bundledexport|duplicates|analytics"` 4/4 passed; `tst_bundledexport` 11/11. Not run: full ctest / `run.bat` (auto-commit risk). Manual: none. Status stays IN PROGRESS until the user approves.
+- Final verification pass (2026-11-08, after review): **full ctest 14/14 suites passed, 0 failed, 0 skipped; 184 test functions passed** (per-suite QtTest totals). `tst_bundledexport` now 15/15. New tests: source changed mid-export (same-size content change with mtime restored, and size change) -> SourceProblem/Changed, previous destination intact; destination held open (Windows) -> FinalizeFailed, previous kept, no leftovers; cancel at Validating/Writing/Verifying keeps an existing destination; progress monotonic, 100% only at `Stage::Done` after the swap. Additive change: `ExportProgress::permille` + `Stage::Done`.
+- Windows replacement (superseded 2026-11-08, crash-safety fix): the earlier two-rename swap is gone. Now isolated in `gui/{include,src}/resora/destinationfinalizer.*` (`finalizeDestination`): flush temp, then `MoveFileExW(tmp, dst, 0)` for a new destination (no overwrite flag, same volume); if it reports the destination exists, `ReplaceFileW(dst, tmp, backup, IGNORE_MERGE_ERRORS)` which swaps in one OS call and keeps the old content under a `.tmp` backup until success, then the backup is removed (best effort). Sharing/lock/access-denied errors retried 6x (50-250 ms backoff), then `FinalizeFailed` with the previous file intact; temp removed by the caller. Non-Windows: `rename(2)`. Limits: not durable-fsync of the directory entry (`REPLACEFILE_WRITE_THROUGH` unsupported by Windows); a crash can leave a stray `*.tmp`, never a missing/partial destination; ReplaceFileW is not atomic on every filesystem (network shares). Source-change detection: Writer hashes the bytes it streams, verify compares size+SHA-256 to the validation pass, plus an mtime/size recheck.
+- Test-runner note: QtTest prints nothing to a piped stdout in this MinGW/Git-Bash setup, so `... | grep Totals` yields empty output and exit 1 (grep's status; the test exe itself exits 0). Use `-o file,txt` for counts or `ctest`. Cause identified from observation, not from the earlier run itself.
+- Replacement fix verification (2026-11-08): `tst_bundledexport` 21 passed (6 new finalizer tests: new destination, replace without leftovers, locked destination keeps previous + temp, transient lock released mid-retry succeeds, read-only destination keeps previous, missing temp / folder destination); full ctest 14/14 suites passed, QtTest totals 190 passed / 0 failed / 0 skipped. No manual verification; `run.bat` not run; nothing committed.
+- ReplaceFileW failure-handling review (2026-11-08, user-requested): Microsoft's page shows my earlier claim "every failure keeps the original name" was WRONG for 1177 (replaced file lives under the backup name, destination path can be missing) and the caller still deleted the temp file. Fixed: `finalizeWith` observes {target, backup, tmp} after a failed `ReplaceFileW`; clean state -> clean failure; 1177 shape -> non-overwriting restore of the backup; anything uncertain -> `FinalizeStatus::NeedsAttention` + `keepTemp` (nothing deleted/moved, no retry, message lists paths); `exportBundled` skips temp cleanup when `keepTemp`. Documented-vs-assumed split: docs/RESORA_FORMAT.md ("Destination finalization"). New tests via the `detail::FinalizeOps` seam: 1175, 1176, 1177 restorable, 1177 restore failed (both preserved, one call only), unexpected states a/b/c, success removes only the backup, transient error retried. `tst_bundledexport` 27 passed; full ctest 14/14, QtTest totals 196 passed / 0 failed / 0 skipped. Real 1175-1177 cannot be provoked from user mode (simulated). No manual verification; `run.bat` not run; nothing committed.
+- Approved by the user 2026-11-08 (COMPLETED).
+
+### Phase 3 evidence (2026-11-08)
+- Implemented: `gui/{include,src}/resora/linkedexport.*` (`exportLinked`), `exportcommon.*` (shared hashing + common JSON resources; Bundled refactored to use it, behaviour unchanged), `gui/tests/tst_linkedexport.cpp`; spec in docs/RESORA_FORMAT.md ("Linked Data Export"), `image-references.schema.json` linked record finalised.
+- Automated: `tst_linkedexport` 10/10 passed; full ctest 15/15 suites passed (incl. `tst_bundledexport`, `tst_resorafile`). Covers multi-image export, original bytes absent, references + thumbnails, duplicate names, missing/unreadable/modified sources, absolute/relative/document-relative paths, 1500-image collection, cancel at 3 stages, existing destination preserved, common resources equal to Bundled, reader round-trip/integrity. Not run: `run.bat`. Manual: none. Not committed. Stays IN PROGRESS until the user approves.
+- Phase 3 review fix (2026-11-08, user-requested): final source-identity verification. Before finalizing, `exportLinked` re-reads and rehashes every source and compares size + SHA-256 with the validation-time values (mismatch/unreadable -> `Changed` issue, `SourceProblem`, destination preserved, temp removed); cancellable per chunk; progress by bytes in the Verifying window (monotonic, 1000 only after finalization). Bundled unchanged. New tests: same-size edit + restored mtime after the initial hash is detected with the previous destination intact; cancel during the rehash. `tst_linkedexport` 12/12, full ctest 15/15. No `run.bat`, no manual verification, nothing committed. Phase 3 stays IN PROGRESS; Phase 4 not started.
