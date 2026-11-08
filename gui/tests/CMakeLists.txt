@@ -32,6 +32,10 @@ qt_add_executable(tst_linkedexport tst_linkedexport.cpp)
 target_link_libraries(tst_linkedexport PRIVATE resora_format Qt6::Test)
 add_test(NAME tst_linkedexport COMMAND tst_linkedexport)
 
+qt_add_executable(tst_resoraimport tst_resoraimport.cpp)
+target_link_libraries(tst_resoraimport PRIVATE resora_format Qt6::Test)
+add_test(NAME tst_resoraimport COMMAND tst_resoraimport)
+
 # Developer tool: renders windows/dialogs to PNG on the real platform plugin (not run by ctest).
 qt_add_executable(grab_screens grab_screens.cpp)
 target_link_libraries(grab_screens PRIVATE imgan_core)

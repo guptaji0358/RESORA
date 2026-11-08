@@ -20,3 +20,5 @@
 
 ## Confirmed defects now
 None confirmed (per docs). Insights redesign unassessed [?].
+
+- `.resora` import (Phase 4): no stale cache sweep (crash leaves `doc-*` folders). (Large single-image extraction cancel is now per 1 MiB chunk; fixed.)

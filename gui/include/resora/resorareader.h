@@ -3,6 +3,7 @@
 // directory checksums, trailer, whole-file SHA-256, every offset/size, ids, duplicates, overlaps)
 // before any payload is touched. Payload reads re-verify the per-resource SHA-256.
 #include <QFile>
+#include <functional>
 #include <QList>
 #include <QString>
 
@@ -37,14 +38,17 @@ public:
     // Whole resource into memory; refuses (before allocating) anything larger than maxBytes.
     Result readResource(const QString &id, QByteArray *out, quint64 maxBytes = kDefaultMaxInMemory);
     // Streams a resource to `out` in chunks. On ChecksumMismatch the caller must discard what it wrote.
-    Result copyResource(const QString &id, QIODevice *out);
+    // `onChunk(bytesWrittenSoFar)` runs after every chunk; returning false stops immediately with
+    // Error::Cancelled (the caller discards what it wrote).
+    Result copyResource(const QString &id, QIODevice *out, const std::function<bool(quint64)> &onChunk = {});
 
 private:
     Result parseHeader(quint64 size);
     Result parseTrailer(quint64 size, quint64 *dirOffset, quint64 *dirLength, quint32 *count);
     Result parseDirectory(quint64 dirOffset, quint64 dirLength, quint32 count);
     Result verifyFileHash(quint64 hashedLength, const QByteArray &expected);
-    Result streamResource(const ResourceInfo &e, QIODevice *out, QByteArray *mem);
+    Result streamResource(const ResourceInfo &e, QIODevice *out, QByteArray *mem,
+                          const std::function<bool(quint64)> &onChunk = {});
 
     QFile file_;
     quint16 major_ = 0, minor_ = 0;

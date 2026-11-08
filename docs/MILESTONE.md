@@ -299,3 +299,10 @@ Scope: <one or two lines>
 4. Review fix: before finalizing, every source is re-read and rehashed and its size + SHA-256 compared with validation-time values (`Changed` -> abort, destination preserved, cancellable, monotonic progress). Limitations: a change in the instant between the final rehash and the swap is undetectable; doubled read I/O; dimensions come from caller metadata; no disk-space estimate; no import/relink/UI.
 5. Status: NOT FINISHED (awaiting user verification), uncommitted.
 
+
+## `.resora` Phase 4: Import and Opening Engine (2026-11-08)
+1. Automated: `tst_resoraimport` passed via CTest, 0 failed (one new test function added, incl. mid-image chunk-level cancel with .part/cache cleanup: bundled extract + integrity, linked absolute / folder-relative / document-relative, no-base relative not assumed, missing + unreadable + mismatch reported together, same-size edit with restored mtime, relink wrong/right/partial + full revalidation, unsafe relative paths, hostile index (traversal ids, duplicates, wrong hash/size, count/mode mismatch), missing resources, truncated/flipped/junk/empty input, cancellation + cleanup + user files preserved, progress monotonic). Full ctest 16/16 suites passed (built with ninja/ctest directly).
+2. Manual: none by the user. `run.bat` not run.
+3. Change: `gui/{include,src}/resora/{resoraimport.h,importinternal.h,importparse.cpp,linkresolve.cpp,bundledextract.cpp,importdocument.cpp}`, `gui/tests/tst_resoraimport.cpp`, CMake entries, docs/RESORA_FORMAT.md. Phases 1-3 source unchanged.
+4. Limitations: no stale-cache sweep; every linked open rehashes all files.
+5. Status: NOT FINISHED (awaiting user verification), uncommitted.

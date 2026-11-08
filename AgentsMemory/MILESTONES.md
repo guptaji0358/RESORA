@@ -22,3 +22,4 @@ Roadmap (docs/ROADMAP.md): all four features implemented, 2–4 awaiting review.
 | `.resora` Phase 1 (update 2026-11-08) | COMPLETED (user approved) | — | superseded row above |
 | `.resora` Phase 2: bundled export (2026-11-08) | COMPLETED (user-approved) | tst_bundledexport 27/27 (incl. ReplaceFileW 1175/1176/1177 handling via test seam), full ctest 14/14 (196 tests) | Uncommitted; awaiting user verification |
 | `.resora` Phase 3: linked export (2026-11-08) | IN PROGRESS / NOT FINISHED | tst_linkedexport 12/12 (final source rehash), full ctest 15/15 | Uncommitted; awaiting user verification |
+| `.resora` Phase 4: import/opening engine (2026-11-08) | NOT FINISHED | tst_resoraimport 16 passed; ctest 16/16 | Uncommitted; awaiting user review |

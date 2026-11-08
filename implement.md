@@ -26,6 +26,7 @@ Statuses: NOT STARTED, IN PROGRESS, COMPLETED, BLOCKED. A phase is COMPLETED onl
 Phase 1 status: COMPLETED. Formally approved by the user (2026-11-08); evidence in section 14.
 Phase 2 status: COMPLETED (approved by the user 2026-11-08).
 Phase 3 status: IN PROGRESS (started 2026-11-08); implemented and automated tests pass, awaiting user approval.
+Phase 4 status: IN PROGRESS (2026-11-08); implemented, automated tests pass, awaiting user review (not COMPLETED until approved).
 
 ---
 
@@ -216,7 +217,7 @@ A phase is complete only when: (1) its scope is implemented and nothing from lat
 | Phase 1: File Format Foundation | COMPLETED (formally approved by the user 2026-11-08) |
 | Phase 2: Bundled Export | COMPLETED (approved by the user 2026-11-08) |
 | Phase 3: Linked Data Export | IN PROGRESS |
-| Phase 4: Import and Opening Engine | NOT STARTED |
+| Phase 4: Import and Opening Engine | IN PROGRESS (implemented, automated tests pass, awaiting user review) |
 | Phase 5: Dashboard Integration | NOT STARTED |
 | Phase 6: Export/Import UI | NOT STARTED |
 | Phase 7: Compatibility and Reliability | NOT STARTED |
@@ -249,3 +250,8 @@ A phase is complete only when: (1) its scope is implemented and nothing from lat
 - Implemented: `gui/{include,src}/resora/linkedexport.*` (`exportLinked`), `exportcommon.*` (shared hashing + common JSON resources; Bundled refactored to use it, behaviour unchanged), `gui/tests/tst_linkedexport.cpp`; spec in docs/RESORA_FORMAT.md ("Linked Data Export"), `image-references.schema.json` linked record finalised.
 - Automated: `tst_linkedexport` 10/10 passed; full ctest 15/15 suites passed (incl. `tst_bundledexport`, `tst_resorafile`). Covers multi-image export, original bytes absent, references + thumbnails, duplicate names, missing/unreadable/modified sources, absolute/relative/document-relative paths, 1500-image collection, cancel at 3 stages, existing destination preserved, common resources equal to Bundled, reader round-trip/integrity. Not run: `run.bat`. Manual: none. Not committed. Stays IN PROGRESS until the user approves.
 - Phase 3 review fix (2026-11-08, user-requested): final source-identity verification. Before finalizing, `exportLinked` re-reads and rehashes every source and compares size + SHA-256 with the validation-time values (mismatch/unreadable -> `Changed` issue, `SourceProblem`, destination preserved, temp removed); cancellable per chunk; progress by bytes in the Verifying window (monotonic, 1000 only after finalization). Bundled unchanged. New tests: same-size edit + restored mtime after the initial hash is detected with the previous destination intact; cancel during the rehash. `tst_linkedexport` 12/12, full ctest 15/15. No `run.bat`, no manual verification, nothing committed. Phase 3 stays IN PROGRESS; Phase 4 not started.
+
+### Phase 4 evidence (2026-11-08)
+- Implemented: `gui/{include,src}/resora/{resoraimport.h,importinternal.h,importparse.cpp,linkresolve.cpp,bundledextract.cpp,importdocument.cpp}` (in `resora_format`, Qt Core only), `gui/tests/tst_resoraimport.cpp`; spec in docs/RESORA_FORMAT.md ("Import and Opening (Phase 4)"). Phases 1-3 code unchanged.
+- Automated: `tst_resoraimport` 16 passed / 0 failed (14 test functions); full `ctest` 16/16 suites passed. Built directly with ninja/ctest; `run.bat` not run. Manual/GUI: none. Nothing committed.
+- Limits: no stale-cache sweep (Phase 7); single-image copy cancellable only between images; linked open rehashes every file each time.

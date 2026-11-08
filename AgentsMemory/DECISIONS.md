@@ -49,3 +49,6 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 ## 2026-11-08 Linked export path policy [V]
 - Linked references: absolute path first, then `relative_path` against an explicit base (`folder` image root or `document` folder, only when chosen); never assume the .resora folder is the image folder; relative path only when inside the base (no `..`); identity (size + SHA-256) always decides; duplicate file names flagged, never used as ids. Header flags stay 0 (mode lives in the manifest). Details: docs/RESORA_FORMAT.md.
 
+
+## 2026-11-08 `.resora` Phase 4 decisions [V]
+- Relink is the sole candidate for that image (no fallback), identity always required; every open revalidates all links. Bundled cache = `<cacheRoot>/doc-<uuid>` with `.resora-cache` marker; `closeDocument` deletes only marked folders. Opening blocked (no document returned) if any link fails. Stale-cache sweep deferred to Phase 7.

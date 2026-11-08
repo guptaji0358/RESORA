@@ -183,7 +183,8 @@ ResourceInfo Reader::info(const QString &id) const
     return {};
 }
 
-Result Reader::streamResource(const ResourceInfo &e, QIODevice *out, QByteArray *mem)
+Result Reader::streamResource(const ResourceInfo &e, QIODevice *out, QByteArray *mem,
+                              const std::function<bool(quint64)> &onChunk)
 {
     if (e.compression != CompressionNone)
         return Result::fail(Error::UnsupportedCompression, QStringLiteral("Resource '%1' uses unsupported compression %2").arg(e.id).arg(e.compression));
@@ -203,6 +204,8 @@ Result Reader::streamResource(const ResourceInfo &e, QIODevice *out, QByteArray 
         else if (out->write(buf.constData(), n) != n)
             return bad(Error::WriteFailed, "Cannot write resource to destination");
         left -= quint64(n);
+        if (onChunk && !onChunk(e.storedLength - left))
+            return Result::fail(Error::Cancelled, QStringLiteral("Resource copy cancelled"));
     }
     if (h.result() != e.sha256)
         return Result::fail(Error::ChecksumMismatch, QStringLiteral("Resource '%1' checksum mismatch").arg(e.id));
@@ -224,14 +227,14 @@ Result Reader::readResource(const QString &id, QByteArray *out, quint64 maxBytes
     return r;
 }
 
-Result Reader::copyResource(const QString &id, QIODevice *dest)
+Result Reader::copyResource(const QString &id, QIODevice *dest, const std::function<bool(quint64)> &onChunk)
 {
     const ResourceInfo e = info(id);
     if (e.id.isEmpty())
         return Result::fail(Error::ResourceNotFound, QStringLiteral("No such resource: '%1'").arg(id));
     if (!dest)
         return bad(Error::InvalidArgument, "No destination device");
-    return streamResource(e, dest, nullptr);
+    return streamResource(e, dest, nullptr, onChunk);
 }
 
 }  // namespace resora
