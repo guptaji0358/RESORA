@@ -74,6 +74,10 @@ add_library(imgan_core STATIC
     src/widgets/hbarchart.cpp
     src/widgets/segmentedswitch.cpp
     src/backend/dashboardmodel.cpp
+    src/backend/dashboardserialize.cpp src/backend/dashboardrestore.cpp src/backend/dashboardsession.cpp
+    src/backend/resoraworkflow.cpp src/backend/resorajobs.cpp
+    src/widgets/confirmdialog.cpp src/widgets/exportdialog.cpp src/widgets/relinkpanel.cpp
+    src/widgets/openresoradialog.cpp
     src/widgets/pixelspan.cpp
     src/widgets/sharechart.cpp
     src/widgets/appheader.cpp
@@ -102,7 +106,7 @@ add_library(imgan_core STATIC
     ${RESORA_ASSETS}/resora.qrc
 )
 target_include_directories(imgan_core PUBLIC include)
-target_link_libraries(imgan_core PUBLIC Qt6::Widgets Qt6::Svg)
+target_link_libraries(imgan_core PUBLIC Qt6::Widgets Qt6::Svg resora_format)
 
 # Executable keeps its file name (run.bat, tooling); the Windows resource carries the RESORA
 # icon and display name (ProductName / FileDescription).

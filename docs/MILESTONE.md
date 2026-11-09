@@ -306,3 +306,21 @@ Scope: <one or two lines>
 3. Change: `gui/{include,src}/resora/{resoraimport.h,importinternal.h,importparse.cpp,linkresolve.cpp,bundledextract.cpp,importdocument.cpp}`, `gui/tests/tst_resoraimport.cpp`, CMake entries, docs/RESORA_FORMAT.md. Phases 1-3 source unchanged.
 4. Limitations: no stale-cache sweep; every linked open rehashes all files.
 5. Status: NOT FINISHED (awaiting user verification), uncommitted.
+
+## `.resora` Phase 5: Dashboard Integration (2026-11-08)
+1. Automated: `tst_dashboardstate` 12 passed / 0 failed (state accessor, deterministic plan, Bundled and Linked round trips incl. panel re-display, invalid states, missing source, unsupported fields, tampered parts, session failure/cancel/blocked-links keep state, restore failure cleans cache); full ctest 17/17 passed. Built directly with cmake/ninja; `run.bat` not run.
+2. Manual: none; no GUI inspected.
+3. Change: `gui/{include,src}/backend/dashboard{state.h,serialize,restore,session}`, `AnalyticsPanel::result()`, CMake (imgan_core links resora_format), `tst_dashboardstate`, docs/RESORA_FORMAT.md. Phases 1-4 code unchanged.
+4. Limitations: charts must equal this build's derivation; no thumbnails; no UI wiring (Phase 6).
+5. Status: IN PROGRESS (awaiting user review), uncommitted.
+
+### Addenda 2026-11-08 (history above is unchanged)
+- Phase 3 status update: approved by the user (stated in the Phase 5 final-review request); implement.md now shows COMPLETED. The "NOT FINISHED" line in the Phase 3 section above was true when written.
+- Phase 5 final-review correction: runtime image associations. `AnalyticsPanel::showRestored` + `dashboard::runtimePaths`; `restore()` rejects unresolved/unreadable image files; persisted analytics JSON untouched. Tests added to `tst_dashboardstate` (bundled with deleted source directory, linked via relink, failed resolution). Automated: focused `tst_dashboardstate` 15 passed / 0 failed; full ctest 17/17, built directly with cmake/ninja. `run.bat` not run; no manual or GUI verification. Phase 5 remains IN PROGRESS pending approval; nothing committed.
+- Git note: unreachable commit f8d169b (an auto-commit that was later undone with `reset --mixed`) is not on `main`; no history was changed.
+
+## `.resora` Phase 6: Export/Import UI (2026-11-09)
+1. Automated: `tst_resoraui` 14 passed (modes, destination validation, overwrite confirm, duplicate-request refusal, export success/failure/cancel, close-while-running, bundled/linked import, all missing links listed, valid/invalid relink, blocked until assigned, failed import keeps previous session, cache lifetime); full ctest 18/18.
+2. Manual: none; GUI not visually inspected.
+3. Change: see implement.md "Phase 6 evidence". Limitation: dialogs untested on screen; Phase 7 hardening not started.
+4. Status: IN PROGRESS (awaiting user review), uncommitted.

@@ -6,6 +6,9 @@
 #include <QPointer>
 
 #include "backend/backendlocator.h"
+#include <memory>
+
+#include "backend/dashboardstate.h"
 #include "backend/scanrequest.h"
 #include "ui/toolrequest.h"
 
@@ -66,6 +69,8 @@ private:
     void openProperties(); // Ctrl+I
     void openComparison(); // Ctrl+Shift+C
     void openDuplicates(); // Ctrl+Shift+D
+    void exportDashboard();    // Ctrl+Shift+E
+    void openDashboardFile();  // Ctrl+Shift+O
     void openInAnalytics();  // Readout hand-off: reuse the scan's analytics
     void syncCollections();
     ProgressPanel *activeProgress() const;
@@ -108,6 +113,7 @@ private:
     QCheckBox *aRecursive_ = nullptr;
     ProgressPanel *aProgress_ = nullptr;
     QPushButton *aCancel_ = nullptr;
+    std::shared_ptr<dashboard::Session> session_;  // opened .resora: keeps its cache alive while displayed
     QJsonObject lastScan_;  // data of the last completed scan (for the Analytics hand-off)
 
     QPointer<BackendProcess> job_;

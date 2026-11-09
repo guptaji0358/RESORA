@@ -52,3 +52,10 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 
 ## 2026-11-08 `.resora` Phase 4 decisions [V]
 - Relink is the sole candidate for that image (no fallback), identity always required; every open revalidates all links. Bundled cache = `<cacheRoot>/doc-<uuid>` with `.resora-cache` marker; `closeDocument` deletes only marked folders. Opening blocked (no document returned) if any link fails. Stale-cache sweep deferred to Phase 7.
+
+## 2026-11-08 `.resora` Phase 5 decisions [V]
+- Adapter lives in `imgan_core` (Qt Core only); `resora_format` stays dashboard-free. Dashboard image associations = the 4 extreme images (the dashboard keeps no other image list). Charts derived from `DashboardModel`, stored, and must equal the rebuilt ones on open. Non-analytics result keys preserved verbatim in `config.result_context`. Unknown fields -> warnings, unsupported values -> failure. State replaced transactionally via `dashboard::Session`.
+- [V] 2026-11-08 Phase 5 review: runtime image paths are a separate representation (`runtimePaths`, `AnalyticsPanel::showRestored`) from the persisted analytics JSON; unresolved images fail restore, no silent fallback to stale paths.
+
+## 2026-11-09 Phase 6 decisions [V]
+- Dialogs use test seams (overwrite confirmer); closing while a job runs cancels and closes only after the worker finishes; passed relinks are retained across retries; old session is released only after the new one is shown.

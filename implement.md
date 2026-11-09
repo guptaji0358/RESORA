@@ -21,12 +21,15 @@ Statuses: NOT STARTED, IN PROGRESS, COMPLETED, BLOCKED. A phase is COMPLETED onl
 
 | Total phases | Completed | In progress | Not started | Blocked | Overall completion |
 |---|---|---|---|---|---|
-| 7 | 2 | 1 | 4 | 0 | 28.57% (2/7 completed) |
+| 7 | 5 | 1 | 1 | 0 | 71.43% (5/7 completed) |
 
 Phase 1 status: COMPLETED. Formally approved by the user (2026-11-08); evidence in section 14.
 Phase 2 status: COMPLETED (approved by the user 2026-11-08).
-Phase 3 status: IN PROGRESS (started 2026-11-08); implemented and automated tests pass, awaiting user approval.
-Phase 4 status: IN PROGRESS (2026-11-08); implemented, automated tests pass, awaiting user review (not COMPLETED until approved).
+Phase 3 status: COMPLETED (approved by the user; confirmed in the Phase 5 final-review request, 2026-11-08).
+Phase 4 status: COMPLETED (approved by the user 2026-11-08, stated at the start of the Phase 5 request).
+Phase 5 status: COMPLETED (approved by the user; stated at the start of the Phase 6 request, 2026-11-09).
+Phase 6 status: IN PROGRESS (started 2026-11-09).
+Phase 7 status: NOT STARTED.
 
 ---
 
@@ -216,10 +219,10 @@ A phase is complete only when: (1) its scope is implemented and nothing from lat
 |---|---|
 | Phase 1: File Format Foundation | COMPLETED (formally approved by the user 2026-11-08) |
 | Phase 2: Bundled Export | COMPLETED (approved by the user 2026-11-08) |
-| Phase 3: Linked Data Export | IN PROGRESS |
-| Phase 4: Import and Opening Engine | IN PROGRESS (implemented, automated tests pass, awaiting user review) |
-| Phase 5: Dashboard Integration | NOT STARTED |
-| Phase 6: Export/Import UI | NOT STARTED |
+| Phase 3: Linked Data Export | COMPLETED (approved by the user 2026-11-08) |
+| Phase 4: Import and Opening Engine | COMPLETED (approved by the user 2026-11-08) |
+| Phase 5: Dashboard Integration | COMPLETED (approved by the user 2026-11-09) |
+| Phase 6: Export/Import UI | IN PROGRESS (started 2026-11-09) |
 | Phase 7: Compatibility and Reliability | NOT STARTED |
 
 ### Confirmed repository facts used (inspected 2026-11-08)
@@ -255,3 +258,14 @@ A phase is complete only when: (1) its scope is implemented and nothing from lat
 - Implemented: `gui/{include,src}/resora/{resoraimport.h,importinternal.h,importparse.cpp,linkresolve.cpp,bundledextract.cpp,importdocument.cpp}` (in `resora_format`, Qt Core only), `gui/tests/tst_resoraimport.cpp`; spec in docs/RESORA_FORMAT.md ("Import and Opening (Phase 4)"). Phases 1-3 code unchanged.
 - Automated: `tst_resoraimport` 16 passed / 0 failed (14 test functions); full `ctest` 16/16 suites passed. Built directly with ninja/ctest; `run.bat` not run. Manual/GUI: none. Nothing committed.
 - Limits: no stale-cache sweep (Phase 7); single-image copy cancellable only between images; linked open rehashes every file each time.
+
+### Phase 5 evidence (2026-11-08)
+- Implemented: `gui/{include/backend/dashboardstate.h,src/backend/dashboard{serialize,restore,session}.cpp}` (Qt Core only, in `imgan_core`, which now links `resora_format`), read-only `AnalyticsPanel::result()`, `gui/tests/tst_dashboardstate.cpp`; mapping in docs/RESORA_FORMAT.md ("Dashboard Integration (Phase 5)"). Note: the dashboard holds no full image list; its image associations are the four extreme images. No schema/format change, no UI.
+- Automated: `tst_dashboardstate` 12 passed; full ctest 17/17. `run.bat` not run. Manual: none. Nothing committed. Stays IN PROGRESS for review.
+- Tracker note (superseded 2026-11-08): this line previously said Phase 3 was left IN PROGRESS; the user has since confirmed Phase 3 as approved, so the tracker now shows COMPLETED.
+- Final-review correction A (2026-11-08): `AnalyticsPanel::showRestored(result, pathByRole, &err)` + `dashboard::runtimePaths(Restored)`. Persisted analytics JSON (`result()`) is unchanged; the four extreme-image rows (largest/smallest/highest/lowest) use the Phase 4 validated paths (Bundled: extracted cache; Linked: validated/relinked originals). `restore()` now fails if an image has no readable resolved file; a missing role path makes `showRestored` fail with the panel untouched (no fallback to stale JSON paths). Tests added: bundled after source dir deleted, linked via relink, unresolved/missing. `tst_dashboardstate` 15 passed (incl. init/cleanup), full ctest 17/17 (direct cmake/ninja). Phase 5 stays IN PROGRESS; no manual/GUI verification; nothing committed.
+
+### Phase 6 evidence (2026-11-09)
+- Implemented: `gui/{include,src}/backend/{resoraworkflow,resorajobs}` (destination check, estimate, ExportJob/ImportJob on QThreadPool; destructor cancels and waits), `widgets/{exportdialog,openresoradialog,relinkpanel,confirmdialog}`, MainWindow wiring (Ctrl+Shift+E / Ctrl+Shift+O, Analytics page actions), `gui/tests/tst_resoraui.cpp`. No format/engine change.
+- Fix found while testing: relinks that already passed are kept across retries (`accepted_`), so only still-failing images are re-asked.
+- Automated: `tst_resoraui` 14 cases passed; full ctest 18/18 (direct cmake/ninja; `run.bat` not run). Manual/visual: none by Claude; not inspected on screen. Nothing committed. Stays IN PROGRESS pending user review.

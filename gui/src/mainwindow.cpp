@@ -42,6 +42,8 @@
 #include "ui/brand.h"
 #include "ui/theme.h"
 #include "widgets/aboutdialog.h"
+#include "widgets/exportdialog.h"
+#include "widgets/openresoradialog.h"
 #include "widgets/progresspanel.h"
 #include "widgets/reportselector.h"
 #include "widgets/resultspanel.h"
@@ -294,6 +296,8 @@ void MainWindow::buildUi()
     connect(header_->toolNav(), &ToolNav::toolRequested, this, [this](int t) { showTool(Tool(t)); });
     connect(start_, &QPushButton::clicked, this, &MainWindow::startScan);
     connect(analytics_, &AnalyticsPanel::refreshRequested, this, &MainWindow::startAnalytics);
+    connect(analytics_, &AnalyticsPanel::exportRequested, this, &MainWindow::exportDashboard);
+    connect(analytics_, &AnalyticsPanel::openRequested, this, &MainWindow::openDashboardFile);
     connect(analytics_, &AnalyticsPanel::propertiesRequested, this,
             [this](const QString &path) { route({Tool::Analyzer, {path}}); });
     connect(cancel_, &QPushButton::clicked, this, &MainWindow::cancelScan);
@@ -323,6 +327,8 @@ void MainWindow::buildUi()
     };
     addKey(QKeySequence(Qt::CTRL | Qt::Key_Comma), &MainWindow::openSettings);
     addKey(QKeySequence(Qt::CTRL | Qt::Key_I), &MainWindow::openProperties);
+    addKey(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E), &MainWindow::exportDashboard);
+    addKey(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_O), &MainWindow::openDashboardFile);
     addKey(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C), &MainWindow::openComparison);
     addKey(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_D), &MainWindow::openDuplicates);
     auto *about = new QShortcut(QKeySequence(Qt::Key_F1), this);
@@ -436,6 +442,39 @@ void MainWindow::openComparison()  // Ctrl+Shift+C
     showTool(Tool::Compare);
 }
 
+void MainWindow::exportDashboard()  // Ctrl+Shift+E
+{
+    showTool(Tool::Analytics);
+    if (!analytics_->hasData()) {
+        setNotice(tr("Nothing to export: analyze a collection first."));
+        return;
+    }
+    ExportDialog dlg(dashboard::State{analytics_->result(), analytics_->viewIndex()},
+                     QCoreApplication::applicationVersion(), this);
+    dlg.exec();
+}
+
+void MainWindow::openDashboardFile()  // Ctrl+Shift+O
+{
+    showTool(Tool::Analytics);
+    OpenResoraDialog dlg(QString(), this);
+    if (dlg.exec() != QDialog::Accepted || !dlg.session() || !dlg.session()->current())
+        return;
+    const std::shared_ptr<dashboard::Session> fresh = dlg.session();
+    const dashboard::Restored *r = fresh->current();
+    QString why;
+    // Show first; only a successful presentation replaces the old session (and releases its cache).
+    if (!analytics_->showRestored(r->state.result, dashboard::runtimePaths(*r), &why)) {
+        setNotice(tr("The dashboard could not be shown: %1").arg(why));
+        return;
+    }
+    analytics_->setViewIndex(r->state.viewIndex);
+    analytics_->setStale(false);
+    session_ = fresh;
+    setNotice(QString());
+    updateAnalyticsControls();
+}
+
 void MainWindow::openInAnalytics()
 {
     showTool(Tool::Analytics);
@@ -444,6 +483,7 @@ void MainWindow::openInAnalytics()
     aSource_->setSelection(source_->selection());
     aRecursive_->setChecked(recursive_->isChecked());
     analytics_->showAnalytics(lastScan_);
+    session_.reset();
     analytics_->setStale(false);
     updateAnalyticsControls();
 }
@@ -668,6 +708,7 @@ void MainWindow::onSucceeded(const QJsonValue &data)
 {
     if (analyticsJob_) {  // Analytics refresh: the Analyzer's readout and reports stay as they were
         analytics_->showAnalytics(data.toObject());
+        session_.reset();  // fresh numbers: the opened .resora's cache is no longer shown
         updateAnalyticsControls();
         aProgress_->setSucceeded(tr("Analytics refreshed."));
         jobEnded();

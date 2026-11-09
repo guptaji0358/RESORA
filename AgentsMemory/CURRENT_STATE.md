@@ -55,3 +55,12 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 
 ## 2026-11-08 `.resora` Phase 4 [V]
 - Phase 4 Import/Opening engine implemented, uncommitted: `resora::openResora/relinkAndOpen/closeDocument/readThumbnail` (`resoraimport.h`, 4 .cpp files in `resora_format`), Final correction: extraction cancel is per 1 MiB chunk (`Reader::copyResource` optional chunk callback, default no-op); new test `cancelDuringSingleLargeImageStopsBetweenChunks`; `tst_resoraimport` passed (new case added; CTest hides per-case totals), full ctest 16/16 [V, ctest direct]. Phase 4 stays IN PROGRESS pending review. Linked: abs path then relative (folder vs document base, `imageRoot` override), size+SHA-256 mandatory, all failures collected, `LinksBlocked` returns no document, relink revalidates all. Bundled: extract to marked `doc-<uuid>` cache folder, verified, cleaned on fail/cancel. Awaiting user review; Phase 5 not started. No `run.bat`, no manual verification.
+
+## 2026-11-08 `.resora` Phase 5 [V]
+- Phase 4 approved [U]. Phase 5 dashboard integration implemented, uncommitted: `dashboard::{plan,exportBundled,exportLinked,restore,Session}` (`backend/dashboardstate.h`), `AnalyticsPanel::result()`; `tst_dashboardstate` 12/12, full ctest 17/17 (direct cmake/ninja, no run.bat). No UI wiring (Phase 6). Awaiting review; Phase 6 not started. implement.md still lists Phase 3 IN PROGRESS (user did not say it was approved).
+
+## 2026-11-08 Phase 5 final-review corrections [V]
+- A: restored dashboard now uses runtime paths: `AnalyticsPanel::showRestored` + `dashboard::runtimePaths`; persisted analytics JSON unchanged; `restore()` rejects unresolved files; no fallback to stale paths. `tst_dashboardstate` 15 passed, full ctest 17/17 (direct cmake/ninja). B: commit f8d169b is unreachable (reflog: made, then `reset --mixed HEAD~1`); HEAD is 85c2626; Phase 5 files are uncommitted/untracked; nothing changed in history. C: tracker now Phase 1-4 COMPLETED (Phase 3 user-approved), Phase 5 IN PROGRESS, 6-7 NOT STARTED (4/7). No run.bat, no manual/GUI verification, nothing committed. Phase 6 not started.
+
+## 2026-11-09 `.resora` Phase 6 [V]
+- Phase 5 approved [U]. Phase 6 UI implemented, uncommitted: export/open dialogs, relink panel, jobs (worker waits on destroy), MainWindow shortcuts; `tst_resoraui` 14 passed, ctest 18/18. Relinks that passed persist across retries. Not visually verified; Phase 7 not started.

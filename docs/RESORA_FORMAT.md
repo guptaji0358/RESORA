@@ -144,3 +144,22 @@ API: `gui/include/resora/resoraimport.h` (`openResora`, `relinkAndOpen`, `closeD
 **Path safety:** stored relative paths must be non-empty, `/`-separated, no leading `/`, no `\`, `:`, control characters, empty/`.`/`..` segments; the joined path must stay under the base (cleaned prefix check, plus canonical check when it exists so a link cannot escape); recorded absolute paths must be absolute. Rejected paths yield `UnsafePath`/blocked, never a different file.
 
 **Limits:**  the `.resora` is never written; no sweep of stale cache; hashing a large linked set is I/O-bound (every open re-reads all linked files by design). Tests: `gui/tests/tst_resoraimport.cpp` (`tst_resoraimport`).
+
+## Dashboard Integration (Phase 5)
+
+API: `gui/include/backend/dashboardstate.h` (namespace `dashboard`), in `imgan_core` (Qt Core only; `imgan_core` now links `resora_format`). No schema or format change; `resora_format` is untouched.
+
+**State:** `State {result, viewIndex}` = what `AnalyticsPanel::showAnalytics()` receives plus its view switch. The panel gained one read-only accessor, `result()` (raw object last shown, empty after `clear()`); no widget behaviour changed. `stale` is a transient hint about the current collection and is not persisted.
+
+**Mapping:** `analytics` resource `data` = the engine object, unmodified. `layout` = `active_view` (`dashboard`|`detailed`), `visible_sections` null (not configurable today), `widgets` = `{id:"extreme.<role>", role, image_id}` for roles largest/smallest/highest/lowest (these are the only images the dashboard associates). `charts` = 4 definitions derived by `DashboardModel` (`chart.categories` bar, `chart.orientation` donut, `chart.formats` donut, `chart.storage` hbar) with `categories`, `series`, `data_source`. `config` = `recursive`, null `report_options`/`scan_filters`, and `result_context` = every non-`analytics` key of the result, verbatim. `manifest.source` from the result's folder/files info. Images = distinct extreme files (deduped by path), metadata from the engine image record, `image_id` = `img-NNNN` by first appearance. No thumbnails are generated (none exist in the dashboard state).
+
+**Export:** `plan()` validates (analytics present, view 0/1, absolute image paths) and builds inputs; `exportBundled`/`exportLinked` call the Phase 2/3 engines (hashing, streaming, finalization, path policy, identity checks are theirs). Linked takes `RelativeBase`/`baseDir`, default none.
+
+**Import:** `restore()` takes an `OpenedDocument` (so Phase 4 blocking, extraction and checksums already ran) and checks: analytics usable; layout schema, view, widget roles/ids, image ids exist, widget image name equals the analytics image, every present extreme has an association; charts structurally valid and equal to `chartsFor(analytics)`; config `result_context`. Unsupported values fail; unknown/unsupported fields produce `Restored::warnings` (never silent). `Session::open` = `openResora` + `restore` into a separate object; the active state (and its Bundled cache folder) is replaced only after both succeed; failure/cancel keeps the old state and removes the new attempt's cache.
+
+**Limits:** charts must match what this build derives (a file from a build with different chart derivation is rejected; migration policy is Phase 7). Restored element images point to cache/validated paths in `ElementImage::path`; the analytics JSON keeps the original paths, and panel use of the mapping is Phase 6. No UI or `MainWindow` wiring.
+
+Tests: `gui/tests/tst_dashboardstate.cpp` (12 passed).
+
+## Export/Import UI (Phase 6)
+Export: Analytics page action or Ctrl+Shift+E; choose Bundled (copies images, standalone, larger) or Linked (absolute paths, originals must remain, identity checked on open); destination must end in `.resora`, cannot be a source image, existing files need confirmation. Open: Ctrl+Shift+O; all unresolved linked images are listed together, replacements are checked by size and SHA-256, opening is blocked until all pass; a failed open never changes the current dashboard.

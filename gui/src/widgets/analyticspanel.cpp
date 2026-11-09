@@ -121,8 +121,20 @@ AnalyticsPanel::AnalyticsPanel(QWidget *parent)
     refresh_->setToolTip(tr("Re-read the headers of the currently imported collection (no reports are written)"));
     connect(refresh_, &QPushButton::clicked, this, &AnalyticsPanel::refreshRequested);
 
+    export_ = new ChamferButton(tr("Export .resora"), this);
+    export_->setGlyph(QStringLiteral("report"));
+    export_->setToolTip(tr("Save this dashboard as a .resora file (Bundled or Linked) - Ctrl+Shift+E"));
+    export_->setEnabled(false);
+    connect(export_, &QPushButton::clicked, this, &AnalyticsPanel::exportRequested);
+    openFile_ = new ChamferButton(tr("Open .resora"), this);
+    openFile_->setGlyph(QStringLiteral("folder-open"));
+    openFile_->setToolTip(tr("Open a saved .resora dashboard - Ctrl+Shift+O"));
+    connect(openFile_, &QPushButton::clicked, this, &AnalyticsPanel::openRequested);
+
     auto *top = new QHBoxLayout;
     top->addWidget(sourceLabel_, 1);
+    top->addWidget(openFile_, 0, Qt::AlignTop);
+    top->addWidget(export_, 0, Qt::AlignTop);
     top->addWidget(refresh_, 0, Qt::AlignTop);
 
     // Failure banner
@@ -250,6 +262,8 @@ AnalyticsPanel::AnalyticsPanel(QWidget *parent)
 void AnalyticsPanel::clear()
 {
     data_ = AnalyticsData();
+    result_ = QJsonObject();
+    export_->setEnabled(false);
     dashboard_->clear();
     source_.clear();
     sourceLabel_->setText(tr("No collection analyzed."));
@@ -287,7 +301,42 @@ void AnalyticsPanel::showAnalytics(const QJsonObject &result)
         clear();
         return;
     }
+    present(result, d);
+}
+
+// Restored dashboard: `result` stays exactly as persisted (result_), while the four extreme images use the
+// runtime paths resolved by the import engine. A missing role path is an error: no fallback to the stale
+// serialized path, and the panel is left untouched.
+bool AnalyticsPanel::showRestored(const QJsonObject &result, const QHash<QString, QString> &pathByRole, QString *error)
+{
+    AnalyticsData d = AnalyticsModel::fromJson(result.value(QLatin1String("analytics")).toObject());
+    if (!d.valid) {
+        if (error)
+            *error = QStringLiteral("analytics data is not usable");
+        return false;
+    }
+    struct Slot { const char *role; AnalyticsImage *image; };
+    for (const Slot &s : {Slot{"largest", &d.largest}, Slot{"smallest", &d.smallest},
+                          Slot{"highest", &d.highest}, Slot{"lowest", &d.lowest}}) {
+        if (!s.image->valid)
+            continue;
+        const QString path = pathByRole.value(QLatin1String(s.role));
+        if (path.isEmpty()) {
+            if (error)
+                *error = QStringLiteral("no resolved image path for '%1'").arg(QLatin1String(s.role));
+            return false;
+        }
+        s.image->path = path;
+    }
+    present(result, d);
+    return true;
+}
+
+void AnalyticsPanel::present(const QJsonObject &result, const AnalyticsData &d)
+{
     data_ = d;
+    result_ = result;
+    export_->setEnabled(d.valid);
     source_ = describeSource(result);
     sourceLabel_->setText(tr("Based on: %1").arg(source_));
     staleLabel_->setProperty("stale", false);
