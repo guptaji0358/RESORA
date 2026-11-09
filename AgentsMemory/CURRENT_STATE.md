@@ -64,3 +64,6 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 
 ## 2026-11-09 `.resora` Phase 6 [V]
 - Phase 5 approved [U]. Phase 6 UI implemented, uncommitted: export/open dialogs, relink panel, jobs (worker waits on destroy), MainWindow shortcuts; `tst_resoraui` 14 passed, ctest 18/18. Relinks that passed persist across retries. Not visually verified; Phase 7 not started.
+
+## 2026-11-09 Phase 6 final-integration verification [V]
+- Added `tst_mainwindow` (7 tests: Ctrl+Shift+E/O wiring via QShortcut::activated, repeat/nested activation guarded, success swap A->B with old cache released only after B active, failed/cancelled/relink-failure keep A). MainWindow got a `dashboardDialogOpen_` re-entrancy guard and `dashboardSession()` accessor; open dialog is destroyed before the session is adopted. Lifecycle reviewed: no rewrite needed. Phase 6 stays IN PROGRESS; not visually verified; nothing committed; Phase 7 not started.

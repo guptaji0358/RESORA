@@ -324,3 +324,6 @@ Scope: <one or two lines>
 2. Manual: none; GUI not visually inspected.
 3. Change: see implement.md "Phase 6 evidence". Limitation: dialogs untested on screen; Phase 7 hardening not started.
 4. Status: IN PROGRESS (awaiting user review), uncommitted.
+
+### Phase 6 final integration verification (2026-11-09)
+`tst_mainwindow` added (offscreen; dialogs driven from a zero-delay timer inside `exec()`, no coordinates/animation timing). MainWindow gained a re-entrancy guard for the export/open dialogs. Phase 6 remains IN PROGRESS pending review; no visual verification.

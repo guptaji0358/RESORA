@@ -45,6 +45,8 @@ public:
     ReportSelector *csvSelector() const { return csv_; }
     ReportSelector *txtSelector() const { return txt_; }
     AnalyticsPanel *analyticsPanel() const { return analytics_; }
+    // Session whose cache backs the shown dashboard (null for a fresh analysis). Read-only, for tests.
+    std::shared_ptr<dashboard::Session> dashboardSession() const { return session_; }
     ComparisonWorkspace *comparison() const { return compare_; }
     bool isComparing() const;
     DuplicateFinder *duplicates() const { return dup_; }
@@ -121,5 +123,6 @@ private:
     ScanRequest request_;
     QElapsedTimer sinceProgress_;
     bool closing_ = false;
+    bool dashboardDialogOpen_ = false;  // an export/open dialog is up (re-entrancy guard)
     bool analyticsJob_ = false;  // the running job is an analytics refresh, not a scan
 };

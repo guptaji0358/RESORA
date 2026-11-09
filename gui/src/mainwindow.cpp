@@ -449,18 +449,32 @@ void MainWindow::exportDashboard()  // Ctrl+Shift+E
         setNotice(tr("Nothing to export: analyze a collection first."));
         return;
     }
-    ExportDialog dlg(dashboard::State{analytics_->result(), analytics_->viewIndex()},
-                     QCoreApplication::applicationVersion(), this);
-    dlg.exec();
+    if (dashboardDialogOpen_)  // a modal dashboard dialog is already up: never stack a second one
+        return;
+    dashboardDialogOpen_ = true;
+    {
+        ExportDialog dlg(dashboard::State{analytics_->result(), analytics_->viewIndex()},
+                         QCoreApplication::applicationVersion(), this);
+        dlg.exec();
+    }
+    dashboardDialogOpen_ = false;
 }
 
 void MainWindow::openDashboardFile()  // Ctrl+Shift+O
 {
     showTool(Tool::Analytics);
-    OpenResoraDialog dlg(QString(), this);
-    if (dlg.exec() != QDialog::Accepted || !dlg.session() || !dlg.session()->current())
+    if (dashboardDialogOpen_)
         return;
-    const std::shared_ptr<dashboard::Session> fresh = dlg.session();
+    dashboardDialogOpen_ = true;
+    std::shared_ptr<dashboard::Session> fresh;
+    {
+        OpenResoraDialog dlg(QString(), this);
+        if (dlg.exec() == QDialog::Accepted)
+            fresh = dlg.session();
+    }  // dialog (and its worker) destroyed before the session is adopted
+    dashboardDialogOpen_ = false;
+    if (!fresh || !fresh->current())
+        return;
     const dashboard::Restored *r = fresh->current();
     QString why;
     // Show first; only a successful presentation replaces the old session (and releases its cache).

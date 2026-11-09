@@ -20,6 +20,7 @@ imgan_add_test(tst_insights)
 imgan_add_test(tst_duplicates)
 imgan_add_test(tst_dashboardstate)
 imgan_add_test(tst_resoraui)
+imgan_add_test(tst_mainwindow)
 
 # Container library test: links only the Qt-Core-only library (proves no widgets dependency).
 qt_add_executable(tst_resorafile tst_resorafile.cpp)

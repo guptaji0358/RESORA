@@ -1,0 +1,45 @@
+[HANDLER_OUTPUT] 
+Test project C:/Users/lenovo/OneDrive/Desktop/projects/RESORA/build
+
+      Start  1: tst_protocolparser
+ 1/19 Test  #1: tst_protocolparser ...............   Passed    0.19 sec
+      Start  2: tst_backendprocess
+ 2/19 Test  #2: tst_backendprocess ...............   Passed    9.54 sec
+      Start  3: tst_widgets
+ 3/19 Test  #3: tst_widgets ......................   Passed    1.43 sec
+      Start  4: tst_locations
+ 4/19 Test  #4: tst_locations ....................   Passed    0.65 sec
+      Start  5: tst_icons
+ 5/19 Test  #5: tst_icons ........................   Passed    0.10 sec
+      Start  6: tst_dialogs
+ 6/19 Test  #6: tst_dialogs ......................   Passed    0.36 sec
+      Start  7: tst_properties
+ 7/19 Test  #7: tst_properties ...................   Passed    0.85 sec
+      Start  8: tst_analytics
+ 8/19 Test  #8: tst_analytics ....................   Passed    0.22 sec
+      Start  9: tst_dashboard
+ 9/19 Test  #9: tst_dashboard ....................   Passed    0.25 sec
+      Start 10: tst_comparison
+10/19 Test #10: tst_comparison ...................   Passed    4.60 sec
+      Start 11: tst_insights
+11/19 Test #11: tst_insights .....................   Passed    0.61 sec
+      Start 12: tst_duplicates
+12/19 Test #12: tst_duplicates ...................   Passed    0.38 sec
+      Start 13: tst_dashboardstate
+13/19 Test #13: tst_dashboardstate ...............   Passed    2.42 sec
+      Start 14: tst_resoraui
+14/19 Test #14: tst_resoraui .....................   Passed    1.86 sec
+      Start 15: tst_mainwindow
+15/19 Test #15: tst_mainwindow ...................   Passed    2.58 sec
+      Start 16: tst_resorafile
+16/19 Test #16: tst_resorafile ...................   Passed    3.78 sec
+      Start 17: tst_bundledexport
+17/19 Test #17: tst_bundledexport ................   Passed   11.59 sec
+      Start 18: tst_linkedexport
+18/19 Test #18: tst_linkedexport .................   Passed    3.35 sec
+      Start 19: tst_resoraimport
+19/19 Test #19: tst_resoraimport .................   Passed    1.23 sec
+
+100% tests passed, 0 tests failed out of 19
+
+Total Test time (real) =  46.10 sec
