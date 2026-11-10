@@ -6,7 +6,9 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QList>
+#include <QSet>
 #include <QString>
+#include <QStringList>
 #include <functional>
 
 #include "resora/resorafmt.h"
@@ -24,7 +26,9 @@ enum class OpenError {
     Cancelled
 };
 
-enum class LinkState { Ok, Missing, Unreadable, IdentityMismatch, UnsafePath };
+// Omitted: the caller explicitly excluded this image for THIS open (OpenOptions::omitImages); it was not
+// checked and is not part of the opened document. Never produced unless requested.
+enum class LinkState { Ok, Missing, Unreadable, IdentityMismatch, UnsafePath, Omitted };
 
 // One linked image's validation outcome. Reported for EVERY image in `OpenResult::links`; the blocking
 // ones are returned in `problems`.
@@ -39,6 +43,7 @@ struct LinkStatus
     QString resolvedPath;   // path that passed (Ok) or the last candidate that was tried
     bool viaRelative = false;
     bool viaRelink = false;
+    QStringList roles;      // layout widgets (role, else id) that use this image; informational
     QString message;
     bool ok() const { return state == LinkState::Ok; }
 };
@@ -63,6 +68,7 @@ struct OpenedDocument
     QJsonObject manifest, layout, analytics, config;
     QJsonArray charts;
     QList<ImageRef> images;
+    QStringList omittedImageIds;  // Linked: images the caller explicitly omitted (not in `images`)
     QString cacheDir;  // Bundled only: app-managed folder created for this open; remove with closeDocument()
 };
 
@@ -83,6 +89,11 @@ struct OpenOptions
     QString imageRoot;
     // Linked: explicit replacement files by image_id. Validated like any other candidate.
     QHash<QString, QString> relinks;
+    // Linked: images the user explicitly chose to leave out of this open (e.g. "Remove from Dashboard").
+    // Scope: this call only; nothing is stored. Each id must exist in the file (else InvalidInput) and is
+    // not validated at all. Everything NOT listed is still validated and still blocks the open. Rejected
+    // for Bundled documents. The document's `images` then lacks the omitted ones (omittedImageIds lists them).
+    QSet<QString> omitImages;
 };
 
 struct OpenResult

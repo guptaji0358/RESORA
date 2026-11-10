@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QSet>
 
 namespace resora {
 
@@ -32,12 +33,30 @@ OpenResult openResora(const QString &path, const OpenOptions &opts, const Import
         return failWith(OpenError::Cancelled, QStringLiteral("Opening cancelled"));
 
     OpenResult res;
+    if (!opts.omitImages.isEmpty()) {
+        // An omission must name real images of a Linked document; nothing is ignored silently.
+        if (!parsed.doc.linked)
+            return failWith(OpenError::InvalidInput, QStringLiteral("Images can only be omitted from a Linked document"));
+        QSet<QString> known;
+        for (const Record &r : parsed.records)
+            known.insert(r.ref.imageId);
+        for (const QString &id : opts.omitImages)
+            if (!known.contains(id))
+                return failWith(OpenError::InvalidInput, QStringLiteral("Cannot omit unknown image '%1'").arg(id));
+    }
     if (parsed.doc.linked) {
         QList<LinkStatus> links;
         if (!validateLinks(parsed, opts, fi.absoluteDir().absolutePath(), rep, &links))
             return failWith(OpenError::Cancelled, QStringLiteral("Opening cancelled"));
+        const QJsonArray widgets = parsed.doc.layout.value("widgets").toArray();
+        for (LinkStatus &s : links)
+            for (const QJsonValue &wv : widgets) {
+                const QJsonObject w = wv.toObject();
+                if (w.value("image_id").toString() == s.imageId)
+                    s.roles << (w.value("role").toString().isEmpty() ? w.value("id").toString() : w.value("role").toString());
+            }
         for (const LinkStatus &s : links)
-            if (!s.ok())
+            if (!s.ok() && s.state != LinkState::Omitted)
                 res.problems.append(s);
         if (!res.problems.isEmpty()) {
             // Blocked: no document is handed out, only the diagnostics.
@@ -46,9 +65,16 @@ OpenResult openResora(const QString &path, const OpenOptions &opts, const Import
             res.links = links;
             return res;
         }
+        QList<Record> kept;
         for (int i = 0; i < parsed.records.size(); ++i) {
+            if (links[i].state == LinkState::Omitted) {
+                parsed.doc.omittedImageIds << links[i].imageId;
+                continue;
+            }
             parsed.records[i].ref.path = links[i].resolvedPath;
+            kept << parsed.records[i];
         }
+        parsed.records = kept;
         res.links = links;
     } else {
         const OpenResult x = extractBundled(rd, &parsed, opts.cacheRoot.isEmpty() ? defaultCacheRoot() : opts.cacheRoot, rep);

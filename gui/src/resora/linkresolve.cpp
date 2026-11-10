@@ -109,8 +109,21 @@ bool validateLinks(const Parsed &p, const OpenOptions &opts, const QString &docD
 {
     quint64 total = 0, done = 0;
     for (const Record &r : p.records)
-        total += r.size;
+        if (!opts.omitImages.contains(r.ref.imageId))
+            total += r.size;
     for (const Record &rec : p.records) {
+        if (opts.omitImages.contains(rec.ref.imageId)) {
+            LinkStatus om;  // explicit, user-approved omission: not checked, reported as Omitted
+            om.index = rec.ref.index;
+            om.imageId = rec.ref.imageId;
+            om.name = rec.ref.name;
+            om.recordedPath = rec.path;
+            om.relativePath = rec.relativePath;
+            om.state = LinkState::Omitted;
+            om.message = QStringLiteral("Omitted by request");
+            out->append(om);
+            continue;
+        }
         LinkStatus st;
         st.index = rec.ref.index;
         st.imageId = rec.ref.imageId;
