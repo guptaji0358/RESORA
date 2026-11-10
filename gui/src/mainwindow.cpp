@@ -453,7 +453,8 @@ void MainWindow::exportDashboard()  // Ctrl+Shift+E
         return;
     dashboardDialogOpen_ = true;
     {
-        ExportDialog dlg(dashboard::State{analytics_->result(), analytics_->viewIndex(), analytics_->removedRoles()},
+        ExportDialog dlg(dashboard::State{analytics_->result(), analytics_->viewIndex(), analytics_->removedRoles(),
+                                          analytics_->isRestored(), analytics_->runtimePaths()},
                          QCoreApplication::applicationVersion(), this);
         dlg.exec();
     }

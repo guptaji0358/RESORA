@@ -62,3 +62,6 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 
 ## 2026-11-10 Remove from Dashboard [U request, V implemented]
 - Accepted: explicit per-open omission of linked images (not a global bypass); removal = dashboard association only, never deletes the image; removal persisted on re-export via optional `layout.omitted_roles`. Interim status "Replacement chosen" added beside the four requested statuses. No undo-removal action (not requested).
+
+## 2026-11-10 Re-export uses runtime paths [V]
+- Restored dashboards export from validated runtime paths (`State::runtimePaths`), never persisted analytics paths; missing runtime path = error. Equality of `State` stays logical. `layout.omitted_roles` stays optional, `schema_version` 1; older-reader compatibility unverified -> Phase 7.

@@ -40,6 +40,13 @@
         "schema_version": {"const": 1},
         "active_view": {"enum": ["dashboard", "detailed"], "x-phase": 5},
         "visible_sections": {"type": ["array", "null"], "items": {"type": "string"}, "x-phase": 5},
+        "omitted_roles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["largest", "smallest", "highest", "lowest"]},
+          "description": "Roles whose image association the user removed (Remove from Dashboard). Optional; absent = none. A role listed here must have no widget. Null is invalid.",
+          "x-phase": 6
+        },
         "widgets": {
           "type": ["array", "null"],
           "x-phase": 5,

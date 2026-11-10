@@ -274,6 +274,8 @@ void AnalyticsPanel::clear()
     data_ = AnalyticsData();
     result_ = QJsonObject();
     removedRoles_.clear();
+    restored_ = false;
+    runtimePaths_.clear();
     export_->setEnabled(false);
     dashboard_->clear();
     source_.clear();
@@ -344,6 +346,8 @@ bool AnalyticsPanel::showRestored(const QJsonObject &result, const QHash<QString
     }
     present(result, d);
     removedRoles_ = removedRoles;  // present() reset it; populate() below shows the removed rows
+    restored_ = true;
+    runtimePaths_ = pathByRole;
     for (const auto &pr : {std::pair<const char *, ExtremeRow *>{"largest", largest_}, {"smallest", smallest_},
                            {"highest", highest_}, {"lowest", lowest_}})
         if (removedRoles_.contains(QLatin1String(pr.first)))
@@ -356,6 +360,8 @@ void AnalyticsPanel::present(const QJsonObject &result, const AnalyticsData &d)
     data_ = d;
     result_ = result;
     removedRoles_.clear();
+    restored_ = false;
+    runtimePaths_.clear();
     export_->setEnabled(d.valid);
     source_ = describeSource(result);
     sourceLabel_->setText(tr("Based on: %1").arg(source_));

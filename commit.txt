@@ -143,3 +143,10 @@ fix(gui): relinking table and Remove from Dashboard (Phase 6 correction)
 
 - RelinkPanel table + RelinkModel; OpenOptions::omitImages (per call, Linked only); removedRoles in State/Restored; optional layout.omitted_roles on export
 - tests extended in tst_dashboardstate and tst_resoraui
+
+
+fix(resora): re-export restored dashboards from validated runtime paths (Phase 6 review)
+
+- State::restored/runtimePaths: restored dashboards export only from extracted or validated/relinked files, no stale-path fallback
+- layout.omitted_roles: reader rejects null and duplicates; schema entry added
+- tst_dashboardstate: Bundled re-export after source deletion, Linked re-export after relink, omitted_roles validation

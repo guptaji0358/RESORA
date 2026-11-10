@@ -101,7 +101,12 @@ Plan plan(const State &s)
             omitted << QLatin1String(r.name);
             continue;
         }
-        const QString path = im.path;
+        // Restored dashboards: the runtime (validated) path is the only source; never the persisted one.
+        const QString path = s.restored ? s.runtimePaths.value(QLatin1String(r.name)) : im.path;
+        if (s.restored && path.isEmpty()) {
+            problems << QStringLiteral("Image for '%1' has no validated runtime path").arg(r.name);
+            continue;
+        }
         if (path.isEmpty() || !QFileInfo(path).isAbsolute()) {
             problems << QStringLiteral("Image for '%1' has no absolute path: %2").arg(r.name, path);
             continue;

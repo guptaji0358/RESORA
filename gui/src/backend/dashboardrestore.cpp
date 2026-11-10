@@ -65,15 +65,17 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
     QSet<QString> widgetIds, roles;
     const QSet<QString> omittedImages(doc.omittedImageIds.begin(), doc.omittedImageIds.end());
     QSet<QString> removed;  // roles whose association is absent by explicit, recorded removal
-    if (!lay.value("omitted_roles").isUndefined() && !lay.value("omitted_roles").isNull()) {
+    if (lay.contains("omitted_roles")) {  // optional; when present it must be an array (null is rejected)
         if (!lay.value("omitted_roles").isArray())
             return fail("layout.omitted_roles is not an array");
         for (const QJsonValue &v : lay.value("omitted_roles").toArray()) {
             bool known = false;
             for (const char *n : kRoleNames)
-                known = known || v.toString() == n;
+                known = known || (v.isString() && v.toString() == n);
             if (!known)
                 return fail(QStringLiteral("layout.omitted_roles lists an unsupported role '%1'").arg(v.toString()));
+            if (removed.contains(v.toString()))
+                return fail(QStringLiteral("layout.omitted_roles lists role '%1' twice").arg(v.toString()));
             removed.insert(v.toString());
         }
     }
@@ -118,6 +120,9 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
         if (removed.contains(n))
             r.removedRoles << QString::fromLatin1(n);
     r.state.removedRoles = r.removedRoles;
+    r.state.restored = true;
+    for (const ElementImage &e : r.elementImages)
+        r.state.runtimePaths.insert(e.role, e.path);
 
     // charts: stored definitions must be structurally valid and agree with the analytics data
     QJsonArray charts = doc.charts;

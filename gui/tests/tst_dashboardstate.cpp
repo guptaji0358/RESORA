@@ -479,6 +479,130 @@ private slots:
         QVERIFY(!plan(partial).ok);
     }
 
+    // ---- Re-export from runtime paths (Phase 6 final review) ----------------------------------------
+    void bundledReExportWorksAfterSourceDirectoryDeleted()
+    {
+        const State s = capture(1);
+        QVERIFY(exportBundled(s, p("b.resora"), "t").ok());
+        const QByteArray original = slurp(p("b.resora"));
+        QVERIFY(QDir(p("pics")).removeRecursively());
+        resora::OpenResult o = resora::openResora(p("b.resora"), resora::OpenOptions{p("cache")});
+        QVERIFY2(o.ok(), qPrintable(o.message));
+        Restored got;
+        QString err;
+        QVERIFY2(restore(o.document, &got, &err), qPrintable(err));
+        QVERIFY(got.state.restored);
+        // the state the real panel hands to the export dialog carries the same runtime paths
+        AnalyticsPanel panel;
+        QVERIFY2(panel.showRestored(got.state.result, runtimePaths(got), &err, got.removedRoles), qPrintable(err));
+        QVERIFY(panel.isRestored());
+        panel.setViewIndex(got.state.viewIndex);
+        const State fromPanel{panel.result(), panel.viewIndex(), panel.removedRoles(), panel.isRestored(), panel.runtimePaths()};
+        QVERIFY(fromPanel == got.state);
+        QVERIFY(fromPanel.restored && fromPanel.runtimePaths == got.state.runtimePaths);
+        QCOMPARE(fromPanel.runtimePaths.size(), 4);
+        QVERIFY(!QFileInfo(p("pics")).exists());  // the original directory stays deleted
+        QVERIFY(exportBundled(fromPanel, p("b2.resora"), "t").ok());
+        for (const resora::ExportImage &im : plan(fromPanel).images)
+            QVERIFY(im.sourcePath.startsWith(o.document.cacheDir));  // extracted copies, never the stale paths
+        QCOMPARE(slurp(p("b.resora")), original);   // original document untouched
+        QCOMPARE(got.state.result, result());       // persisted analytics JSON untouched
+        resora::closeDocument(&o.document);
+        // the new document opens (cache of the first one is gone) and its images are intact
+        resora::OpenResult o2 = resora::openResora(p("b2.resora"), resora::OpenOptions{p("cache2")});
+        QVERIFY2(o2.ok(), qPrintable(o2.message));
+        Restored again;
+        QVERIFY2(restore(o2.document, &again, &err), qPrintable(err));
+        QCOMPARE(again.elementImages.size(), 4);
+        for (const ElementImage &e : again.elementImages)
+            QCOMPARE(slurp(e.path), e.name == "big.png" ? QByteArray(5000, 'a') : QByteArray(900, 'b'));
+        QCOMPARE(again.state.result, result());
+        resora::closeDocument(&o2.document);
+    }
+
+    void restoredExportNeverFallsBackToStalePaths()
+    {
+        makeImages();  // the persisted paths exist and WOULD work for a non-restored export
+        State s = capture(0);
+        QVERIFY(plan(s).ok);
+        s.restored = true;  // restored but no runtime path: must fail rather than use the persisted ones
+        const Plan bad = plan(s);
+        QVERIFY(!bad.ok);
+        QVERIFY(bad.error.contains("runtime path"));
+        QVERIFY(!exportBundled(s, p("x.resora"), "t").ok());
+        QVERIFY(!QFileInfo(p("x.resora")).exists());
+        s.runtimePaths = {{"largest", p("pics/big.png")}, {"highest", p("pics/big.png")}, {"smallest", p("pics/s.jpg")}};
+        QVERIFY(!plan(s).ok);  // one role still missing
+        s.runtimePaths.insert("lowest", p("pics/s.jpg"));
+        QVERIFY(plan(s).ok);
+    }
+
+    void linkedReExportAfterRelinkKeepsRemovals()
+    {
+        QSet<QString> ids;
+        const resora::OpenResult b = blockedLinked(&ids);  // originals deleted
+        QCOMPARE(b.error, resora::OpenError::LinksBlocked);
+        QString bigId, sId;
+        for (const auto &x : b.problems)
+            (x.name == "big.png" ? bigId : sId) = x.imageId;
+        const QByteArray src = slurp(p("l.resora"));
+        QVERIFY(put(p("moved/s.jpg"), QByteArray(900, 'b')));
+        resora::OpenOptions opts{p("cache")};
+        opts.omitImages.insert(bigId);
+        opts.relinks.insert(sId, p("moved/s.jpg"));
+        const resora::OpenResult r = resora::openResora(p("l.resora"), opts);
+        QVERIFY2(r.ok(), qPrintable(r.message));
+        Restored got;
+        QString err;
+        QVERIFY2(restore(r.document, &got, &err), qPrintable(err));
+        const resora::LinkedExportResult ex = exportLinked(got.state, p("l2.resora"), "t");
+        QVERIFY2(ex.ok(), qPrintable(ex.message));
+        const Plan pl = plan(got.state);
+        QCOMPARE(pl.images.size(), 1);
+        QCOMPARE(pl.images.at(0).sourcePath, p("moved/s.jpg"));  // the relinked path, not pics/s.jpg
+        QCOMPARE(slurp(p("l.resora")), src);
+        QCOMPARE(got.state.result, result());
+        resora::OpenedDocument d = r.document;
+        resora::closeDocument(&d);
+        Restored again;
+        QVERIFY2(openRestore(p("l2.resora"), &again, &err), qPrintable(err));
+        QCOMPARE(again.removedRoles, (QStringList{"largest", "highest"}));  // removed associations stay removed
+        QCOMPARE(again.elementImages.size(), 2);
+        for (const ElementImage &e : again.elementImages)
+            QCOMPARE(e.path, p("moved/s.jpg"));
+    }
+
+    void omittedRolesFieldIsValidated()
+    {
+        QVERIFY(exportBundled(capture(0), p("b.resora"), "t").ok());
+        resora::OpenResult o = resora::openResora(p("b.resora"), resora::OpenOptions{p("cache")});
+        QVERIFY(o.ok());
+        QVERIFY(!o.document.layout.contains("omitted_roles"));  // absent when nothing was removed
+        Restored got;
+        QString err;
+        const auto tryRoles = [&](const QJsonValue &v, bool dropWidget) {
+            resora::OpenedDocument d = o.document;
+            if (dropWidget) {
+                QJsonArray w;
+                for (const QJsonValue &x : d.layout.value("widgets").toArray())
+                    if (x.toObject().value("role").toString() != "largest")
+                        w << x;
+                d.layout["widgets"] = w;
+            }
+            d.layout["omitted_roles"] = v;
+            return restore(d, &got, &err);
+        };
+        QVERIFY(!tryRoles("largest", false) && err.contains("not an array"));
+        QVERIFY(!tryRoles(QJsonValue(QJsonValue::Null), false) && err.contains("not an array"));
+        QVERIFY(!tryRoles(QJsonArray{"nope"}, true) && err.contains("unsupported role"));
+        QVERIFY(!tryRoles(QJsonArray{1}, true) && err.contains("unsupported role"));
+        QVERIFY(!tryRoles(QJsonArray{"largest", "largest"}, true) && err.contains("twice"));
+        QVERIFY(!tryRoles(QJsonArray{"largest"}, false) && err.contains("both as a widget and as omitted"));
+        QVERIFY2(tryRoles(QJsonArray{"largest"}, true), qPrintable(err));  // valid: removed and no widget
+        QCOMPARE(got.removedRoles, QStringList{"largest"});
+        resora::closeDocument(&o.document);
+    }
+
     void omitRejectedForBundled()
     {
         QVERIFY(exportBundled(capture(0), p("b.resora"), "t").ok());

@@ -23,6 +23,12 @@ struct State
     // Roles whose image association the user removed (Open flow, "Remove from Dashboard"). The analytics
     // JSON is untouched; an export omits these associations and records them in layout.omitted_roles.
     QStringList removedRoles;
+    // Restored dashboards only: role -> validated runtime image file (extracted copy / validated or relinked
+    // original). When `restored` is true an export takes image files ONLY from here; a remaining role without
+    // an entry is an error (no fallback to the persisted analytics paths, which may be stale).
+    bool restored = false;
+    QHash<QString, QString> runtimePaths;
+    // Equality is the LOGICAL dashboard state; `restored`/`runtimePaths` are runtime transport and are excluded.
     bool operator==(const State &o) const
     {
         return viewIndex == o.viewIndex && result == o.result && removedRoles == o.removedRoles;

@@ -37,6 +37,8 @@ public:
     bool showRestored(const QJsonObject &result, const QHash<QString, QString> &pathByRole, QString *error,
                       const QStringList &removedRoles = {});
     const QStringList &removedRoles() const { return removedRoles_; }
+    bool isRestored() const { return restored_; }  // true after showRestored() until the next showAnalytics()/clear()
+    const QHash<QString, QString> &runtimePaths() const { return runtimePaths_; }
     // 0 = Dashboard (default), 1 = Detailed View. Switching never rescans.
     int viewIndex() const;
     void setViewIndex(int index);
@@ -69,6 +71,8 @@ private:
     AnalyticsData data_;
     QJsonObject result_;
     QStringList removedRoles_;
+    bool restored_ = false;
+    QHash<QString, QString> runtimePaths_;
     QString source_;
     QLabel *emptyArt_, *empty_, *sourceLabel_, *staleLabel_, *basis_;
     QWidget *content_, *detailed_;
