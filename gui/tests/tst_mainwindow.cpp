@@ -238,7 +238,7 @@ private slots:
             QVERIFY(d->startOpen());
             QTRY_VERIFY(!d->isRunning());
             QCOMPARE(d->state(), OpenResoraDialog::State::NeedsRelink);
-            for (const auto &pr : d->relinkPanel()->problems())
+            for (const auto &pr : d->relinkPanel()->model().unresolved())
                 d->relinkPanel()->assign(pr.imageId, p("fake.bin"));
             QVERIFY(d->retryWithRelinks());
             QTRY_VERIFY(!d->isRunning());

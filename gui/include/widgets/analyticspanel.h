@@ -33,7 +33,10 @@ public:
     // Restored .resora dashboard: result() keeps the persisted JSON unchanged; the extreme-image rows use
     // `pathByRole` (largest/smallest/highest/lowest -> resolved file). Fails (panel untouched) if a role that
     // has an image has no resolved path; never falls back to the serialized path.
-    bool showRestored(const QJsonObject &result, const QHash<QString, QString> &pathByRole, QString *error);
+    // `removedRoles`: associations the user removed; those rows show "Removed from dashboard" and need no path.
+    bool showRestored(const QJsonObject &result, const QHash<QString, QString> &pathByRole, QString *error,
+                      const QStringList &removedRoles = {});
+    const QStringList &removedRoles() const { return removedRoles_; }
     // 0 = Dashboard (default), 1 = Detailed View. Switching never rescans.
     int viewIndex() const;
     void setViewIndex(int index);
@@ -65,6 +68,7 @@ private:
 
     AnalyticsData data_;
     QJsonObject result_;
+    QStringList removedRoles_;
     QString source_;
     QLabel *emptyArt_, *empty_, *sourceLabel_, *staleLabel_, *basis_;
     QWidget *content_, *detailed_;

@@ -20,7 +20,13 @@ struct State
 {
     QJsonObject result;  // scan/analytics result: source info + "analytics" (engine object, unmodified)
     int viewIndex = 0;   // 0 = Dashboard, 1 = Detailed View
-    bool operator==(const State &o) const { return viewIndex == o.viewIndex && result == o.result; }
+    // Roles whose image association the user removed (Open flow, "Remove from Dashboard"). The analytics
+    // JSON is untouched; an export omits these associations and records them in layout.omitted_roles.
+    QStringList removedRoles;
+    bool operator==(const State &o) const
+    {
+        return viewIndex == o.viewIndex && result == o.result && removedRoles == o.removedRoles;
+    }
 };
 
 // Dashboard element -> image link. Roles: largest, smallest, highest, lowest.
@@ -33,7 +39,8 @@ struct Restored
 {
     State state;
     QJsonArray charts;                // validated chart definitions (equal to chartsFor(state))
-    QList<ElementImage> elementImages;
+    QList<ElementImage> elementImages;  // only the associations that remain (removed roles are absent)
+    QStringList removedRoles;           // associations omitted by the user / recorded as removed in the file
     QStringList warnings;             // unknown fields found and NOT restored (never silent)
     QString documentId;
     bool linked = false;

@@ -75,7 +75,7 @@ add_library(imgan_core STATIC
     src/widgets/segmentedswitch.cpp
     src/backend/dashboardmodel.cpp
     src/backend/dashboardserialize.cpp src/backend/dashboardrestore.cpp src/backend/dashboardsession.cpp
-    src/backend/resoraworkflow.cpp src/backend/resorajobs.cpp
+    src/backend/resoraworkflow.cpp src/backend/resorajobs.cpp src/backend/relinkmodel.cpp
     src/widgets/confirmdialog.cpp src/widgets/exportdialog.cpp src/widgets/relinkpanel.cpp
     src/widgets/openresoradialog.cpp
     src/widgets/pixelspan.cpp

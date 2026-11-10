@@ -1,5 +1,6 @@
 // Export/Import UI workflow tests (Phase 6). Offscreen, temporary data only; no coordinates or timing.
 #include <QDir>
+#include <QTableWidget>
 #include <QFile>
 #include <QJsonDocument>
 #include <QStandardPaths>
@@ -206,8 +207,8 @@ private slots:
         QVERIFY(!dlg.openButton()->isEnabled());
         QVERIFY(!dlg.retryWithRelinks());  // blocked until all assigned
 
-        const QString idA = rp->problems()[0].imageId, idB = rp->problems()[1].imageId;
-        rp->assign(idA, p(rp->problems()[0].name == "big.png" ? "moved_big.png" : "s.jpg.bak"));
+        const QString idA = rp->model().rows()[0].imageId, idB = rp->model().rows()[1].imageId;
+        rp->assign(idA, p(rp->model().rows()[0].name == "big.png" ? "moved_big.png" : "s.jpg.bak"));
         QVERIFY(!rp->complete());
         QVERIFY(!dlg.retryWithRelinks());
         // wrong content with the right name must be rejected by the engine
@@ -218,9 +219,11 @@ private slots:
         QTRY_VERIFY(!dlg.isRunning());
         QCOMPARE(dlg.state(), OpenResoraDialog::State::NeedsRelink);
         QVERIFY(!dlg.session());
-        QVERIFY(rp->rowCount() >= 1);  // still unresolved; choices cleared
+        QCOMPARE(rp->rowCount(), 2);  // table keeps every image
+        QCOMPARE(rp->model().count(resoraui::RelinkModel::Status::WrongImage), 1);
+        QCOMPARE(rp->model().count(resoraui::RelinkModel::Status::Resolved), 1);
 
-        const auto probs = rp->problems();
+        const auto probs = rp->model().unresolved();
         for (const auto &pr : probs)
             rp->assign(pr.imageId, p(pr.name == "big.png" ? "moved_big.png" : "s.jpg.bak"));
         QVERIFY(dlg.retryWithRelinks());
@@ -282,6 +285,133 @@ private slots:
         dlg.setFile(p("nope.resora"));
         QVERIFY(!dlg.openButton()->isEnabled());
         QVERIFY(!dlg.startOpen());
+    }
+
+    // ---- Relinking table / Remove from Dashboard (Phase 6 correction) --------------------------------
+    static QByteArray slurp(const QString &f)
+    {
+        QFile x(f);
+        return x.open(QIODevice::ReadOnly) ? x.readAll() : QByteArray();
+    }
+    // Opens a Linked dashboard whose two images are both gone; leaves the dialog in NeedsRelink.
+    void blockBoth(OpenResoraDialog &dlg)
+    {
+        for (const char *f : {"l.resora", "moved_big.png", "moved_s.jpg"})  // an existing destination would ask to overwrite
+            QFile::remove(p(f));
+        exportTo(resoraui::Mode::Linked, p("l.resora"));
+        QVERIFY(QFile::rename(p("pics/big.png"), p("moved_big.png")));
+        QVERIFY(QFile::rename(p("pics/s.jpg"), p("moved_s.jpg")));
+        dlg.setFile(p("l.resora"));
+        QVERIFY(dlg.startOpen());
+        QTRY_VERIFY(!dlg.isRunning());
+        QCOMPARE(dlg.state(), OpenResoraDialog::State::NeedsRelink);
+    }
+    QString idOf(RelinkPanel *rp, const QString &name)
+    {
+        for (const auto &r : rp->model().rows())
+            if (r.name == name)
+                return r.imageId;
+        return {};
+    }
+
+    void tableShowsAllMissingImagesAtOnce()
+    {
+        OpenResoraDialog dlg;
+        blockBoth(dlg);
+        RelinkPanel *rp = dlg.relinkPanel();
+        QCOMPARE(rp->rowCount(), 2);
+        QCOMPARE(rp->table()->rowCount(), 2);
+        QCOMPARE(rp->table()->columnCount(), 4);
+        for (const auto &r : rp->model().rows()) {
+            QCOMPARE(r.status, resoraui::RelinkModel::Status::Missing);
+            QVERIFY(!r.roles.isEmpty());
+        }
+        const auto *big = rp->model().find(idOf(rp, "big.png"));
+        QVERIFY(big && big->roles.contains("largest") && big->roles.contains("highest"));
+        QCOMPARE(rp->table()->item(0, 2)->text(), QString("Missing"));
+    }
+
+    void removeOneThenResolveOtherOpensWithoutIt()
+    {
+        OpenResoraDialog dlg;
+        blockBoth(dlg);
+        RelinkPanel *rp = dlg.relinkPanel();
+        const QByteArray src = slurp(p("l.resora")), img = slurp(p("moved_big.png"));
+        int asked = 0;
+        rp->setRemoveConfirmer([&](const QString &, const QStringList &) { ++asked; return false; });
+        QVERIFY(!rp->requestRemove(idOf(rp, "big.png")));  // declined: nothing changes
+        QCOMPARE(rp->model().count(resoraui::RelinkModel::Status::Removed), 0);
+        rp->setRemoveConfirmer([&](const QString &, const QStringList &) { ++asked; return true; });
+        QVERIFY(rp->requestRemove(idOf(rp, "big.png")));
+        QCOMPARE(asked, 2);
+        for (int i = 0; i < rp->model().rows().size(); ++i)
+            if (rp->model().rows().at(i).name == "big.png")
+                QCOMPARE(rp->table()->item(i, 2)->text(), QString("Removed from Dashboard"));
+        QVERIFY(!rp->complete());          // the other image is still unresolved
+        QVERIFY(!dlg.retryWithRelinks());  // still blocked
+        QVERIFY(!rp->assign(idOf(rp, "big.png"), p("moved_big.png")));  // a removed row takes no replacement
+        rp->assign(idOf(rp, "s.jpg"), p("moved_s.jpg"));
+        QVERIFY(rp->complete());
+        QVERIFY(dlg.retryWithRelinks());
+        QTRY_VERIFY(!dlg.isRunning());
+        QCOMPARE(dlg.state(), OpenResoraDialog::State::Done);
+        const dashboard::Restored *r = dlg.session()->current();
+        QVERIFY(r);
+        QCOMPARE(r->removedRoles, (QStringList{"largest", "highest"}));
+        QCOMPARE(r->elementImages.size(), 2);
+        QCOMPARE(slurp(p("l.resora")), src);
+        QCOMPARE(slurp(p("moved_big.png")), img);  // the image file itself is untouched
+        QVERIFY(QFileInfo(p("moved_big.png")).isFile());
+    }
+
+    void removeAllAssociationsOpens()
+    {
+        OpenResoraDialog dlg;
+        blockBoth(dlg);
+        RelinkPanel *rp = dlg.relinkPanel();
+        rp->setRemoveConfirmer([](const QString &, const QStringList &) { return true; });
+        QVERIFY(rp->requestRemove(idOf(rp, "big.png")));
+        QVERIFY(rp->requestRemove(idOf(rp, "s.jpg")));
+        QVERIFY(rp->complete());
+        QVERIFY(dlg.retryWithRelinks());
+        QTRY_VERIFY(!dlg.isRunning());
+        QCOMPARE(dlg.state(), OpenResoraDialog::State::Done);
+        QCOMPARE(dlg.session()->current()->removedRoles.size(), 4);
+        QVERIFY(dlg.session()->current()->elementImages.isEmpty());
+    }
+
+    void wrongReplacementRejectedAcceptedOneKeptAndClearRestores()
+    {
+        OpenResoraDialog dlg;
+        blockBoth(dlg);
+        RelinkPanel *rp = dlg.relinkPanel();
+        put(p("fake.bin"), QByteArray(900, 'z'));
+        rp->assign(idOf(rp, "big.png"), p("moved_big.png"));
+        rp->assign(idOf(rp, "s.jpg"), p("fake.bin"));
+        QVERIFY(dlg.retryWithRelinks());
+        QTRY_VERIFY(!dlg.isRunning());
+        QCOMPARE(dlg.state(), OpenResoraDialog::State::NeedsRelink);
+        using S = resoraui::RelinkModel::Status;
+        QCOMPARE(rp->model().find(idOf(rp, "s.jpg"))->status, S::WrongImage);  // rejected by size/hash
+        QCOMPARE(rp->model().find(idOf(rp, "big.png"))->status, S::Resolved);  // accepted stays accepted
+        QCOMPARE(rp->chosen().value(idOf(rp, "big.png")), p("moved_big.png"));
+        QVERIFY(!rp->complete());
+        // Clear Replacement returns an accepted association to unresolved (not removed)
+        QVERIFY(rp->clearReplacement(idOf(rp, "big.png")));
+        QCOMPARE(rp->model().find(idOf(rp, "big.png"))->status, S::Missing);
+        QVERIFY(rp->chosen().isEmpty());
+        QVERIFY(rp->omitted().isEmpty());
+        QVERIFY(!rp->clearReplacement(idOf(rp, "big.png")));  // nothing left to clear
+        // a pending choice can be cleared too
+        rp->assign(idOf(rp, "big.png"), p("moved_big.png"));
+        QCOMPARE(rp->model().find(idOf(rp, "big.png"))->status, S::ReplacementChosen);
+        QVERIFY(rp->clearReplacement(idOf(rp, "big.png")));
+        QVERIFY(!dlg.retryWithRelinks());  // still blocked while anything is unresolved
+        rp->assign(idOf(rp, "big.png"), p("moved_big.png"));
+        rp->assign(idOf(rp, "s.jpg"), p("moved_s.jpg"));
+        QVERIFY(dlg.retryWithRelinks());
+        QTRY_VERIFY(!dlg.isRunning());
+        QCOMPARE(dlg.state(), OpenResoraDialog::State::Done);
     }
 };
 

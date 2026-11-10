@@ -59,3 +59,6 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 
 ## 2026-11-09 Phase 6 decisions [V]
 - Dialogs use test seams (overwrite confirmer); closing while a job runs cancels and closes only after the worker finishes; passed relinks are retained across retries; old session is released only after the new one is shown.
+
+## 2026-11-10 Remove from Dashboard [U request, V implemented]
+- Accepted: explicit per-open omission of linked images (not a global bypass); removal = dashboard association only, never deletes the image; removal persisted on re-export via optional `layout.omitted_roles`. Interim status "Replacement chosen" added beside the four requested statuses. No undo-removal action (not requested).

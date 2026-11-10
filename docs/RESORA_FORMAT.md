@@ -163,3 +163,9 @@ Tests: `gui/tests/tst_dashboardstate.cpp` (12 passed).
 
 ## Export/Import UI (Phase 6)
 Export: Analytics page action or Ctrl+Shift+E; choose Bundled (copies images, standalone, larger) or Linked (absolute paths, originals must remain, identity checked on open); destination must end in `.resora`, cannot be a source image, existing files need confirmation. Open: Ctrl+Shift+O; all unresolved linked images are listed together, replacements are checked by size and SHA-256, opening is blocked until all pass; a failed open never changes the current dashboard.
+
+### Remove from Dashboard (Phase 6 correction, additive)
+- Open: `OpenOptions::omitImages` (Linked only; this call only) skips validation of the listed image ids; unknown ids or a Bundled document fail with `InvalidInput`; all other images still block. The document then has no entry for them (`omittedImageIds`).
+- Restore: widgets of omitted images are dropped and their roles reported in `Restored::removedRoles`; no path remains for them. The analytics JSON is unchanged.
+- Export: roles in `State::removedRoles` get no widget and no image; they are listed in the optional `layout.omitted_roles`. Restore accepts a missing role widget only if the role is listed there (or omitted in the current open); a role both listed and present as a widget is rejected. `schema_version` stays 1; older readers reject such a file because the role association is missing.
+- Original image files and the source `.resora` are never modified.

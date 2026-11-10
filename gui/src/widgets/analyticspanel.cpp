@@ -1,6 +1,7 @@
 #include "widgets/analyticspanel.h"
 
 #include <QDesktopServices>
+#include <utility>
 #include <QDir>
 #include <QFileInfo>
 #include <QGridLayout>
@@ -66,6 +67,15 @@ public:
         folder->setEnabled(i.valid);
         setAccessibleName(caption_->text());
         setAccessibleDescription(i.valid ? detail + QStringLiteral(" ") + i.path : detail_->text());
+    }
+    void setRemoved(const QString &why)
+    {
+        path.clear();
+        detail_->setText(why);
+        path_->setVisible(false);
+        props->setEnabled(false);
+        folder->setEnabled(false);
+        setAccessibleDescription(why);
     }
     QString detailText() const { return detail_->text(); }
     QString path;
@@ -263,6 +273,7 @@ void AnalyticsPanel::clear()
 {
     data_ = AnalyticsData();
     result_ = QJsonObject();
+    removedRoles_.clear();
     export_->setEnabled(false);
     dashboard_->clear();
     source_.clear();
@@ -307,7 +318,8 @@ void AnalyticsPanel::showAnalytics(const QJsonObject &result)
 // Restored dashboard: `result` stays exactly as persisted (result_), while the four extreme images use the
 // runtime paths resolved by the import engine. A missing role path is an error: no fallback to the stale
 // serialized path, and the panel is left untouched.
-bool AnalyticsPanel::showRestored(const QJsonObject &result, const QHash<QString, QString> &pathByRole, QString *error)
+bool AnalyticsPanel::showRestored(const QJsonObject &result, const QHash<QString, QString> &pathByRole, QString *error,
+                                  const QStringList &removedRoles)
 {
     AnalyticsData d = AnalyticsModel::fromJson(result.value(QLatin1String("analytics")).toObject());
     if (!d.valid) {
@@ -320,6 +332,8 @@ bool AnalyticsPanel::showRestored(const QJsonObject &result, const QHash<QString
                           Slot{"highest", &d.highest}, Slot{"lowest", &d.lowest}}) {
         if (!s.image->valid)
             continue;
+        if (removedRoles.contains(QLatin1String(s.role)))
+            continue;  // removed by the user: no association, no path required
         const QString path = pathByRole.value(QLatin1String(s.role));
         if (path.isEmpty()) {
             if (error)
@@ -329,6 +343,11 @@ bool AnalyticsPanel::showRestored(const QJsonObject &result, const QHash<QString
         s.image->path = path;
     }
     present(result, d);
+    removedRoles_ = removedRoles;  // present() reset it; populate() below shows the removed rows
+    for (const auto &pr : {std::pair<const char *, ExtremeRow *>{"largest", largest_}, {"smallest", smallest_},
+                           {"highest", highest_}, {"lowest", lowest_}})
+        if (removedRoles_.contains(QLatin1String(pr.first)))
+            pr.second->setRemoved(tr("Removed from dashboard (the original image file is untouched)."));
     return true;
 }
 
@@ -336,6 +355,7 @@ void AnalyticsPanel::present(const QJsonObject &result, const AnalyticsData &d)
 {
     data_ = d;
     result_ = result;
+    removedRoles_.clear();
     export_->setEnabled(d.valid);
     source_ = describeSource(result);
     sourceLabel_->setText(tr("Based on: %1").arg(source_));

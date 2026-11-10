@@ -79,12 +79,28 @@ Plan plan(const State &s)
         return p;
     }
 
-    QJsonArray widgets;
+    for (const QString &rr : s.removedRoles) {
+        bool known = false;
+        for (const Role &r : kRoles)
+            known = known || rr == QLatin1String(r.name);
+        if (!known)
+            problems << QStringLiteral("Unsupported removed role '%1'").arg(rr);
+    }
+    if (!problems.isEmpty()) {
+        p.error = problems.join(QLatin1Char('\n'));
+        return p;
+    }
+
+    QJsonArray widgets, omitted;
     QSet<QString> seen;
     for (const Role &r : kRoles) {
         const AnalyticsImage &im = d.*(r.image);
         if (!im.valid)
             continue;
+        if (s.removedRoles.contains(QLatin1String(r.name))) {  // user-removed association: no widget, no image
+            omitted << QLatin1String(r.name);
+            continue;
+        }
         const QString path = im.path;
         if (path.isEmpty() || !QFileInfo(path).isAbsolute()) {
             problems << QStringLiteral("Image for '%1' has no absolute path: %2").arg(r.name, path);
@@ -117,6 +133,8 @@ Plan plan(const State &s)
 
     p.layout = QJsonObject{{"active_view", s.viewIndex == 0 ? "dashboard" : "detailed"},
                            {"visible_sections", QJsonValue(QJsonValue::Null)}, {"widgets", widgets}};
+    if (!omitted.isEmpty())
+        p.layout.insert("omitted_roles", omitted);
     p.charts = chartsFor(data);
     p.analytics = data;
     QJsonObject ctx = s.result;  // every non-analytics key is kept verbatim (nothing silently dropped)

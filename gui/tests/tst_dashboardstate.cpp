@@ -365,6 +365,127 @@ private slots:
         QVERIFY(ses.current()->state == a);
         QCOMPARE(QDir(p("cache")).entryList(QDir::Dirs | QDir::NoDotAndDotDot).size(), 1);  // only the active one
     }
+
+    // ---- Remove from Dashboard (Phase 6 correction) -------------------------------------------------
+    static QByteArray slurp(const QString &f)
+    {
+        QFile x(f);
+        return x.open(QIODevice::ReadOnly) ? x.readAll() : QByteArray();
+    }
+    resora::OpenResult blockedLinked(QSet<QString> *ids = nullptr)
+    {
+        const State s = capture(0);
+        if (!exportLinked(s, p("l.resora"), "t").ok())
+            return {};
+        QDir(p("pics")).removeRecursively();
+        const resora::OpenResult b = resora::openResora(p("l.resora"), resora::OpenOptions{p("cache")});
+        if (ids)
+            for (const auto &x : b.problems)
+                ids->insert(x.imageId);
+        return b;
+    }
+
+    void omittedImagesAreScopedAndNeverSilent()
+    {
+        const resora::OpenResult b = blockedLinked();
+        QCOMPARE(b.error, resora::OpenError::LinksBlocked);
+        QCOMPARE(b.problems.size(), 2);  // every missing image reported together
+        for (const auto &x : b.problems)
+            QVERIFY(!x.roles.isEmpty());
+        const QByteArray before = slurp(p("l.resora"));
+        resora::OpenOptions o{p("cache")};
+        o.omitImages.insert(b.problems.at(0).imageId);  // only one omitted: the other still blocks
+        const resora::OpenResult one = resora::openResora(p("l.resora"), o);
+        QCOMPARE(one.error, resora::OpenError::LinksBlocked);
+        QCOMPARE(one.problems.size(), 1);
+        QCOMPARE(one.problems.at(0).imageId, b.problems.at(1).imageId);
+        o.omitImages.insert("img-nope");  // unknown id is an error, never ignored
+        QCOMPARE(resora::openResora(p("l.resora"), o).error, resora::OpenError::InvalidInput);
+        QCOMPARE(slurp(p("l.resora")), before);
+        // the default path is unchanged
+        QCOMPARE(resora::openResora(p("l.resora"), resora::OpenOptions{p("cache")}).error, resora::OpenError::LinksBlocked);
+    }
+
+    void removeOneAssociationKeepsTheRest()
+    {
+        const resora::OpenResult b = blockedLinked();
+        QString bigId, sId;
+        for (const auto &x : b.problems)
+            (x.name == "big.png" ? bigId : sId) = x.imageId;
+        const QByteArray src = slurp(p("l.resora"));
+        QVERIFY(put(p("moved/s.jpg"), QByteArray(900, 'b')));
+        resora::OpenOptions o{p("cache")};
+        o.omitImages.insert(bigId);
+        o.relinks.insert(sId, p("moved/s.jpg"));
+        const resora::OpenResult r = resora::openResora(p("l.resora"), o);
+        QVERIFY2(r.ok(), qPrintable(r.message));
+        QCOMPARE(r.document.images.size(), 1);
+        QCOMPARE(r.document.omittedImageIds, QStringList{bigId});
+        Restored got;
+        QString err;
+        QVERIFY2(restore(r.document, &got, &err), qPrintable(err));
+        QCOMPARE(got.removedRoles, (QStringList{"largest", "highest"}));
+        QCOMPARE(got.elementImages.size(), 2);
+        const QHash<QString, QString> paths = runtimePaths(got);
+        QVERIFY(!paths.contains("largest") && !paths.contains("highest"));
+        QCOMPARE(paths.value("smallest"), p("moved/s.jpg"));
+        QCOMPARE(paths.value("lowest"), p("moved/s.jpg"));
+        for (const auto &e : got.elementImages)  // no stale path of the removed image anywhere
+            QVERIFY(!e.path.contains("big.png"));
+        QCOMPARE(got.state.result, result());  // analytics JSON untouched
+        QCOMPARE(slurp(p("l.resora")), src);   // source file untouched
+        AnalyticsPanel panel;
+        QVERIFY2(panel.showRestored(got.state.result, paths, &err, got.removedRoles), qPrintable(err));
+        QCOMPARE(panel.removedRoles(), got.removedRoles);
+        QCOMPARE(panel.result(), result());
+        resora::OpenedDocument d = r.document;
+        resora::closeDocument(&d);
+    }
+
+    void removeAllAndExportAgainKeepsRemoval()
+    {
+        QSet<QString> ids;
+        blockedLinked(&ids);
+        resora::OpenOptions o{p("cache")};
+        o.omitImages = ids;
+        const resora::OpenResult r = resora::openResora(p("l.resora"), o);
+        QVERIFY2(r.ok(), qPrintable(r.message));
+        QCOMPARE(r.document.images.size(), 0);
+        Restored got;
+        QString err;
+        QVERIFY2(restore(r.document, &got, &err), qPrintable(err));
+        QCOMPARE(got.removedRoles.size(), 4);
+        QVERIFY(got.elementImages.isEmpty());
+        const QByteArray src = slurp(p("l.resora"));
+        QVERIFY2(exportLinked(got.state, p("n.resora"), "t").ok(), "re-export");
+        QCOMPARE(slurp(p("l.resora")), src);
+        Restored again;
+        QVERIFY2(openRestore(p("n.resora"), &again, &err), qPrintable(err));
+        QCOMPARE(again.removedRoles, got.removedRoles);
+        QVERIFY(again.elementImages.isEmpty());
+        QCOMPARE(again.state.result, result());
+        QVERIFY(again.charts == got.charts);
+        // partial removal also survives a Bundled export
+        makeImages();
+        State partial = capture(0);
+        partial.removedRoles = {"largest", "highest"};
+        QVERIFY2(exportBundled(partial, p("pb.resora"), "t").ok(), "bundled partial");
+        Restored pb;
+        QVERIFY2(openRestore(p("pb.resora"), &pb, &err), qPrintable(err));
+        QCOMPARE(pb.removedRoles, (QStringList{"largest", "highest"}));
+        QCOMPARE(pb.elementImages.size(), 2);
+        QVERIFY(QFileInfo(p("pics/big.png")).isFile());  // original image untouched
+        partial.removedRoles = {"bogus"};
+        QVERIFY(!plan(partial).ok);
+    }
+
+    void omitRejectedForBundled()
+    {
+        QVERIFY(exportBundled(capture(0), p("b.resora"), "t").ok());
+        resora::OpenOptions o{p("cache")};
+        o.omitImages.insert("img-0000");
+        QCOMPARE(resora::openResora(p("b.resora"), o).error, resora::OpenError::InvalidInput);
+    }
 };
 
 QTEST_MAIN(TstDashboardState)

@@ -67,3 +67,6 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 
 ## 2026-11-09 Phase 6 final-integration verification [V]
 - Added `tst_mainwindow` (7 tests: Ctrl+Shift+E/O wiring via QShortcut::activated, repeat/nested activation guarded, success swap A->B with old cache released only after B active, failed/cancelled/relink-failure keep A). MainWindow got a `dashboardDialogOpen_` re-entrancy guard and `dashboardSession()` accessor; open dialog is destroyed before the session is adopted. Lifecycle reviewed: no rewrite needed. Phase 6 stays IN PROGRESS; not visually verified; nothing committed; Phase 7 not started.
+
+## 2026-11-10 Phase 6 correction: relink table + Remove from Dashboard [V]
+- Implemented, uncommitted: table-based `RelinkPanel` + `RelinkModel`, `OpenOptions::omitImages` (per-call, Linked only), `State/Restored::removedRoles`, optional `layout.omitted_roles`. Default Phase 4 blocking unchanged. Details in implement.md. Automated: ctest 19/19; manual/visual none. Phase 6 still IN PROGRESS. Risk: restored dashboards export from the persisted (original) analytics paths (pre-existing Phase 5 design), so re-exporting a relinked/Bundled-opened dashboard needs those paths to exist.

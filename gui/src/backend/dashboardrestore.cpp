@@ -53,7 +53,7 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
     if (view == "dashboard") r.state.viewIndex = 0;
     else if (view == "detailed") r.state.viewIndex = 1;
     else return fail(QStringLiteral("layout has an unsupported active_view '%1'").arg(view));
-    unknownKeys(lay, {"schema_version", "active_view", "visible_sections", "widgets"}, "layout", &r.warnings);
+    unknownKeys(lay, {"schema_version", "active_view", "visible_sections", "widgets", "omitted_roles"}, "layout", &r.warnings);
     if (!lay.value("visible_sections").isNull() && !lay.value("visible_sections").isUndefined())
         r.warnings << "layout.visible_sections is not supported by this dashboard and was not restored";
     if (!lay.value("widgets").isArray())
@@ -63,6 +63,20 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
     for (const resora::ImageRef &im : doc.images)
         byId.insert(im.imageId, &im);
     QSet<QString> widgetIds, roles;
+    const QSet<QString> omittedImages(doc.omittedImageIds.begin(), doc.omittedImageIds.end());
+    QSet<QString> removed;  // roles whose association is absent by explicit, recorded removal
+    if (!lay.value("omitted_roles").isUndefined() && !lay.value("omitted_roles").isNull()) {
+        if (!lay.value("omitted_roles").isArray())
+            return fail("layout.omitted_roles is not an array");
+        for (const QJsonValue &v : lay.value("omitted_roles").toArray()) {
+            bool known = false;
+            for (const char *n : kRoleNames)
+                known = known || v.toString() == n;
+            if (!known)
+                return fail(QStringLiteral("layout.omitted_roles lists an unsupported role '%1'").arg(v.toString()));
+            removed.insert(v.toString());
+        }
+    }
     for (const QJsonValue &v : lay.value("widgets").toArray()) {
         const QJsonObject w = v.toObject();
         const QString id = w.value("id").toString(), role = w.value("role").toString();
@@ -78,6 +92,13 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
         if (!known || id != QStringLiteral("extreme.") + role)
             return fail(QStringLiteral("layout widget '%1' has an unsupported role '%2'").arg(id, role));
         unknownKeys(w, {"id", "role", "image_id", "row", "col", "span"}, "layout.widgets", &r.warnings);
+        if (removed.contains(role))
+            return fail(QStringLiteral("layout lists role '%1' both as a widget and as omitted").arg(role));
+        if (omittedImages.contains(imageId)) {  // the user removed this image for this open: no association, no path
+            roles.insert(role);
+            removed.insert(role);
+            continue;
+        }
         const auto it = byId.constFind(imageId);
         if (it == byId.constEnd())
             return fail(QStringLiteral("layout widget '%1' refers to unknown image '%2'").arg(id, imageId));
@@ -91,8 +112,12 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
         r.elementImages << ElementImage{role, imageId, (*it)->name, (*it)->path};
     }
     for (const char *n : kRoleNames)
-        if (imageOf(d, n).valid && !roles.contains(n))
+        if (imageOf(d, n).valid && !roles.contains(n) && !removed.contains(n))
             return fail(QStringLiteral("layout has no image association for '%1'").arg(n));
+    for (const char *n : kRoleNames)
+        if (removed.contains(n))
+            r.removedRoles << QString::fromLatin1(n);
+    r.state.removedRoles = r.removedRoles;
 
     // charts: stored definitions must be structurally valid and agree with the analytics data
     QJsonArray charts = doc.charts;

@@ -156,6 +156,7 @@ QString stateText(resora::LinkState s)
     case resora::LinkState::Unreadable: return QObject::tr("Unreadable");
     case resora::LinkState::IdentityMismatch: return QObject::tr("Different file");
     case resora::LinkState::UnsafePath: return QObject::tr("Unsafe path");
+    case resora::LinkState::Omitted: return QObject::tr("Removed");
     }
     return {};
 }

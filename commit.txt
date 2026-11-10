@@ -138,3 +138,8 @@ feat(resora): add Bundled and Linked data export (Phases 2-3)
 - Linked export: external references with size/mtime/SHA-256 identity, absolute/relative path policy, duplicate-name flags; every source is rehashed before finalizing and a mismatch aborts with a Changed issue
 - shared exportcommon.* (hashing, common JSON resources); tst_bundledexport, tst_linkedexport
 - docs/RESORA_FORMAT.md, JSON schemas, implement.md, docs/MILESTONE.md and AgentsMemory updated; Duplicates GUI test/layout tweaks included
+
+fix(gui): relinking table and Remove from Dashboard (Phase 6 correction)
+
+- RelinkPanel table + RelinkModel; OpenOptions::omitImages (per call, Linked only); removedRoles in State/Restored; optional layout.omitted_roles on export
+- tests extended in tst_dashboardstate and tst_resoraui

@@ -453,7 +453,7 @@ void MainWindow::exportDashboard()  // Ctrl+Shift+E
         return;
     dashboardDialogOpen_ = true;
     {
-        ExportDialog dlg(dashboard::State{analytics_->result(), analytics_->viewIndex()},
+        ExportDialog dlg(dashboard::State{analytics_->result(), analytics_->viewIndex(), analytics_->removedRoles()},
                          QCoreApplication::applicationVersion(), this);
         dlg.exec();
     }
@@ -478,7 +478,7 @@ void MainWindow::openDashboardFile()  // Ctrl+Shift+O
     const dashboard::Restored *r = fresh->current();
     QString why;
     // Show first; only a successful presentation replaces the old session (and releases its cache).
-    if (!analytics_->showRestored(r->state.result, dashboard::runtimePaths(*r), &why)) {
+    if (!analytics_->showRestored(r->state.result, dashboard::runtimePaths(*r), &why, r->removedRoles)) {
         setNotice(tr("The dashboard could not be shown: %1").arg(why));
         return;
     }

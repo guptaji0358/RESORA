@@ -49,8 +49,6 @@ private:
     resoraui::ImportJob job_;
     std::shared_ptr<dashboard::Session> session_;
     bool closeWhenDone_ = false;
-    QHash<QString, QString> sent_;      // relinks of the attempt in flight
-    QHash<QString, QString> accepted_;  // earlier replacements that passed validation (kept across retries)
 
     QLineEdit *path_ = nullptr;
     QLabel *status_ = nullptr;

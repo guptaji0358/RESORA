@@ -17,7 +17,7 @@ OpenResoraDialog::OpenResoraDialog(const QString &startDir, QWidget *parent)
     : FramelessDialog(tr("Open dashboard"), parent), startDir_(startDir)
 {
     setObjectName(QStringLiteral("openResoraDialog"));
-    setMinimumWidth(580);
+    setMinimumWidth(640);
     auto *col = bodyLayout();
     auto *eyebrow = new QLabel(tr("OPEN"));
     eyebrow->setProperty("role", QStringLiteral("eyebrow"));
@@ -88,8 +88,7 @@ OpenResoraDialog::OpenResoraDialog(const QString &startDir, QWidget *parent)
     connect(path_, &QLineEdit::textChanged, this, [this](const QString &t) {
         if (state_ == State::Idle || state_ == State::Failed) {
             file_ = QDir::fromNativeSeparators(t.trimmed());
-            accepted_.clear();
-            sent_.clear();
+            relink_->reset();  // choices and removals belong to one file and one open operation
             setState(State::Idle);
         }
     });
@@ -137,7 +136,7 @@ void OpenResoraDialog::setState(State s)
     relinkTools_->setVisible(relinking);
     bar_->setVisible(busy);
     open_->setText(relinking ? tr("Check and open") : tr("Open"));
-    // Opening is blocked until every unresolved image has a replacement; the engine then revalidates ALL.
+    // Opening is blocked until every image has a replacement or is removed; the engine then revalidates ALL.
     open_->setEnabled(!busy && s != State::Done &&
                       (relinking ? relink_->complete() : QFileInfo(file_).isFile()));
     close_->setText(busy ? tr("Cancel") : tr("Close"));
@@ -155,11 +154,11 @@ bool OpenResoraDialog::retryWithRelinks()
 {
     if (job_.isRunning() || state_ != State::NeedsRelink || !relink_->complete())
         return false;  // never open while an image is still unresolved
+    // Verified and newly chosen replacements, plus ONLY the images the user explicitly removed. Everything
+    // else is revalidated by the engine and still blocks the open.
     resora::OpenOptions o;
-    o.relinks = accepted_;
-    for (auto it = relink_->chosen().cbegin(); it != relink_->chosen().cend(); ++it)
-        o.relinks.insert(it.key(), it.value());
-    sent_ = o.relinks;
+    o.relinks = relink_->chosen();
+    o.omitImages = relink_->omitted();
     begin(o);
     return job_.isRunning();
 }
@@ -198,12 +197,10 @@ void OpenResoraDialog::onFinished(const resoraui::ImportOutcome &o)
     }
     if (o.error == resora::OpenError::LinksBlocked && !o.problems.isEmpty()) {
         status_->setStyleSheet(QStringLiteral("color:%1;").arg(Theme::accentColor()));
-        status_->setText(tr("%1 of %2 linked image(s) could not be verified. Choose the original files to continue.")
+        status_->setText(tr("%1 of %2 linked image(s) could not be verified. Choose the original files, or remove them from the dashboard, to continue.")
                              .arg(o.problems.size()).arg(o.linkCount));
-        // Replacements that passed stay accepted; only the still-failing images must be chosen again.
-        accepted_ = sent_;
-        for (const resora::LinkStatus &pr : o.problems)
-            accepted_.remove(pr.imageId);
+        // The table keeps every image: replacements that passed become Resolved (and stay accepted across
+        // retries); rejected ones turn into Wrong Image and must be chosen again.
         relink_->setProblems(o.problems);
         setState(State::NeedsRelink);
         return;
