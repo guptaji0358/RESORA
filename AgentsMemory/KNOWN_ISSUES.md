@@ -22,3 +22,6 @@
 None confirmed (per docs). Insights redesign unassessed [?].
 
 - `.resora` import (Phase 4): no stale cache sweep (crash leaves `doc-*` folders). (Large single-image extraction cancel is now per 1 MiB chunk; fixed.)
+
+## 2026-11-10 Phase 7 known limits [V]
+- `.resora` reliability verified on Windows 11 / local NTFS only; network shares, removable drives, FAT, cloud-synced folders, antivirus interference, full disk and power loss are untested. Finalization never deletes the only valid copy but is not power-fail atomic. A stale cache folder may stay up to ~1 h (7 days for pre-Phase-7 markers) or while its pid is reused.
