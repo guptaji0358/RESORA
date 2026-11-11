@@ -123,4 +123,27 @@ QByteArray readThumbnail(const OpenedDocument &doc, int index);
 
 QString defaultCacheRoot();
 
+// ---- stale cache sweep (Phase 7) ----
+struct SweepOptions
+{
+    // A folder is only removed when its owner process is gone AND it has not been touched for this long.
+    qint64 minAgeSeconds = 3600;
+    // Folders whose marker names no owner (older builds): much more conservative.
+    qint64 unknownOwnerMinAgeSeconds = 7 * 24 * 3600;
+};
+struct SweepReport
+{
+    int examined = 0;       // entries looked at under the cache root
+    int removed = 0;
+    int skippedActive = 0;  // owned by this or another live process
+    int skippedRecent = 0;  // owner gone but too young
+    int skippedUnsafe = 0;  // not provably ours (name, marker, symlink/junction, unexpected content)
+    int failed = 0;         // ours, stale, but removal failed (left as it was or partially removed)
+    QStringList removedDirs;
+};
+// Removes abandoned `doc-<32 hex>` folders left by crashes. Only touches direct children of `cacheRoot`
+// (default: defaultCacheRoot()) that carry a valid RESORA marker, are real directories (no symlink/junction),
+// contain only expected regular files, and belong to a process that is no longer running. Never recursive.
+SweepReport sweepStaleCache(const QString &cacheRoot = {}, const SweepOptions &opts = {});
+
 }  // namespace resora
