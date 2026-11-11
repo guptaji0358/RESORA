@@ -15,4 +15,19 @@ bool isValidResourceId(const QString &id)
     return true;
 }
 
+QString schemaVersionProblem(const QJsonValue &v, int supported, const QString &what)
+{
+    const double d = v.toDouble(-1);
+    if (!v.isDouble() || d < 1 || d != double(int(d)))
+        return QStringLiteral("%1 has no valid schema_version").arg(what);
+    const int found = int(d);
+    if (found == supported)
+        return QString();
+    if (found > supported)
+        return QStringLiteral("%1 was written by a newer RESORA (schema_version %2; this build supports %3)")
+            .arg(what).arg(found).arg(supported);
+    return QStringLiteral("%1 uses schema_version %2, which this build cannot read (no migration exists)")
+        .arg(what).arg(found);
+}
+
 }  // namespace resora

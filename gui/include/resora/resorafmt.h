@@ -2,6 +2,7 @@
 // .resora container: shared constants, error type and layout helpers. Qt Core only (no widgets, no
 // dashboard knowledge). Layout is documented in docs/RESORA_FORMAT.md.
 #include <QByteArray>
+#include <QJsonValue>
 #include <QString>
 #include <QtEndian>
 
@@ -49,6 +50,11 @@ struct Result
 
 // Resource id: [a-z0-9][a-z0-9_-]{0,62}. A flat name, never a path (no '.', '/', '\\', ':').
 bool isValidResourceId(const QString &id);
+
+// Compatibility policy for JSON resources (docs/RESORA_FORMAT.md "Versioning and compatibility"):
+// `schema_version` must be an integer equal to `supported`. Returns an empty string when it is, otherwise a
+// specific message (missing/invalid, newer than this build, or older with no migration available).
+QString schemaVersionProblem(const QJsonValue &v, int supported, const QString &what);
 
 // ---- little-endian helpers ----------------------------------------------------------------------
 inline void putU16(QByteArray &b, quint16 v) { char t[2]; qToLittleEndian(v, t); b.append(t, 2); }
