@@ -1,6 +1,7 @@
 #include "resora/resorareader.h"
 
 #include <QCryptographicHash>
+#include <QSet>
 #include <algorithm>
 
 namespace resora {
@@ -159,15 +160,16 @@ Result Reader::parseDirectory(quint64 dirOffset, quint64 dirLength, quint32 coun
     std::sort(byOffset.begin(), byOffset.end(), [](const ResourceInfo &a, const ResourceInfo &b) {
         return a.offset < b.offset;
     });
-    QStringList seen;
     for (int i = 0; i < byOffset.size(); ++i) {
         if (i > 0 && byOffset[i - 1].offset + byOffset[i - 1].storedLength > byOffset[i].offset)
             return Result::fail(Error::ResourceOutOfRange, QStringLiteral("Resource '%1' overlaps another").arg(byOffset[i].id));
     }
+    QSet<QString> seen;  // hashed: a 65536-entry directory must not cost O(n^2) comparisons
+    seen.reserve(list.size());
     for (const ResourceInfo &e : list) {
         if (seen.contains(e.id))
             return Result::fail(Error::DuplicateResourceId, QStringLiteral("Duplicate resource id: '%1'").arg(e.id));
-        seen.append(e.id);
+        seen.insert(e.id);
     }
     entries_ = list;
     return {};
