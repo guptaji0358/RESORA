@@ -327,3 +327,9 @@ Scope: <one or two lines>
 
 ### Phase 6 final integration verification (2026-11-09)
 `tst_mainwindow` added (offscreen; dialogs driven from a zero-delay timer inside `exec()`, no coordinates/animation timing). MainWindow gained a re-entrancy guard for the export/open dialogs. Phase 6 remains IN PROGRESS pending review; no visual verification.
+
+## `.resora` Phase 7: Compatibility and Reliability (2026-11-10)
+1. Automated: full ctest 20/20 (direct cmake/ninja); `tst_resorareliability` 9, `tst_resorafile` 27, `tst_dashboardstate` 24 passed. Details: implement.md "Phase 7 evidence".
+2. Manual: none; no GUI inspection.
+3. Change: unified schema_version policy, hashed duplicate checks, JSON cache marker + conservative startup sweep, safe extraction names, documented limits and compatibility policy. No format change, no migrations.
+4. Status: IN PROGRESS (awaiting user review), uncommitted. Limitations: Windows/local NTFS only; no disk-full/network/power-loss tests.
