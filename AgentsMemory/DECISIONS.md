@@ -65,3 +65,7 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 
 ## 2026-11-10 Re-export uses runtime paths [V]
 - Restored dashboards export from validated runtime paths (`State::runtimePaths`), never persisted analytics paths; missing runtime path = error. Equality of `State` stays logical. `layout.omitted_roles` stays optional, `schema_version` 1; older-reader compatibility unverified -> Phase 7.
+
+## 2026-11-10 Phase 7 decisions [V, implemented; awaiting user approval]
+- Compatibility: container major must be 1, any minor of 1 reads, header flags carried not interpreted (a "required" feature needs a major bump), `schema_version` must equal 1 exactly with specific newer/older/invalid errors, unknown layout/config keys warn. No migrations (no older format exists) - inventing one rejected. Supersedes "older-reader compatibility unverified" for omitted_roles: documented as intended rejection.
+- Stale-cache sweep implemented (supersedes "deferred to Phase 7"): only `doc-<32 hex>` real dirs with a valid JSON marker, only generated-shape image files, dead owner pid and >=1 h old (7 days for legacy markers); never recursive, never follows links. Extraction extensions limited to a fixed image list, else `.img`.
