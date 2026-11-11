@@ -3,6 +3,7 @@
 // write time). write() is atomic: data goes to a temporary file and replaces the target only on
 // success (QSaveFile), so a failed write never leaves a partial file under the final name.
 #include <QList>
+#include <QSet>
 #include <functional>
 #include <QString>
 
@@ -37,6 +38,7 @@ private:
 
     quint32 flags_ = 0;
     QList<Item> items_;
+    QSet<QString> ids_;  // O(1) duplicate check (60000-image exports)
 };
 
 }  // namespace resora

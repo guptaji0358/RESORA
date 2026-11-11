@@ -24,9 +24,8 @@ Result Writer::checkId(const QString &id) const
 {
     if (!isValidResourceId(id))
         return Result::fail(Error::InvalidResourceId, QStringLiteral("Invalid resource id: '%1'").arg(id));
-    for (const Item &it : items_)
-        if (it.id == id)
-            return Result::fail(Error::DuplicateResourceId, QStringLiteral("Duplicate resource id: '%1'").arg(id));
+    if (ids_.contains(id))
+        return Result::fail(Error::DuplicateResourceId, QStringLiteral("Duplicate resource id: '%1'").arg(id));
     if (items_.size() >= int(kMaxResources))
         return Result::fail(Error::TooManyResources, QStringLiteral("Too many resources"));
     return {};
@@ -37,6 +36,7 @@ Result Writer::addBytes(const QString &id, quint32 type, const QByteArray &data)
     const Result r = checkId(id);
     if (!r.ok())
         return r;
+    ids_.insert(id);
     items_.append({id, type, data, QString()});
     return {};
 }
@@ -48,6 +48,7 @@ Result Writer::addFile(const QString &id, quint32 type, const QString &sourcePat
     const Result r = checkId(id);
     if (!r.ok())
         return r;
+    ids_.insert(id);
     items_.append({id, type, QByteArray(), sourcePath});
     return {};
 }
