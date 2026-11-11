@@ -19,10 +19,10 @@ struct RawEntry { QByteArray id; quint32 comp = 0; quint64 offset = 0, stored = 
 
 // Builds a container with *valid* checksums around arbitrary directory entries, so structural
 // validation (not checksums) is what rejects it.
-QByteArray forge(const QByteArray &payload, const QList<RawEntry> &entries, quint16 major = 1, quint32 declaredCount = 0xFFFFFFFF)
+QByteArray forge(const QByteArray &payload, const QList<RawEntry> &entries, quint16 major = 1, quint32 declaredCount = 0xFFFFFFFF, quint16 minor = 0)
 {
     QByteArray head = magic();
-    putU16(head, major); putU16(head, 0); putU32(head, 0); putU32(head, kHeaderSize);
+    putU16(head, major); putU16(head, minor); putU32(head, 0); putU32(head, kHeaderSize);
     head.append(QByteArray(12, '\0'));
     head.append(sha(head));
     QByteArray dir;
@@ -170,6 +170,68 @@ private slots:
         QCOMPARE(openErr(magic()), Error::Truncated);
         Reader r;
         QCOMPARE(r.open(p("missing.resora")).error, Error::IoError);
+    }
+
+    void minorVersionAndFlagsPolicy()  // Phase 7: additive minors readable, flags carried but never interpreted
+    {
+        QCOMPARE(openErr(forge({}, {}, 1, 0xFFFFFFFF, 7)), Error::None);  // newer minor of the same major is read
+        QCOMPARE(openErr(forge({}, {}, 0)), Error::UnsupportedVersion);   // major 0 never existed
+        QCOMPARE(openErr(forge({}, {}, 65535)), Error::UnsupportedVersion);
+        Writer w(0x80000001u);
+        w.addBytes("a", TypeJson, "{}");
+        QVERIFY(w.write(p("fl.resora")).ok());
+        Reader r;
+        QVERIFY(r.open(p("fl.resora")).ok());
+        QCOMPARE(r.flags(), 0x80000001u);
+        QCOMPARE(r.versionMinor(), quint16(kVersionMinor));
+    }
+
+    void unknownResourceTypesAreCarried()
+    {
+        Writer w;
+        w.addBytes("future", 0xABCD, "zz");
+        QVERIFY(w.write(p("ut.resora")).ok());
+        Reader r;
+        QVERIFY(r.open(p("ut.resora")).ok());
+        QByteArray b;
+        QVERIFY(r.readResource("future", &b).ok());
+        QCOMPARE(r.info("future").type, quint32(0xABCD));
+    }
+
+    void manyResourcesStress()  // 20000 resources: hashed duplicate checks keep this fast; every one verifies
+    {
+        QElapsedTimer t;
+        t.start();
+        Writer w;
+        for (int i = 0; i < 20000; ++i)
+            QVERIFY(w.addBytes(QStringLiteral("r%1").arg(i), TypeOpaque, QByteArray::number(i)).ok());
+        QCOMPARE(w.addBytes("r5", TypeOpaque, "x").error, Error::DuplicateResourceId);
+        QVERIFY(w.write(p("many.resora")).ok());
+        Reader r;
+        QVERIFY(r.open(p("many.resora")).ok());
+        QCOMPARE(r.resources().size(), 20000);
+        QByteArray b;
+        QVERIFY(r.readResource("r19999", &b).ok());
+        QCOMPARE(b, QByteArray("19999"));
+        QVERIFY2(t.elapsed() < 20000, qPrintable(QString::number(t.elapsed())));
+    }
+
+    void hostileDirectoryEntries()  // offset+length overflow, huge declared sizes: rejected before any allocation
+    {
+        const QByteArray payload(16, 'p');
+        RawEntry e;
+        e.id = "a"; e.offset = quint64(-8); e.stored = 16; e.orig = 16;
+        QCOMPARE(openErr(forge(payload, {e})), Error::ResourceOutOfRange);
+        e.offset = kHeaderSize; e.stored = e.orig = quint64(-1);
+        QCOMPARE(openErr(forge(payload, {e})), Error::ResourceTooLarge);
+        e.stored = e.orig = kMaxResourceSize;  // within the cap, but far outside the file
+        QCOMPARE(openErr(forge(payload, {e})), Error::ResourceOutOfRange);
+        e.stored = 16; e.orig = 16; e.comp = CompressionZlib;
+        QCOMPARE(openErr(forge(payload, {e})), Error::None);  // directory is fine; reading it is what fails
+        Reader r;
+        QVERIFY(r.open(p("x.resora")).ok());
+        QByteArray out;
+        QCOMPARE(r.readResource("a", &out).error, Error::UnsupportedCompression);
     }
 
     void unsupportedVersion()
