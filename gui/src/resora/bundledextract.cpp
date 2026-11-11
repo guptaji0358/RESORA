@@ -1,10 +1,15 @@
 #include "resora/exportcommon.h"
 #include "resora/importinternal.h"
 
+#include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRegularExpression>
+#include <QSet>
 #include <QStandardPaths>
 #include <QStorageInfo>
 #include <QUuid>
@@ -21,17 +26,34 @@ QString defaultCacheRoot()
 
 namespace detail {
 
-namespace {
-constexpr const char *kMarker = ".resora-cache";
-
-// File extension taken from the (untrusted) display name only when it is short and alphanumeric.
-QString safeExtension(const QString &name)
+QByteArray cacheMarkerContent(const QString &documentId)
 {
-    static const QRegularExpression re(QStringLiteral("^[A-Za-z0-9]{1,5}$"));
-    const QString s = QFileInfo(name).suffix();
-    return re.match(s).hasMatch() ? QLatin1Char('.') + s.toLower() : QString();
+    const QJsonObject o{{"app", "RESORA"},
+                        {"kind", "resora-document-cache"},
+                        {"version", 1},
+                        {"document_id", documentId},
+                        {"pid", double(QCoreApplication::applicationPid())},
+                        {"created_utc", QDateTime::currentDateTimeUtc().toString(Qt::ISODate)}};
+    return QJsonDocument(o).toJson(QJsonDocument::Compact);
 }
 
+QString safeImageExtension(const QString &displayName)
+{
+    static const QSet<QString> known{QStringLiteral("png"),  QStringLiteral("jpg"),  QStringLiteral("jpeg"), QStringLiteral("gif"),
+                                     QStringLiteral("bmp"),  QStringLiteral("webp"), QStringLiteral("tif"),  QStringLiteral("tiff"),
+                                     QStringLiteral("ico"),  QStringLiteral("heic"), QStringLiteral("heif"), QStringLiteral("avif"),
+                                     QStringLiteral("jxl"),  QStringLiteral("jp2"),  QStringLiteral("dds"),  QStringLiteral("tga")};
+    const QString s = QFileInfo(displayName).suffix().toLower();
+    return known.contains(s) ? QLatin1Char('.') + s : QStringLiteral(".img");
+}
+
+QString safeStem(const QString &id)
+{
+    static const QRegularExpression device(QStringLiteral("^(con|prn|aux|nul|com[0-9]|lpt[0-9])$"));
+    return device.match(id).hasMatch() ? QStringLiteral("r-") + id : id;
+}
+
+namespace {
 OpenResult abortWith(const QString &dir, OpenError e, const QString &m)
 {
     QDir(dir).removeRecursively();  // `dir` was created by us a moment ago and holds only our files
@@ -56,8 +78,8 @@ OpenResult extractBundled(Reader &rd, Parsed *p, const QString &cacheRoot, Repor
     if (!QDir().mkdir(dir))
         return failWith(OpenError::ExtractionFailed, QStringLiteral("Cannot create the extraction folder"));
     {
-        QFile m(dir + QLatin1Char('/') + QLatin1String(kMarker));
-        if (!m.open(QIODevice::WriteOnly) || m.write(p->doc.documentId.toLatin1()) < 0)
+        QFile m(dir + QLatin1Char('/') + QLatin1String(kCacheMarker));
+        if (!m.open(QIODevice::WriteOnly) || m.write(cacheMarkerContent(p->doc.documentId)) < 0)
             return abortWith(dir, OpenError::ExtractionFailed, QStringLiteral("Cannot write the cache marker"));
     }
     quint64 done = 0;
@@ -65,7 +87,7 @@ OpenResult extractBundled(Reader &rd, Parsed *p, const QString &cacheRoot, Repor
         return abortWith(dir, OpenError::Cancelled, QStringLiteral("Opening cancelled"));
     for (Record &rec : p->records) {
         // Name is generated from the validated resource id + a sanitised extension; never from file contents.
-        const QString final = dir + QLatin1Char('/') + rec.bundledResource + safeExtension(rec.ref.name);
+        const QString final = dir + QLatin1Char('/') + safeStem(rec.bundledResource) + safeImageExtension(rec.ref.name);
         const QString part = final + QStringLiteral(".part");
         {
             QFile f(part);
@@ -128,7 +150,7 @@ bool closeDocument(OpenedDocument *doc)
         return true;
     const QFileInfo fi(doc->cacheDir);
     const bool marked = fi.isDir() && !fi.isSymLink() && fi.fileName().startsWith(QLatin1String("doc-"))
-                        && QFile::exists(doc->cacheDir + QLatin1Char('/') + QLatin1String(detail::kMarker));
+                        && QFile::exists(doc->cacheDir + QLatin1Char('/') + QLatin1String(detail::kCacheMarker));
     bool gone = !fi.exists();
     if (marked)
         gone = QDir(doc->cacheDir).removeRecursively();
