@@ -21,7 +21,7 @@ add_library(resora_format STATIC
     src/resora/bundledexport.cpp src/resora/destinationfinalizer.cpp
     src/resora/exportcommon.cpp src/resora/linkedexport.cpp
     src/resora/importparse.cpp src/resora/linkresolve.cpp src/resora/bundledextract.cpp
-    src/resora/importdocument.cpp)
+    src/resora/importdocument.cpp src/resora/cachesweep.cpp)
 target_include_directories(resora_format PUBLIC include)
 target_link_libraries(resora_format PUBLIC Qt6::Core)
 
