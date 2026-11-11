@@ -38,8 +38,10 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
     r.linked = doc.linked;
 
     // analytics
-    if (doc.analytics.value("schema_version").toInt(-1) != 1 || !doc.analytics.value("data").isObject())
-        return fail("analytics resource is missing its data or has an unsupported schema_version");
+    if (const QString why = resora::schemaVersionProblem(doc.analytics.value("schema_version"), 1, "analytics resource"); !why.isEmpty())
+        return fail(why);
+    if (!doc.analytics.value("data").isObject())
+        return fail("analytics resource is missing its data");
     const QJsonObject data = doc.analytics.value("data").toObject();
     const AnalyticsData d = AnalyticsModel::fromJson(data);
     if (!d.valid)
@@ -47,8 +49,8 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
 
     // layout
     const QJsonObject &lay = doc.layout;
-    if (lay.value("schema_version").toInt(-1) != 1)
-        return fail("layout has an unsupported schema_version");
+    if (const QString why = resora::schemaVersionProblem(lay.value("schema_version"), 1, "layout"); !why.isEmpty())
+        return fail(why);
     const QString view = lay.value("active_view").toString();
     if (view == "dashboard") r.state.viewIndex = 0;
     else if (view == "detailed") r.state.viewIndex = 1;
@@ -146,8 +148,10 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
 
     // config -> result
     const QJsonObject &cfg = doc.config;
-    if (cfg.value("schema_version").toInt(-1) != 1 || !cfg.value("result_context").isObject())
-        return fail("config is missing result_context or has an unsupported schema_version");
+    if (const QString why = resora::schemaVersionProblem(cfg.value("schema_version"), 1, "config"); !why.isEmpty())
+        return fail(why);
+    if (!cfg.value("result_context").isObject())
+        return fail("config is missing result_context");
     unknownKeys(cfg, {"schema_version", "recursive", "report_options", "scan_filters", "result_context"}, "config", &r.warnings);
     for (const char *k : {"report_options", "scan_filters"})
         if (cfg.value(k).isObject())
