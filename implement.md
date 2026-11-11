@@ -28,8 +28,8 @@ Phase 2 status: COMPLETED (approved by the user 2026-11-08).
 Phase 3 status: COMPLETED (approved by the user; confirmed in the Phase 5 final-review request, 2026-11-08).
 Phase 4 status: COMPLETED (approved by the user 2026-11-08, stated at the start of the Phase 5 request).
 Phase 5 status: COMPLETED (approved by the user; stated at the start of the Phase 6 request, 2026-11-09).
-Phase 6 status: IN PROGRESS (started 2026-11-09).
-Phase 7 status: NOT STARTED.
+Phase 6 status: COMPLETED (approved by the user; stated at the start of the Phase 7 request, 2026-11-10).
+Phase 7 status: IN PROGRESS (started 2026-11-10).
 
 ---
 
@@ -222,8 +222,8 @@ A phase is complete only when: (1) its scope is implemented and nothing from lat
 | Phase 3: Linked Data Export | COMPLETED (approved by the user 2026-11-08) |
 | Phase 4: Import and Opening Engine | COMPLETED (approved by the user 2026-11-08) |
 | Phase 5: Dashboard Integration | COMPLETED (approved by the user 2026-11-09) |
-| Phase 6: Export/Import UI | IN PROGRESS (started 2026-11-09) |
-| Phase 7: Compatibility and Reliability | NOT STARTED |
+| Phase 6: Export/Import UI | COMPLETED (approved by the user 2026-11-10) |
+| Phase 7: Compatibility and Reliability | IN PROGRESS (started 2026-11-10) |
 
 ### Confirmed repository facts used (inspected 2026-11-08)
 - `AnalyticsData` / `AnalyticsModel::fromJson` (`gui/include/backend/analyticsmodel.h`): Qt-Core struct parsed from the engine's `analytics` object. `DashboardModel` (`dashboardmodel.h`) turns it into `ChartItem` lists; `AnalyticsPanel` / `AnalyticsDashboard` render it. Analytics results are not persisted anywhere today.
@@ -282,3 +282,10 @@ A phase is complete only when: (1) its scope is implemented and nothing from lat
 - **Limit:** the re-export of a Bundled dashboard works only while its session (cache folder) is active; the cache is removed when the session is replaced/closed (by design).
 - **`layout.omitted_roles` (B):** schema entry added (`dashboard.schema.json`: array, unique items, enum of the 4 roles, optional, null invalid). Reader: must be an array when present (null/other types rejected), each item must be a string and an allowed role, duplicates rejected, a role listed both as widget and omitted rejected. `schema_version` stays 1; nothing was bumped. **Backward compatibility is NOT verified and not claimed.** An older (Phase 5) reader was not run against such a file; by reading its code it would reject it ("no image association") when a role is removed, and would ignore the unknown key otherwise. **Phase 7 compatibility item:** decide whether removal needs a `schema_version`/feature bump and test older-reader behaviour with a real fixture.
 - Phase 6 stays IN PROGRESS. Nothing committed. Phase 7 not started.
+
+### Phase 7 evidence: compatibility and reliability (2026-11-10)
+- **Audit findings:** (1) `schema_version` was checked with `toInt(-1) != 1` (accepted `1.0`, no newer/older/invalid distinction) and the charts schema was not checked - now one policy function with specific messages. (2) Duplicate resource-id checks were O(n^2) in reader and writer - now hashed. (3) No cleanup of crash-orphaned `doc-*` folders - conservative startup sweep added. (4) Extraction used the untrusted display-name extension (any <=5 alnum chars, e.g. `exe`) - now a fixed image-extension list else `.img`; Windows device-name stems prefixed. (5) Cache marker held only the document id (no owner) - now JSON with pid; legacy markers still recognised. (6) The sweep's first file-name check accepted any `<id>.<ext>` (a failing test showed `notes.txt` qualified) - tightened to image extensions. No defect found in reader bounds checks, the finalizer, export rehash or worker lifecycle (reviewed; Phase 1-6 tests already cover them).
+- **No format change, no migration, no breaking change.** Container 1.0 and all schemas stay at 1. Policy: `docs/RESORA_FORMAT.md` (Phase 7 section).
+- **Tests added:** `tst_resorareliability` (9: sweep removes only dead-owner intact folders; keeps active/young/unmarked/foreign/garbage-marker/unexpected-content/lookalike-name folders; legacy marker age rule; missing root; junction never followed, also as cache root; open session untouched; hostile extensions; 25 open/replace/close cycles), `tst_resorafile` +4 (minor version/flags, unknown resource type, 20000-resource stress, hostile directory entries incl. overflow), `tst_dashboardstate` +1 (schema-version and unknown-field policy).
+- **Automated (direct cmake/ninja, no run.bat):** full ctest 20/20; tst_resorafile 27, tst_resorareliability 9, tst_dashboardstate 24, tst_resoraimport 17, tst_bundledexport 27, tst_linkedexport 12, tst_resoraui 18, tst_mainwindow 7 passed.
+- **Not done / not verified:** no manual or visual verification; no full-disk, network-share, removable-drive, antivirus or power-loss testing; non-Windows branch not run. Phase 7 stays IN PROGRESS pending review. Nothing committed.
