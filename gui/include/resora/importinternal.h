@@ -56,6 +56,16 @@ bool validateLinks(const Parsed &p, const OpenOptions &opts, const QString &docD
                    QList<LinkStatus> *out);
 
 // ---- Bundled ----
+// Marker file written first into every cache folder; its JSON content (app, kind, document id, owner pid,
+// creation time) is what the stale-cache sweep and closeDocument() use to recognise a folder as ours.
+constexpr const char *kCacheMarker = ".resora-cache";
+QByteArray cacheMarkerContent(const QString &documentId);
+// Extension of an extracted image file: only a known image extension taken from the (untrusted) display
+// name, else ".img". Never an executable/script extension.
+QString safeImageExtension(const QString &displayName);
+// File stem for an extracted image: the validated resource id, prefixed when it would be a Windows device name.
+QString safeStem(const QString &resourceId);
+
 // Extracts every bundled image into a fresh marked folder under the cache root, verifying size and
 // SHA-256. On any failure/cancel the folder is removed. Fills ref.path.
 OpenResult extractBundled(Reader &rd, Parsed *p, const QString &cacheRoot, Reporter &rep);
