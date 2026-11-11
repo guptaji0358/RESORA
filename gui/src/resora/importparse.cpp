@@ -3,6 +3,7 @@
 #include <QJsonDocument>
 #include <QRegularExpression>
 #include <QSet>
+#include <utility>
 
 namespace resora::detail {
 
@@ -86,8 +87,11 @@ bool parseDocument(Reader &rd, const QString &containerPath, Parsed *out, OpenRe
         || !readJson(rd, "config", &config, &why) || !readJson(rd, "images-index", &index, &why))
         return bad(why);
 
-    if (manifest.value("schema_version").toInt(-1) != 1 || index.value("schema_version").toInt(-1) != 1)
-        return bad(QStringLiteral("Unsupported manifest or images-index schema_version"));
+    for (const auto &[doc, what] : {std::pair{&manifest, "manifest"}, std::pair{&index, "images-index"}, std::pair{&charts, "charts"}}) {
+        const QString why2 = schemaVersionProblem(doc->value("schema_version"), 1, QString::fromLatin1(what));
+        if (!why2.isEmpty())
+            return bad(why2);
+    }
     const QString mode = manifest.value("mode").toString();
     if (mode != QLatin1String("bundled") && mode != QLatin1String("linked"))
         return bad(QStringLiteral("Unknown document mode '%1'").arg(mode));
