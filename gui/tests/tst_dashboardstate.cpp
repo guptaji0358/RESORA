@@ -603,6 +603,38 @@ private slots:
         resora::closeDocument(&o.document);
     }
 
+    void versionAndUnknownFieldPolicy()  // Phase 7 compatibility policy
+    {
+        QVERIFY(exportBundled(capture(0), p("v.resora"), "t").ok());
+        resora::OpenResult o = resora::openResora(p("v.resora"), resora::OpenOptions{p("cache")});
+        QVERIFY(o.ok());
+        Restored got;
+        QString err;
+        QVERIFY2(restore(o.document, &got, &err), qPrintable(err));
+        QVERIFY(got.warnings.isEmpty());  // a current file restores with no warnings and no omitted_roles
+        const auto with = [&](const char *res, const QJsonValue &v) {
+            resora::OpenedDocument d = o.document;
+            QJsonObject &obj = std::string(res) == "layout" ? d.layout : std::string(res) == "config" ? d.config : d.analytics;
+            obj["schema_version"] = v;
+            return restore(d, &got, &err);
+        };
+        for (const char *res : {"layout", "config", "analytics"}) {
+            QVERIFY(!with(res, 2) && err.contains("newer RESORA") && err.contains("schema_version 2"));
+            QVERIFY(!with(res, 0) && err.contains("no valid schema_version"));
+            QVERIFY(!with(res, "1") && err.contains("no valid schema_version"));
+            QVERIFY(!with(res, 1.5) && err.contains("no valid schema_version"));
+            QVERIFY(with(res, 1));
+        }
+        // unknown optional fields are never silent: restored with a warning that names them
+        resora::OpenedDocument d = o.document;
+        d.layout["future_feature"] = 1;
+        d.config["future_option"] = true;
+        QVERIFY2(restore(d, &got, &err), qPrintable(err));
+        QVERIFY(got.warnings.join('|').contains("layout.future_feature"));
+        QVERIFY(got.warnings.join('|').contains("config.future_option"));
+        resora::closeDocument(&o.document);
+    }
+
     void omitRejectedForBundled()
     {
         QVERIFY(exportBundled(capture(0), p("b.resora"), "t").ok());
