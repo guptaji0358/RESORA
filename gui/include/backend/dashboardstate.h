@@ -91,9 +91,16 @@ public:
     ~Session();
     const Restored *current() const { return has_ ? &current_ : nullptr; }
     Outcome open(const QString &path, const resora::OpenOptions &opts = {}, const resora::ImportProgressFn &progress = {});
-    void close();  // drops the active dashboard and removes its cache folder
+    // Drops the active dashboard and removes its cache folder. Returns false when the folder could not be
+    // removed (in use, read-only, or not provably ours -> kept untouched); it is then remembered in
+    // pendingCleanup() instead of being forgotten, and retryCleanup() tries again.
+    bool close();
+    bool retryCleanup();                                     // true when nothing is pending afterwards
+    QStringList pendingCleanup() const { return pending_; }  // cache folders still on disk
 
 private:
+    void release(resora::OpenedDocument *d);  // closeDocument + record a failure
+    QStringList pending_;
     Restored current_;
     resora::OpenedDocument doc_;
     bool has_ = false;
