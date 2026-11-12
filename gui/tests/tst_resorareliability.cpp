@@ -1,6 +1,7 @@
 // Phase 7 reliability tests: stale-cache sweep, extraction hardening, repeated session lifecycle.
 // Deterministic generated fixtures only; links resora_format + QtTest (no widgets).
 #include "resora/bundledexport.h"
+#include "resora/importinternal.h"
 #include "resora/resoraimport.h"
 
 #include <QCoreApplication>
@@ -181,6 +182,156 @@ private slots:
         QCOMPARE(rep.skippedActive, 1);
         QVERIFY(QFileInfo::exists(r.document.images[0].path));
         QVERIFY(closeDocument(&r.document));
+    }
+
+    // ---- closeDocument ownership policy (same rules as the sweep; never recursive, never follows links) ----
+    void openCached(const QString &root, OpenedDocument *out)
+    {
+        QVERIFY2(put(p(root + "-src/a.png"), pattern(4000, 5)), "fixture");
+        QVERIFY(exportBundled(oneImage(p(root + "-src/a.png")), p(root + ".resora")).ok());
+        OpenOptions o;
+        o.cacheRoot = p(root);
+        OpenResult r = openResora(p(root + ".resora"), o);
+        QVERIFY2(r.ok(), qPrintable(r.message));
+        *out = r.document;
+    }
+
+    void closeKeepsFolderWithForeignFile()
+    {
+        OpenedDocument d;
+        openCached("c1", &d);
+        const QString dir = d.cacheDir;
+        QVERIFY(put(dir + "/notes.txt", "user data"));
+        QVERIFY(!closeDocument(&d));
+        QCOMPARE(d.cacheDir, dir);  // kept, so the caller can report/retry
+        QVERIFY(QFileInfo::exists(dir + "/notes.txt"));
+        QVERIFY(QFileInfo::exists(dir + "/.resora-cache"));
+        QVERIFY(QFileInfo::exists(d.images[0].path));  // nothing was deleted at all
+        QVERIFY(QFile::remove(dir + "/notes.txt"));    // once the foreign file is gone the same call succeeds
+        QVERIFY(closeDocument(&d));
+        QVERIFY(!QFileInfo::exists(dir));
+    }
+
+    void closeKeepsFolderWithForeignSubdirectory()
+    {
+        OpenedDocument d;
+        openCached("c2", &d);
+        const QString dir = d.cacheDir;
+        QVERIFY(put(dir + "/sub/precious.txt", "user data"));
+        QVERIFY(!closeDocument(&d));
+        QVERIFY(QFileInfo::exists(dir + "/sub/precious.txt"));
+        QVERIFY(QFileInfo::exists(d.images[0].path));
+        QVERIFY(QDir(dir + "/sub").removeRecursively());
+        QVERIFY(closeDocument(&d));
+    }
+
+    void closeRefusesMissingInvalidOrForeignMarker()
+    {
+        OpenedDocument d;
+        openCached("c3", &d);
+        const QString dir = d.cacheDir, mk = dir + "/.resora-cache";
+        const QByteArray good = [&] { QFile f(mk); return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray(); }();
+        QVERIFY(QFile::remove(mk));
+        QVERIFY(!closeDocument(&d));  // no marker
+        QVERIFY(QFileInfo::exists(d.images[0].path));
+        QVERIFY(put(mk, "garbage"));
+        QVERIFY(!closeDocument(&d));  // unparsable marker
+        QVERIFY(put(mk, marker(QCoreApplication::applicationPid(), "OtherApp")));
+        QVERIFY(!closeDocument(&d));  // someone else's marker
+        QVERIFY(put(mk, marker(deadPid() + 7)));
+        QVERIFY(!closeDocument(&d));  // valid RESORA marker of a different process: not ours to close
+        QVERIFY(QFileInfo::exists(d.images[0].path));
+        QVERIFY(put(mk, good));
+        QVERIFY(closeDocument(&d));  // restoring the real marker makes it ours again
+    }
+
+    void closeRefusesBadNameAndOutsideFolders()
+    {
+        mkDoc("c4", "plain-folder", marker(QCoreApplication::applicationPid()));
+        OpenedDocument d;
+        d.cacheDir = p("c4/plain-folder");  // valid marker but not a doc-<32 hex> name
+        QVERIFY(!closeDocument(&d));
+        QVERIFY(QFileInfo::exists(p("c4/plain-folder/image-0001.png")));
+        OpenedDocument none;  // empty cacheDir: nothing to do
+        QVERIFY(closeDocument(&none));
+        OpenedDocument gone;  // already removed: idempotent success
+        gone.cacheDir = p("c4/" + docName(9));
+        QVERIFY(closeDocument(&gone));
+    }
+
+    void closeNeverFollowsJunctionsOrSymlinks()
+    {
+        QVERIFY(put(p("c5victim/precious.png"), "precious"));
+        QVERIFY(put(p("c5victim/sub/deep.png"), "deep"));
+        // (a) the cache folder itself is a link to a folder that looks like a cache
+        mkDoc("c5real", docName(1), marker(QCoreApplication::applicationPid()));
+        QDir().mkpath(p("c5"));
+        if (!makeDirLink(p("c5/" + docName(2)), p("c5real/" + docName(1))))
+            QSKIP("cannot create a directory link/junction in this environment (needs privilege or developer mode)");
+        OpenedDocument viaLink;
+        viaLink.cacheDir = p("c5/" + docName(2));
+        QVERIFY(!closeDocument(&viaLink));
+        QVERIFY(QFileInfo::exists(p("c5real/" + docName(1) + "/image-0001.png")));
+        // (b) a link INSIDE a real cache folder pointing at user data
+        OpenedDocument d;
+        openCached("c5b", &d);
+        QVERIFY(makeDirLink(d.cacheDir + "/image-link", p("c5victim")));
+        QVERIFY(!closeDocument(&d));
+        QVERIFY(QFileInfo::exists(p("c5victim/precious.png")));
+        QVERIFY(QFileInfo::exists(p("c5victim/sub/deep.png")));
+        QVERIFY(QFileInfo::exists(d.images[0].path));  // and nothing of ours was removed either
+        // detach the link without following it, then the folder is ours again
+        QVERIFY(QDir().rmdir(d.cacheDir + "/image-link"));
+        QVERIFY(closeDocument(&d));
+        QVERIFY(QFileInfo::exists(p("c5victim/precious.png")));
+    }
+
+#ifdef Q_OS_WIN
+    // The primitive that closes the validate->delete race: while held, the folder cannot be renamed or
+    // replaced by a junction, but its files can still be deleted.
+    void dirLockBlocksRenameAndSwapButNotChildDeletion()
+    {
+        mkDoc("lk", docName(1), marker(QCoreApplication::applicationPid()));
+        const QString dir = p("lk/" + docName(1));
+        {
+            detail::DirLock lock(dir);
+            QVERIFY(lock.ok() && !lock.isReparsePoint());
+            QVERIFY(!QDir().rename(dir, p("lk/moved")));  // sharing violation: cannot be swapped out
+            QVERIFY(QFileInfo(dir).isDir());
+            QVERIFY(QFile::remove(dir + "/image-0001.png"));  // children are still deletable
+        }
+        QVERIFY(QDir().rename(dir, p("lk/moved")));  // released: normal again
+    }
+
+    void dirLockRefusesJunction()
+    {
+        mkDoc("lk2real", docName(1), marker(QCoreApplication::applicationPid()));
+        QDir().mkpath(p("lk2"));
+        if (!makeDirLink(p("lk2/" + docName(2)), p("lk2real/" + docName(1))))
+            QSKIP("cannot create a directory link/junction in this environment");
+        detail::DirLock lock(p("lk2/" + docName(2)));
+        QVERIFY(!lock.ok());
+        QVERIFY(lock.isReparsePoint());
+    }
+#endif
+
+    void failedCleanupIsReportedAndRetryable()
+    {
+        OpenedDocument d;
+        openCached("c6", &d);
+        const QString dir = d.cacheDir, img = d.images[0].path;
+        QVERIFY(QFile::setPermissions(img, QFileDevice::ReadOwner));  // Windows: DeleteFile refuses read-only files
+        const bool blocked = !closeDocument(&d);
+        if (!blocked) {
+            QSKIP("this filesystem allowed deleting a read-only file, so a deletion failure cannot be provoked");
+        }
+        QCOMPARE(d.cacheDir, dir);                  // still recorded -> reportable and retryable
+        QVERIFY(QFileInfo::exists(dir + "/.resora-cache"));  // marker is removed last, so ownership stays provable
+        QVERIFY(QFile::setPermissions(img, QFileDevice::ReadOwner | QFileDevice::WriteOwner));
+        QVERIFY(closeDocument(&d));                 // partial earlier removal is harmless: remaining entries are still ours
+        QVERIFY(!QFileInfo::exists(dir));
+        QVERIFY(d.cacheDir.isEmpty());
+        QVERIFY(d.images[0].path.isEmpty());
     }
 
     void extractedNamesNeverExecutable()  // display name is untrusted: only known image extensions survive

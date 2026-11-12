@@ -4,7 +4,61 @@
 #include <QDir>
 #include <QFileInfo>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 namespace resora::detail {
+
+#ifdef Q_OS_WIN
+namespace {
+// Classifies a drive letter WITHOUT touching the file system behind it. QueryDosDeviceW only reads the
+// object-manager symbolic link of "X:" (no I/O to the volume or the network), so a mapped share, a
+// disconnected mapping and an unreachable server all answer instantly and identically.
+bool driveIsRemote(wchar_t letter, int depth)
+{
+    if (depth > 4)  // SUBST chain too deep or cyclic: not provably local
+        return true;
+    const wchar_t dev[3] = {letter, L':', 0};
+    wchar_t buf[1024] = {};
+    if (QueryDosDeviceW(dev, buf, DWORD(sizeof(buf) / sizeof(buf[0]))) == 0)
+        return false;  // letter not assigned: nothing can be contacted; the lookup will report "not found"
+    const QString t = QString::fromWCharArray(buf);  // first (current) mapping of the multi-string
+    const auto starts = [&](const char *p) { return t.startsWith(QLatin1String(p), Qt::CaseInsensitive); };
+    if (starts("\\??\\")) {  // SUBST: judge what it points at
+        const QString rest = t.mid(4);
+        if (rest.startsWith(QLatin1String("UNC\\"), Qt::CaseInsensitive))
+            return true;
+        if (rest.size() >= 2 && rest[1] == QLatin1Char(':') && rest[0].isLetter())
+            return driveIsRemote(wchar_t(rest[0].toUpper().unicode()), depth + 1);
+        return false;  // \??\Volume{guid}\ or a local directory
+    }
+    for (const char *remote : {"\\Device\\LanmanRedirector", "\\Device\\Mup", "\\Device\\WebDavRedirector", "\\Device\\MRxDAV",
+                               "\\Device\\VBoxMiniRdr", "\\Device\\vmhgfs", "\\Device\\WinFsp"})
+        if (starts(remote))
+            return true;
+    for (const char *local : {"\\Device\\HarddiskVolume", "\\Device\\Harddisk", "\\Device\\CdRom", "\\Device\\Floppy"})
+        if (starts(local))
+            return false;
+    // Unknown device (third-party volume driver): ask the OS and stay conservative.
+    const wchar_t root[4] = {letter, L':', L'\\', 0};
+    const UINT type = GetDriveTypeW(root);
+    return type == DRIVE_REMOTE || type == DRIVE_UNKNOWN || type == DRIVE_NO_ROOT_DIR;
+}
+}  // namespace
+#endif
+
+bool isRemoteDriveLetter(QChar letter)
+{
+#ifdef Q_OS_WIN
+    if (!letter.isLetter() || letter.unicode() > 0x7f)
+        return false;
+    return driveIsRemote(wchar_t(letter.toUpper().unicode()), 0);
+#else
+    Q_UNUSED(letter);
+    return false;
+#endif
+}
 
 bool isSafeRelativePath(const QString &rel)
 {
@@ -17,6 +71,27 @@ bool isSafeRelativePath(const QString &rel)
     for (const QString &s : parts)
         if (s.isEmpty() || s == QLatin1String(".") || s == QLatin1String(".."))
             return false;
+    return true;
+}
+
+bool isLocalAbsolutePath(const QString &path)
+{
+    if (path.isEmpty() || !QDir::isAbsolutePath(path))
+        return false;
+    // Decided from the string only, before any filesystem call: no "\\server\share", "//server/share",
+    // "\\?\..." or "\\.\..." (any two leading separators of either kind), and no stray control characters.
+    const auto sep = [](QChar c) { return c == QLatin1Char('/') || c == QLatin1Char('\\'); };
+    if (path.size() >= 2 && sep(path[0]) && sep(path[1]))
+        return false;
+    // "C:foo" is relative to a per-drive current directory, not an absolute location.
+    if (path.size() >= 2 && path[1] == QLatin1Char(':') && (path.size() == 2 || !sep(path[2])))
+        return false;
+    for (const QChar c : path)
+        if (c.unicode() < 0x20)
+            return false;
+    // Mapped network drive / SUBST of a share: judged from the local DOS-device table only (no remote access).
+    if (path.size() >= 2 && path[1] == QLatin1Char(':') && isRemoteDriveLetter(path[0]))
+        return false;
     return true;
 }
 
@@ -157,19 +232,21 @@ bool validateLinks(const Parsed &p, const OpenOptions &opts, const QString &docD
         if (relinkIt != opts.relinks.constEnd()) {
             // An explicit relink is the only candidate: no silent fall back to another file.
             const QString rp = relinkIt.value();
-            if (rp.isEmpty() || !QDir::isAbsolutePath(rp)) {
+            if (!isLocalAbsolutePath(rp)) {
                 st.state = LinkState::UnsafePath;
                 st.resolvedPath = rp;
                 st.viaRelink = true;
-                st.message = QStringLiteral("Relink path must be absolute");
+                st.message = QDir::isAbsolutePath(rp) ? QStringLiteral("Network or device paths are not allowed for relinking")
+                                                      : QStringLiteral("Relink path must be absolute");
             } else {
                 res = tryPath(QDir::cleanPath(rp), false, true);
             }
         } else {
-            if (!QDir::isAbsolutePath(rec.path)) {
+            if (!isLocalAbsolutePath(rec.path)) {
                 st.state = LinkState::UnsafePath;
                 st.resolvedPath = rec.path;
-                st.message = QStringLiteral("Recorded path is not absolute");
+                st.message = QDir::isAbsolutePath(rec.path) ? QStringLiteral("Network or device path rejected (not accessed)")
+                                                            : QStringLiteral("Recorded path is not absolute");
             } else {
                 res = tryPath(QDir::cleanPath(rec.path), false, false);
             }
@@ -189,6 +266,14 @@ bool validateLinks(const Parsed &p, const OpenOptions &opts, const QString &docD
                         bases << docDir;
                     }
                     for (const QString &b : bases) {
+                        // Base folders from the file (hint_path) or the caller must be local; the document's own
+                        // folder is where the user opened the file, so it is the one permitted exception.
+                        if (b != docDir && !isLocalAbsolutePath(b)) {
+                            st.message += (st.message.isEmpty() ? QString() : QStringLiteral("; ")) + QStringLiteral("network base folder rejected (not accessed)");
+                            if (rank(LinkState::UnsafePath) > rank(st.state))
+                                st.state = LinkState::UnsafePath;
+                            continue;
+                        }
                         const QString j = joinInside(b, rec.relativePath);
                         if (j.isEmpty()) {
                             st.message += (st.message.isEmpty() ? QString() : QStringLiteral("; ")) + QStringLiteral("relative path escapes its base");
