@@ -1,0 +1,12 @@
+{
+  "name": "source_sizes",
+  "description": "Size (bytes, lines) of source files by extension, plus the largest files. Read-only.",
+  "args": {
+    "root": {"type": "path", "default": "."},
+    "exts": {"type": "str", "default": "py,cpp,h,hpp,c,cc,cmake,bat,ps1,md,json"},
+    "top": {"type": "int", "default": 10, "max": 100}
+  },
+  "timeout_s": 60,
+  "cache_ttl_s": 60,
+  "destructive": false
+}

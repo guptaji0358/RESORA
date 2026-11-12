@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/lias/hooks/prompt_retrieve.py"],
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

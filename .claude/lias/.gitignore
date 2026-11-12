@@ -1,0 +1,6 @@
+database/*.db
+database/*.db-*
+database/backups/
+cache/
+logs/
+__pycache__/
