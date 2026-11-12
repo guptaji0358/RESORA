@@ -102,3 +102,7 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 ## 2026-11-12 Phase 7 security audit follow-up [V] (uncommitted; Phase 7 still IN PROGRESS)
 - Added mapped-drive rejection (`isRemoteDriveLetter`, QueryDosDeviceW first, GetDriveTypeW fallback) and `DirLock` (Windows) inside `removeOwnedCacheDir`. Tests added: `tst_resoraimport::driveLettersLocalRemoteAndSubst` (SUBST via DefineDosDevice, no network), `tst_resorareliability::dirLockBlocksRenameAndSwapButNotChildDeletion`, `dirLockRefusesJunction`. Claude automated: full ctest 21/21 passed. Manual/real-SMB: not done.
 - Gap recorded, not fixed (accepted): `Session` pending list is lost when the object is destroyed (MainWindow replace/reset); startup sweep is the fallback.
+
+## 2026-11-12 Phase 7 application-level cache cleanup ownership [V]
+- Implemented, uncommitted: `dashboard::CacheCleanupManager` (`gui/include|src/backend/cachecleanupmanager.*`) shared by MainWindow, every `Session` and the Open dialog's import job; retries at dashboard replacement, reset points, Open dialog close and `~MainWindow`. Pending folders survive session destruction; every retry re-applies the close ownership check.
+- Automated: full ctest 21/21 (direct cmake/ninja, Qt on PATH); `tst_dashboardstate` 28 + 1 skipped (4 new cleanup cases). `run.bat` not run; no manual/GUI verification. Phase 7 IN PROGRESS; file association not started. Details: implement.md "Phase 7 - Application-level cache cleanup ownership".

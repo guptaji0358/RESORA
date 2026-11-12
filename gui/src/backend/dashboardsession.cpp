@@ -2,40 +2,33 @@
 
 namespace dashboard {
 
+Session::Session(std::shared_ptr<CacheCleanupManager> cleanup)
+    : cleanup_(cleanup ? std::move(cleanup) : std::make_shared<CacheCleanupManager>())
+{
+}
+
 Session::~Session() { close(); }
 
-void Session::release(resora::OpenedDocument *d)
+bool Session::release(resora::OpenedDocument *d)
 {
-    if (d->cacheDir.isEmpty())
-        return;
-    const QString dir = d->cacheDir;
-    if (!resora::closeDocument(d) && !pending_.contains(dir))
-        pending_ << dir;
+    if (resora::closeDocument(d))
+        return true;
+    cleanup_->add(d->cacheDir);  // closeDocument kept cacheDir on failure, so the folder is still identifiable
+    return false;
 }
 
 bool Session::close()
 {
-    if (has_)
-        release(&doc_);
+    const bool removed = !has_ || release(&doc_);
     doc_ = resora::OpenedDocument();
     current_ = Restored();
     has_ = false;
-    return pending_.isEmpty();
+    return removed;
 }
 
-bool Session::retryCleanup()
-{
-    QStringList still;
-    const QStringList todo = pending_;
-    for (const QString &dir : todo) {
-        resora::OpenedDocument stub;
-        stub.cacheDir = dir;
-        if (!resora::closeDocument(&stub))
-            still << dir;
-    }
-    pending_ = still;
-    return pending_.isEmpty();
-}
+bool Session::retryCleanup() { return cleanup_->retryAll() == 0; }
+
+QStringList Session::pendingCleanup() const { return cleanup_->pending(); }
 
 // Transactional: open + restore build a NEW state on the side. The active dashboard (and its cache
 // folder) is replaced only when both succeeded; any failure or cancel leaves it untouched and removes

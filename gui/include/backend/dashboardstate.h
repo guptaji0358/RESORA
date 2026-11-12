@@ -9,6 +9,9 @@
 #include <QString>
 #include <QStringList>
 
+#include <memory>
+
+#include "backend/cachecleanupmanager.h"
 #include "resora/linkedexport.h"
 #include "resora/resoraimport.h"
 
@@ -79,6 +82,8 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error);
 QHash<QString, QString> runtimePaths(const Restored &r);
 
 // Transactional holder: the active dashboard is replaced only after open + restore both succeeded.
+// Failed cache removals are registered with `cleanup` (shared with the owner), so they survive this
+// object's destruction. Without an argument the session gets a private manager (standalone use).
 class Session
 {
 public:
@@ -88,19 +93,20 @@ public:
         QString message;
         resora::OpenResult open;  // problems/links for LinksBlocked
     };
-    ~Session();
+    explicit Session(std::shared_ptr<CacheCleanupManager> cleanup = {});
+    ~Session();  // closes the active dashboard; a folder that cannot be removed is registered, not dropped
     const Restored *current() const { return has_ ? &current_ : nullptr; }
     Outcome open(const QString &path, const resora::OpenOptions &opts = {}, const resora::ImportProgressFn &progress = {});
-    // Drops the active dashboard and removes its cache folder. Returns false when the folder could not be
-    // removed (in use, read-only, or not provably ours -> kept untouched); it is then remembered in
-    // pendingCleanup() instead of being forgotten, and retryCleanup() tries again.
+    // Drops the active dashboard and removes its cache folder. Returns false when that folder could not be
+    // removed (in use, read-only, or not provably ours -> kept untouched); it is then pending in the manager.
     bool close();
-    bool retryCleanup();                                     // true when nothing is pending afterwards
-    QStringList pendingCleanup() const { return pending_; }  // cache folders still on disk
+    // Retries EVERY pending folder of the shared manager. True when none is pending afterwards.
+    bool retryCleanup();
+    QStringList pendingCleanup() const;  // cache folders still on disk (shared manager)
 
 private:
-    void release(resora::OpenedDocument *d);  // closeDocument + record a failure
-    QStringList pending_;
+    bool release(resora::OpenedDocument *d);  // closeDocument; on failure registers the folder, returns false
+    std::shared_ptr<CacheCleanupManager> cleanup_;
     Restored current_;
     resora::OpenedDocument doc_;
     bool has_ = false;

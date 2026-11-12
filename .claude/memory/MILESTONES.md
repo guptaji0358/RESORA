@@ -29,3 +29,4 @@ Roadmap (docs/ROADMAP.md): all four features implemented, 2–4 awaiting review.
 
 <!-- 2026-11-12 correction: the Phase 7 row above says "Uncommitted". Superseded: implementation = commit 954c4fb, low-disk audit follow-up = commit de8bedb; only the final test-strengthening (tst_exportlowdisk.cpp, 25 passed; ctest 21/21) is uncommitted. Still IN PROGRESS, not manually verified. -->
 
+- 2026-11-12 `.resora` Phase 7 cache cleanup ownership: IN PROGRESS (awaiting review), uncommitted. Details: docs/MILESTONE.md.

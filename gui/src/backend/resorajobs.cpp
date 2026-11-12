@@ -79,10 +79,11 @@ bool ExportJob::start(const dashboard::State &state, Mode mode, const QString &d
 
 // ---- import ---------------------------------------------------------------------------------------
 
-bool ImportJob::start(const QString &path, const resora::OpenOptions &opts)
+bool ImportJob::start(const QString &path, const resora::OpenOptions &opts,
+                      std::shared_ptr<dashboard::CacheCleanupManager> cleanup)
 {
     return launch(
-        [this, path, opts] {
+        [this, path, opts, cleanup] {
             int last = -1;
             QString lastStage;
             const resora::ImportProgressFn cb = [this, &last, &lastStage](const resora::ImportProgress &p) {
@@ -95,7 +96,7 @@ bool ImportJob::start(const QString &path, const resora::OpenOptions &opts)
                 return !cancel_.load();
             };
             ImportOutcome o;
-            auto session = std::make_shared<dashboard::Session>();
+            auto session = std::make_shared<dashboard::Session>(cleanup);
             const dashboard::Session::Outcome r = session->open(path, opts, cb);
             o.ok = r.ok;
             o.cancelled = r.cancelled;

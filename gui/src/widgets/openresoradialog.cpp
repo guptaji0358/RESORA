@@ -13,8 +13,9 @@
 #include "widgets/chamferbutton.h"
 #include "widgets/relinkpanel.h"
 
-OpenResoraDialog::OpenResoraDialog(const QString &startDir, QWidget *parent)
-    : FramelessDialog(tr("Open dashboard"), parent), startDir_(startDir)
+OpenResoraDialog::OpenResoraDialog(const QString &startDir, QWidget *parent,
+                                   std::shared_ptr<dashboard::CacheCleanupManager> cleanup)
+    : FramelessDialog(tr("Open dashboard"), parent), startDir_(startDir), cleanup_(std::move(cleanup))
 {
     setObjectName(QStringLiteral("openResoraDialog"));
     setMinimumWidth(640);
@@ -165,7 +166,7 @@ bool OpenResoraDialog::retryWithRelinks()
 
 void OpenResoraDialog::begin(const resora::OpenOptions &opts)
 {
-    if (!job_.start(file_, opts))
+    if (!job_.start(file_, opts, cleanup_))
         return;
     status_->setStyleSheet(QString());
     status_->setText(tr("Starting…"));

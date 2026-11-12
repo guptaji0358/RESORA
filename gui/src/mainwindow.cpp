@@ -53,6 +53,18 @@ namespace {
 constexpr qint64 kProgressIntervalMs = 100;  // UI refresh cap; backend already throttles
 }
 
+MainWindow::~MainWindow()
+{
+    session_.reset();  // a folder that cannot be removed now is registered with cleanup_ (shared, still alive)
+    retryPendingCleanup();
+}
+
+void MainWindow::retryPendingCleanup()
+{
+    // Single pass, never waits: a folder still held or not provably ours stays pending for the next point.
+    cleanup_->retryAll();
+}
+
 MainWindow::MainWindow(QWidget *parent, const QString &locationsFile) : QMainWindow(parent)
 {
     locations_ = new LocationStore(locationsFile.isEmpty() ? LocationStore::defaultFilePath() : locationsFile, this);
@@ -469,11 +481,12 @@ void MainWindow::openDashboardFile()  // Ctrl+Shift+O
     dashboardDialogOpen_ = true;
     std::shared_ptr<dashboard::Session> fresh;
     {
-        OpenResoraDialog dlg(QString(), this);
+        OpenResoraDialog dlg(QString(), this, cleanup_);
         if (dlg.exec() == QDialog::Accepted)
             fresh = dlg.session();
     }  // dialog (and its worker) destroyed before the session is adopted
     dashboardDialogOpen_ = false;
+    retryPendingCleanup();  // the dialog may have dropped a session whose folder could not be removed
     if (!fresh || !fresh->current())
         return;
     const dashboard::Restored *r = fresh->current();
@@ -485,7 +498,8 @@ void MainWindow::openDashboardFile()  // Ctrl+Shift+O
     }
     analytics_->setViewIndex(r->state.viewIndex);
     analytics_->setStale(false);
-    session_ = fresh;
+    session_ = fresh;  // the replaced session is released here: its failed folder is registered, not lost
+    retryPendingCleanup();
     setNotice(QString());
     updateAnalyticsControls();
 }
@@ -499,6 +513,7 @@ void MainWindow::openInAnalytics()
     aRecursive_->setChecked(recursive_->isChecked());
     analytics_->showAnalytics(lastScan_);
     session_.reset();
+    retryPendingCleanup();
     analytics_->setStale(false);
     updateAnalyticsControls();
 }
@@ -724,6 +739,7 @@ void MainWindow::onSucceeded(const QJsonValue &data)
     if (analyticsJob_) {  // Analytics refresh: the Analyzer's readout and reports stay as they were
         analytics_->showAnalytics(data.toObject());
         session_.reset();  // fresh numbers: the opened .resora's cache is no longer shown
+        retryPendingCleanup();
         updateAnalyticsControls();
         aProgress_->setSucceeded(tr("Analytics refreshed."));
         jobEnded();
