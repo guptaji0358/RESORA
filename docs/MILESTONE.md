@@ -346,3 +346,9 @@ Status: Phase 7 remains IN PROGRESS. UNC/device paths rejected before filesystem
 
 ### Phase 7 audit follow-up - mapped drives and cache race (2026-11-12)
 Status: Phase 7 remains IN PROGRESS. Remote/SUBST-to-UNC drive letters rejected without remote I/O; `DirLock` closes the validate-to-delete swap on Windows. Evidence: full ctest 21/21 (automated, this machine); real mapped SMB share and manual GUI not tested. Limits listed in docs/RESORA_FORMAT.md.
+
+## `.resora` Phase 7: Application-level cache cleanup ownership (2026-11-12)
+1. Automated: full ctest 21/21 (direct cmake/ninja); `tst_dashboardstate` 28 passed + 1 skipped (+4 cleanup-ownership cases), `tst_mainwindow` 7, `tst_resoraui` 18. Details: implement.md "Phase 7 - Application-level cache cleanup ownership".
+2. Manual: none; no GUI inspection; `run.bat` not run.
+3. Change: `CacheCleanupManager` (shared, application-lifetime) replaces the per-Session pending list; failed folders survive session replacement and worker-thread destruction; retries at replacement, reset, Open dialog close and shutdown; same ownership rules on every retry.
+4. Status: IN PROGRESS (awaiting user review), uncommitted. Limitations: in-memory only (startup sweep is the cross-run fallback); synchronous single-pass retries; no UI.

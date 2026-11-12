@@ -8,6 +8,7 @@
 #include <atomic>
 #include <memory>
 
+#include "backend/cachecleanupmanager.h"
 #include "backend/resoraworkflow.h"
 
 namespace resoraui {
@@ -83,7 +84,9 @@ class ImportJob : public JobBase
 public:
     explicit ImportJob(QObject *parent = nullptr) : JobBase(parent) {}
     ~ImportJob() override { shutdown(); }
-    bool start(const QString &path, const resora::OpenOptions &opts);
+    // `cleanup` is the application's shared owner; failed cache removals on the worker are registered there.
+    bool start(const QString &path, const resora::OpenOptions &opts,
+               std::shared_ptr<dashboard::CacheCleanupManager> cleanup = {});
 signals:
     void progress(int permille, const QString &stage);
     void finished(const resoraui::ImportOutcome &outcome);

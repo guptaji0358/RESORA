@@ -6,6 +6,7 @@
 #include <QPointer>
 
 #include "backend/backendlocator.h"
+#include "backend/cachecleanupmanager.h"
 #include <memory>
 
 #include "backend/dashboardstate.h"
@@ -38,6 +39,7 @@ class MainWindow : public QMainWindow
 public:
     // `locationsFile`: where Saved Locations are stored; empty = the per-user default (tests pass a temp file).
     explicit MainWindow(QWidget *parent = nullptr, const QString &locationsFile = QString());
+    ~MainWindow() override;  // releases the active dashboard, then retries pending cache cleanup once
 
     bool isScanning() const;
     SourcePicker *sourcePicker() const { return source_; }
@@ -74,6 +76,7 @@ private:
     void exportDashboard();    // Ctrl+Shift+E
     void openDashboardFile();  // Ctrl+Shift+O
     void openInAnalytics();  // Readout hand-off: reuse the scan's analytics
+    void retryPendingCleanup();  // one non-blocking pass over failed cache removals (application-level owner)
     void syncCollections();
     ProgressPanel *activeProgress() const;
     void startScan();
@@ -115,6 +118,8 @@ private:
     QCheckBox *aRecursive_ = nullptr;
     ProgressPanel *aProgress_ = nullptr;
     QPushButton *aCancel_ = nullptr;
+    // Application-lifetime owner of cache folders whose removal failed. Shared with every Session/dialog.
+    std::shared_ptr<dashboard::CacheCleanupManager> cleanup_ = std::make_shared<dashboard::CacheCleanupManager>();
     std::shared_ptr<dashboard::Session> session_;  // opened .resora: keeps its cache alive while displayed
     QJsonObject lastScan_;  // data of the last completed scan (for the Analytics hand-off)
 

@@ -84,3 +84,8 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 ## LIAS local automation/knowledge system (2026-11-12)
 - [U] User approved building LIAS in `.claude/lias/` (+ `.claude/settings.json` hook, `.claude/skills/lias`). Stage 3 core implemented and unit-tested (29 tests); separate from `.claude/memory/`. Not yet verified in a live Claude session; no credit-savings claims. See `.claude/lias/docs/README.md`.
 - [V] LIAS Stage 4 headless live tests (2026-11-12): skill auto-discovery, hook retrieval, store, unknown-fact all worked; cost benefit unproven (n=1). Desktop-app behaviour not tested.
+
+## 2026-11-12 Application-level cache cleanup ownership [V][U-requested]
+- Decision: failed cache-folder removals are owned by one shared `dashboard::CacheCleanupManager` (MainWindow member, shared with every Session and the Open dialog's worker session), not by each `Session`. Retry is a single synchronous pass at dashboard replacement, reset points, Open dialog close and shutdown; there is no timer and no UI.
+- Rules: every retry goes through `resora::closeDocument` (full ownership check, pid rule); refused or locked folders stay pending untouched; duplicates ignored by cleaned path. The list is in-memory; the startup sweep remains the cross-run fallback.
+- Why: the per-Session list was destroyed with the Session on replacement and on worker-thread failure, so the sweep was the only recovery. How to apply: new code that drops a Session must do so through MainWindow's owner (or pass the shared pointer); never add a global cleanup list.

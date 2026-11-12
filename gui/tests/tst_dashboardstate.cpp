@@ -1,4 +1,5 @@
 // Dashboard <-> .resora integration tests (Phase 5). Temporary data only; real AnalyticsPanel model.
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
@@ -362,6 +363,82 @@ private slots:
         QVERIFY(ses.retryCleanup());
         QVERIFY(ses.pendingCleanup().isEmpty());
         QVERIFY(!QFileInfo::exists(dir));
+    }
+
+    // ---- Application-level cleanup ownership (Phase 7) ---------------------------------------------
+    // A session that cannot remove its folder hands it to the shared CacheCleanupManager; the entry must
+    // survive the session's destruction, and a later retry removes it exactly once.
+    void sharedManagerKeepsPendingAcrossSessionDestruction()
+    {
+        QVERIFY(exportBundled(capture(0), p("a.resora"), "t").ok());
+        auto mgr = std::make_shared<CacheCleanupManager>();
+        QString dir;
+        {
+            Session ses(mgr);
+            QVERIFY(ses.open(p("a.resora"), resora::OpenOptions{p("cachesh")}).ok);
+            dir = QDir::cleanPath(QFileInfo(ses.current()->elementImages[0].path).absolutePath());
+            QVERIFY(put(dir + "/foreign.txt", "user data"));
+        }  // destroyed while still holding the folder: the failed removal must be registered, not lost
+        QCOMPARE(mgr->pending(), QStringList{dir});
+        QVERIFY(QFileInfo(dir + "/foreign.txt").isFile());
+        mgr->add(dir);  // duplicate registration is ignored
+        QCOMPARE(mgr->pending().size(), 1);
+        QCOMPARE(mgr->retryAll(), 1);  // still blocked: kept, not forgotten
+        QVERIFY(QFileInfo(dir + "/foreign.txt").isFile());
+        QVERIFY(QFile::remove(dir + "/foreign.txt"));
+        QCOMPARE(mgr->retryAll(), 0);
+        QVERIFY(mgr->pending().isEmpty());
+        QVERIFY(!QFileInfo::exists(dir));
+        QCOMPARE(mgr->retryAll(), 0);  // empty list: a further pass touches nothing
+    }
+
+    void successfulCloseLeavesNoPendingEntry()
+    {
+        QVERIFY(exportBundled(capture(0), p("ok.resora"), "t").ok());
+        auto mgr = std::make_shared<CacheCleanupManager>();
+        Session ses(mgr);
+        QVERIFY(ses.open(p("ok.resora"), resora::OpenOptions{p("cacheok")}).ok);
+        QVERIFY(ses.close());
+        QVERIFY(mgr->pending().isEmpty());
+        QVERIFY(ses.retryCleanup());
+    }
+
+    void otherProcessCacheIsNeverRemoved()
+    {
+        QVERIFY(exportBundled(capture(0), p("o.resora"), "t").ok());
+        auto mgr = std::make_shared<CacheCleanupManager>();
+        QString dir;
+        {
+            Session ses(mgr);
+            QVERIFY(ses.open(p("o.resora"), resora::OpenOptions{p("cacheother")}).ok);
+            dir = QDir::cleanPath(QFileInfo(ses.current()->elementImages[0].path).absolutePath());
+            // Re-stamp the marker as if another live RESORA process owned this folder.
+            const QJsonObject marker{{"app", "RESORA"}, {"kind", "resora-document-cache"}, {"version", 1},
+                                     {"pid", double(QCoreApplication::applicationPid() + 1)}};
+            QVERIFY(put(dir + "/.resora-cache", QJsonDocument(marker).toJson(QJsonDocument::Compact)));
+            QVERIFY(!ses.close());
+        }
+        QCOMPARE(mgr->pending(), QStringList{dir});
+        QCOMPARE(mgr->retryAll(), 1);  // refused on every attempt, never deleted
+        QCOMPARE(mgr->retryAll(), 1);
+        QVERIFY(QFileInfo(dir).isDir());
+        QVERIFY(QFileInfo(dir + "/.resora-cache").isFile());
+    }
+
+    void invalidMarkerAndUnsafeFoldersStayUntouched()
+    {
+        auto mgr = std::make_shared<CacheCleanupManager>();
+        const QString badMarker = p("bad/doc-0123456789abcdef0123456789abcdef");
+        QVERIFY(put(badMarker + "/.resora-cache", "garbage, not a marker"));
+        QVERIFY(put(badMarker + "/pic.png", "x"));
+        const QString notCache = p("plain/notes");  // not a doc-<32 hex> name at all
+        QVERIFY(put(notCache + "/keep.txt", "user data"));
+        mgr->add(badMarker);
+        mgr->add(notCache);
+        QCOMPARE(mgr->retryAll(), 2);
+        QVERIFY(QFileInfo(badMarker + "/.resora-cache").isFile());
+        QVERIFY(QFileInfo(badMarker + "/pic.png").isFile());
+        QVERIFY(QFileInfo(notCache + "/keep.txt").isFile());
     }
 
     void restoreFailureAfterOpenCleansCache()

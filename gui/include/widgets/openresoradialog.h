@@ -20,7 +20,9 @@ class OpenResoraDialog : public FramelessDialog
 public:
     enum class State { Idle, Opening, NeedsRelink, Failed, Done };
 
-    explicit OpenResoraDialog(const QString &startDir = QString(), QWidget *parent = nullptr);
+    // `cleanup`: the application's shared cache-cleanup owner (see backend/cachecleanupmanager.h).
+    explicit OpenResoraDialog(const QString &startDir = QString(), QWidget *parent = nullptr,
+                              std::shared_ptr<dashboard::CacheCleanupManager> cleanup = {});
 
     State state() const { return state_; }
     void setFile(const QString &path);
@@ -48,6 +50,7 @@ private:
     QString startDir_, file_;
     resoraui::ImportJob job_;
     std::shared_ptr<dashboard::Session> session_;
+    std::shared_ptr<dashboard::CacheCleanupManager> cleanup_;
     bool closeWhenDone_ = false;
 
     QLineEdit *path_ = nullptr;
