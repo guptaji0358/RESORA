@@ -1,6 +1,6 @@
-feat(resora): low-disk audit follow-up (source-growth cap, flush seam)
+test(resora): tighten low-disk export tests and clarify flush-failure docs
 
-- Bundled export caps the Writer byte budget at the preflight estimate; a source that grows after the free-space check aborts early as SourceProblem (not a space error)
-- FinalizeOps::flush internal seam wraps open + FlushFileBuffers; failures leave the previous destination and temp file untouched
-- tst_exportlowdisk: per-test temp dirs, 22 cases (growth after preflight/during write, uncertain replacement keeps backup+temp, flush-seam tests)
-- docs: RESORA_FORMAT, MILESTONE.md, implement.md, memory (CURRENT_STATE, KNOWN_ISSUES, MILESTONES)
+- tst_exportlowdisk: assert no Done event and progress < 1000 on failure paths; source-growth tests assert the byte budget stops the write before afterWrite/Verifying/Finalizing
+- tst_exportlowdisk: add export-level flush-failure test (destination intact, temp removed, nothing moved)
+- docs: RESORA_FORMAT clarifies temp-file ownership on flush failure (finalizer level keeps temp, export level removes it)
+- docs/memory: MILESTONE.md, implement.md, CURRENT_STATE, MILESTONES updated

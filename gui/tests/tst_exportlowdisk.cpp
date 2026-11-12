@@ -260,8 +260,11 @@ private slots:
         QVERIFY(put(p("out/keep.resora"), "previous"));
         auto seams = roomy();
         seams.writeLimit = probe.fileBytes - 1;  // everything fits except the last bytes (trailer)
-        const auto r = detail::exportBundledWith(in, p("out/keep.resora"), {}, seams);
+        Recorder rec;
+        const auto r = detail::exportBundledWith(in, p("out/keep.resora"), rec.fn(), seams);
         QCOMPARE(r.error, ExportError::InsufficientStorage);
+        QVERIFY(!rec.sawDone());
+        QVERIFY(rec.maxPermille() < 1000);
         QCOMPARE(slurp(p("out/keep.resora")), QByteArray("previous"));
         QCOMPARE(entries(p("out")), (QStringList{"keep.resora", "probe.resora"}));
     }
@@ -459,12 +462,20 @@ private slots:
                 f.write(pattern(2 << 20, 21));
             return qint64(1) << 40;
         };
+        bool hookReached = false;  // afterWrite runs only once the Writer finished; the byte budget must stop it first
+        seams.afterWrite = [&](const QString &) { hookReached = true; };
         Recorder rec;
         const auto r = detail::exportBundledWith(bundledBase({bundledImg(p("src/g.png"))}), p("out/keep.resora"),
                                                  rec.fn(), seams);
         QCOMPARE(r.error, ExportError::SourceProblem);  // not reported as a disk-space problem
         QCOMPARE(r.issues.size(), 1);
+        QCOMPARE(r.issues.first().kind, SourceIssue::Changed);
+        QVERIFY2(!hookReached, "write completed: the byte budget did not stop the overrun");
+        QVERIFY(rec.saw(ExportProgress::Writing));       // the write started...
+        QVERIFY(!rec.saw(ExportProgress::Verifying));    // ...and never reached post-write verification
+        QVERIFY(!rec.saw(ExportProgress::Finalizing));
         QVERIFY(!rec.sawDone());
+        QVERIFY(rec.maxPermille() < 1000);
         QCOMPARE(slurp(p("out/keep.resora")), QByteArray("previous"));
         QCOMPARE(entries(p("out")), QStringList{"keep.resora"});
     }
@@ -475,7 +486,9 @@ private slots:
         QVERIFY(put(p("src/h.png"), pattern(4 << 20, 22)));
         QVERIFY(put(p("out/keep.resora"), "previous"));
         bool grown = false;
+        Recorder rec;
         const ExportProgressFn grow = [&](const ExportProgress &pr) {
+            rec.events.append(pr);
             if (pr.stage == ExportProgress::Writing && !grown) {
                 grown = true;
                 QFile f(p("src/h.png"));
@@ -484,9 +497,18 @@ private slots:
             }
             return true;
         };
-        const auto r = detail::exportBundledWith(bundledBase({bundledImg(p("src/h.png"))}), p("out/keep.resora"), grow, roomy());
+        bool hookReached = false;
+        auto seams = roomy();
+        seams.afterWrite = [&](const QString &) { hookReached = true; };
+        const auto r = detail::exportBundledWith(bundledBase({bundledImg(p("src/h.png"))}), p("out/keep.resora"), grow, seams);
         QVERIFY(grown);
         QCOMPARE(r.error, ExportError::SourceProblem);
+        QCOMPARE(r.issues.size(), 1);
+        QVERIFY2(!hookReached, "write completed: the byte budget did not stop the overrun");
+        QVERIFY(!rec.saw(ExportProgress::Verifying));
+        QVERIFY(!rec.saw(ExportProgress::Finalizing));
+        QVERIFY(!rec.sawDone());
+        QVERIFY(rec.maxPermille() < 1000);
         QCOMPARE(slurp(p("out/keep.resora")), QByteArray("previous"));
         QCOMPARE(entries(p("out")), QStringList{"keep.resora"});
     }
@@ -503,8 +525,11 @@ private slots:
                 f.write(pattern(1 << 10, 25));
             return qint64(1) << 40;
         };
-        const auto r = detail::exportLinkedWith(linkedBase({linkedImg(p("src/k.png"))}), p("out/keep.resora"), {}, seams);
+        Recorder rec;
+        const auto r = detail::exportLinkedWith(linkedBase({linkedImg(p("src/k.png"))}), p("out/keep.resora"), rec.fn(), seams);
         QCOMPARE(r.error, ExportError::SourceProblem);
+        QVERIFY(!rec.sawDone());
+        QVERIFY(rec.maxPermille() < 1000);
         QCOMPARE(slurp(p("out/keep.resora")), QByteArray("previous"));
         QCOMPARE(entries(p("out")), QStringList{"keep.resora"});
     }
@@ -518,8 +543,11 @@ private slots:
         QVERIFY(put(p("out/keep.resora"), "previous"));
         auto seams = roomy();
         seams.finalize = uncertainKeepsTemp;
-        const auto r = detail::exportBundledWith(bundledBase({bundledImg(p("src/m.png"))}), p("out/keep.resora"), {}, seams);
+        Recorder rec;
+        const auto r = detail::exportBundledWith(bundledBase({bundledImg(p("src/m.png"))}), p("out/keep.resora"), rec.fn(), seams);
         QCOMPARE(r.error, ExportError::FinalizeFailed);
+        QVERIFY(!rec.sawDone());
+        QVERIFY(rec.maxPermille() < 1000);
         QCOMPARE(entries(p("out")).size(), 2);  // backup (old) + temp (verified new): nothing deleted
         int old = 0, fresh = 0;
         for (const QString &n : entries(p("out"))) {
@@ -540,8 +568,11 @@ private slots:
         QVERIFY(put(p("out/keep.resora"), "previous"));
         auto seams = roomy();
         seams.finalize = uncertainKeepsTemp;
-        const auto r = detail::exportLinkedWith(linkedBase({linkedImg(p("src/n.png"))}), p("out/keep.resora"), {}, seams);
+        Recorder rec;
+        const auto r = detail::exportLinkedWith(linkedBase({linkedImg(p("src/n.png"))}), p("out/keep.resora"), rec.fn(), seams);
         QCOMPARE(r.error, ExportError::FinalizeFailed);
+        QVERIFY(!rec.sawDone());
+        QVERIFY(rec.maxPermille() < 1000);
         QCOMPARE(entries(p("out")).size(), 2);
     }
 
@@ -587,6 +618,37 @@ private slots:
         QCOMPARE(probe.replace, 1);
         QCOMPARE(slurp(p("d.resora")), QByteArray("new"));
         QVERIFY(!QFile::exists(p("d.resora.cccc.tmp")));
+    }
+
+    // Export level: a flush failure inside the real finalizer (via the existing finalize seam). The finalizer
+    // reports a clean failure (keepTemp=false), so the export removes its temp file; the old destination stays.
+    void bundledExportFlushFailureKeepsDestinationAndRemovesTemp()
+    {
+        resetOut();
+        QVERIFY(put(p("src/f.png"), pattern(32 << 10, 30)));
+        QVERIFY(put(p("out/keep.resora"), "previous"));
+        auto seams = roomy();
+        int swaps = 0;
+        seams.finalize = [&](const QString &tmp, const QString &target) {
+            detail::FinalizeOps o;
+            o.attempts = 1;
+            o.flush = [](const QString &) { return detail::FlushResult{1117, false}; };
+            const auto count = [&]() -> unsigned long { ++swaps; return 5ul; };
+            o.moveNew = [&](const QString &, const QString &) { return count(); };
+            o.replace = [&](const QString &, const QString &, const QString &) { return count(); };
+            o.restore = [&](const QString &, const QString &) { return count(); };
+            return detail::finalizeWith(o, tmp, target);
+        };
+        Recorder rec;
+        const auto r = detail::exportBundledWith(bundledBase({bundledImg(p("src/f.png"))}), p("out/keep.resora"), rec.fn(), seams);
+        QVERIFY(!r.ok());
+        QCOMPARE(r.error, ExportError::FinalizeFailed);
+        QVERIFY(r.message.contains(QStringLiteral("flush")));
+        QCOMPARE(swaps, 0);  // nothing was moved
+        QVERIFY(!rec.sawDone());
+        QVERIFY(rec.maxPermille() < 1000);
+        QCOMPARE(slurp(p("out/keep.resora")), QByteArray("previous"));
+        QCOMPARE(entries(p("out")), QStringList{"keep.resora"});  // export cleanup removed the temp
     }
 
     void linkedDistinctErrorCodesPerFailure()

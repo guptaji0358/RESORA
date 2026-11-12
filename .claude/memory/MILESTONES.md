@@ -26,3 +26,6 @@ Roadmap (docs/ROADMAP.md): all four features implemented, 2–4 awaiting review.
 | `.resora` Phase 5: dashboard integration (2026-11-08) | COMPLETED (user-approved 2026-11-09) | tst_dashboardstate 15 passed (after runtime-path correction); ctest 17/17 | Implemented, uncommitted; awaiting user review |
 | `.resora` Phase 6: export/import UI (2026-11-09) | COMPLETED (user-approved 2026-11-10) | tst_resoraui 14 passed; ctest 18/18 | Uncommitted; not visually verified |
 | `.resora` Phase 7: compatibility/reliability (2026-11-10) | IN PROGRESS | full ctest 21/21 (2026-11-12, after low-disk work; earlier 20/20 on 2026-11-11/12 before tst_exportlowdisk existed); tst_resorareliability 10; tst_exportlowdisk 22 cases | Uncommitted; not manually verified |
+
+<!-- 2026-11-12 correction: the Phase 7 row above says "Uncommitted". Superseded: implementation = commit 954c4fb, low-disk audit follow-up = commit de8bedb; only the final test-strengthening (tst_exportlowdisk.cpp, 25 passed; ctest 21/21) is uncommitted. Still IN PROGRESS, not manually verified. -->
+
