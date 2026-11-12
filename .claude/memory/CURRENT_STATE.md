@@ -76,3 +76,16 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 
 ## 2026-11-10 Phase 7 (compatibility/reliability) implemented, uncommitted [V]
 - Phase 6 approved [U]; Phase 7 IN PROGRESS. Added: `schemaVersionProblem` policy (reader + restore), hashed duplicate-id checks, JSON cache marker with pid + `sweepStaleCache` run from `main()`, safe extraction extensions/stems, docs in `docs/RESORA_FORMAT.md` (Phase 7 section), evidence in `implement.md`. New `tst_resorareliability` (9), `tst_resorafile` 27, `tst_dashboardstate` 24; full ctest 20/20 (direct cmake/ninja). No format change, no migrations. No manual/visual verification; Windows/local NTFS only; no disk-full/network/power-loss tests. Nothing committed.
+
+## 2026-11-12 Phase 7 continuation [V]
+- Added `unicodeAndLongPathRoundTrip` (tst_resorareliability now 10). Full ctest 20/20 (direct cmake/ninja, Qt DLLs on PATH; without PATH ctest reports 0xc0000135 for Qt test binaries). No product code change, run.bat not run, nothing committed, no manual verification.
+- Phase 7 IN PROGRESS pending review. Open decisions: file association; real low-disk test. (omitted_roles schema policy resolved 2026-11-12: layout version 2 when omitted_roles present; reader accepts 1 and 2; older Phase 5 readers reject 2.) Details: docs/RESORA_FORMAT.md "Open Phase 7 items".
+
+## 2026-11-12 omitted_roles compatibility [V]
+- Layout schema 2 introduced for files with omitted_roles; fixtures `gui/tests/fixtures/dashboard/`; real pre-change reader probe checked. tst_dashboardstate 27 passed/1 skipped; full ctest 20/20 (direct cmake/ninja, Qt on PATH). No file association change, no run.bat, no commit. Phase 7 IN PROGRESS. Details: implement.md "omitted_roles compatibility".
+
+## 2026-11-12 Phase 7 low-disk reliability [V]
+- Export had no up-front free-space check; added (`InsufficientStorage`, container + 16 MiB reserve) for Bundled and Linked, plus Writer byte-limit seam (`OutOfSpace`). Deterministic tests: `tst_exportlowdisk` 16/16; full ctest 21/21 (direct build). Details: implement.md "low-disk reliability". Real full disk not tested; ENOSPC on real disk surfaces as WriteFailed. Phase 7 IN PROGRESS, nothing committed.
+
+## 2026-11-12 Phase 7 low-disk audit corrections [V]
+- Finalizer now checks FlushFileBuffers (clean `Failed`, nothing moved); `setByteLimit` and the `*With` export functions moved out of public headers (`exportinternal.h`, `detail::WriterLimit`). Focused ctest 7/7; full suite and run.bat not run. Open: source-growth vs estimate, real ENOSPC classification, test gaps. Phase 7 IN PROGRESS, nothing committed.

@@ -11,6 +11,10 @@
 
 namespace resora {
 
+namespace detail {
+struct WriterLimit;
+}
+
 class Writer
 {
 public:
@@ -26,7 +30,14 @@ public:
     using ProgressFn = std::function<bool(quint64, quint64)>;
     Result write(const QString &targetPath, const ProgressFn &progress = {}) const;
 
+    // Exact container size write() will produce (header + payloads + directory + trailer).
+    quint64 containerBytes() const;
+
 private:
+    friend struct detail::WriterLimit;  // test-only capacity seam (exportseams.h)
+    bool budgetOk(quint64 n, quint64 &written) const;
+    quint64 limit_ = 0;
+
     struct Item
     {
         QString id;

@@ -4,8 +4,20 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
+#include <QStorageInfo>
+
+#include "resora/exportseams.h"
 
 namespace resora::detail {
+
+bool hasRoomFor(const QString &dir, quint64 needed, const ExportSeams &seams, qint64 *available)
+{
+    const qint64 avail = seams.availableBytes ? seams.availableBytes(dir)
+                                              : (QStorageInfo(dir).isValid() ? QStorageInfo(dir).bytesAvailable() : -1);
+    if (available)
+        *available = avail;
+    return avail < 0 || quint64(avail) >= needed;
+}
 
 namespace {
 constexpr qint64 kChunk = 1 << 20;

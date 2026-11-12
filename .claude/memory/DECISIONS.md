@@ -69,3 +69,6 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 ## 2026-11-10 Phase 7 decisions [V, implemented; awaiting user approval]
 - Compatibility: container major must be 1, any minor of 1 reads, header flags carried not interpreted (a "required" feature needs a major bump), `schema_version` must equal 1 exactly with specific newer/older/invalid errors, unknown layout/config keys warn. No migrations (no older format exists) - inventing one rejected. Supersedes "older-reader compatibility unverified" for omitted_roles: documented as intended rejection.
 - Stale-cache sweep implemented (supersedes "deferred to Phase 7"): only `doc-<32 hex>` real dirs with a valid JSON marker, only generated-shape image files, dead owner pid and >=1 h old (7 days for legacy markers); never recursive, never follows links. Extraction extensions limited to a fixed image list, else `.img`.
+
+## 2026-11-12 Layout schema version 2 for omitted_roles [V]
+- Decision: layout `schema_version` is 2 only when `layout.omitted_roles` is present; version 1 files are unchanged. Reader accepts 1 and 2; `omitted_roles` in version 1 is refused. No migration (additive, no rewrite). Evidence: pre-change Phase 5/6 reader (a467857^) restores v1 and rejects v2 with "unsupported schema_version" (real probe). Charts/analytics/config stay at 1.

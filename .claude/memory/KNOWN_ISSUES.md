@@ -25,3 +25,6 @@ None confirmed (per docs). Insights redesign unassessed [?].
 
 ## 2026-11-10 Phase 7 known limits [V]
 - `.resora` reliability verified on Windows 11 / local NTFS only; network shares, removable drives, FAT, cloud-synced folders, antivirus interference, full disk and power loss are untested. Finalization never deletes the only valid copy but is not power-fail atomic. A stale cache folder may stay up to ~1 h (7 days for pre-Phase-7 markers) or while its pid is reused.
+
+## 2026-11-12 Test environment [V]
+- Qt test binaries exit 0xc0000135 under plain ctest unless `D:\Apps\Qt6\6.12.0\mingw_64\bin` and `D:\Apps\Qt6\Tools\mingw1310_64\bin` are on PATH. Run ctest with those on PATH (run.bat is not used).

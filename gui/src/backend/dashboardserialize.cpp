@@ -138,8 +138,10 @@ Plan plan(const State &s)
 
     p.layout = QJsonObject{{"active_view", s.viewIndex == 0 ? "dashboard" : "detailed"},
                            {"visible_sections", QJsonValue(QJsonValue::Null)}, {"widgets", widgets}};
-    if (!omitted.isEmpty())
+    if (!omitted.isEmpty()) {  // version 2 is written only when the file uses omitted_roles; version 1 files stay byte-compatible
         p.layout.insert("omitted_roles", omitted);
+        p.layout.insert("schema_version", 2);
+    }
     p.charts = chartsFor(data);
     p.analytics = data;
     QJsonObject ctx = s.result;  // every non-analytics key is kept verbatim (nothing silently dropped)

@@ -589,6 +589,7 @@ private slots:
                         w << x;
                 d.layout["widgets"] = w;
             }
+            d.layout["schema_version"] = 2;  // omitted_roles is a version 2 field
             d.layout["omitted_roles"] = v;
             return restore(d, &got, &err);
         };
@@ -601,6 +602,110 @@ private slots:
         QVERIFY2(tryRoles(QJsonArray{"largest"}, true), qPrintable(err));  // valid: removed and no widget
         QCOMPARE(got.removedRoles, QStringList{"largest"});
         resora::closeDocument(&o.document);
+    }
+
+    // Regenerates the committed compatibility fixtures in gui/tests/fixtures/dashboard. Skipped unless
+    // RESORA_WRITE_FIXTURES names an existing folder (manifest timestamps differ per run; the tests never compare bytes).
+    void writeCompatibilityFixtures()
+    {
+        const QString dir = QString::fromLocal8Bit(qgetenv("RESORA_WRITE_FIXTURES"));
+        if (dir.isEmpty())
+            QSKIP("set RESORA_WRITE_FIXTURES=<folder> to regenerate the compatibility fixtures");
+        QVERIFY(exportBundled(capture(0), dir + "/v1_no_omitted_roles.resora", "fixture-1").ok());
+        State removed = capture(0);
+        removed.removedRoles = {"largest"};
+        QVERIFY(exportBundled(removed, dir + "/v2_omitted_largest.resora", "fixture-2").ok());
+    }
+
+    void compatibilityFixturesRestore()  // real versioned files on disk (v1 = Phase 5 shape, v2 = omitted_roles)
+    {
+        const QString dir = QFileInfo(QStringLiteral(__FILE__)).absolutePath() + "/fixtures/dashboard";
+        const auto open = [&](const QString &name, Restored *got) {
+            const resora::OpenResult o = resora::openResora(dir + "/" + name, resora::OpenOptions{p("fx_cache")});
+            QVERIFY2(o.ok(), qPrintable(o.message));
+            QString err;
+            const bool ok = restore(o.document, got, &err);
+            resora::OpenedDocument d = o.document;
+            resora::closeDocument(&d);
+            QVERIFY2(ok, qPrintable(err));
+        };
+        Restored v1, v2;
+        open("v1_no_omitted_roles.resora", &v1);
+        QVERIFY(v1.warnings.isEmpty());
+        QVERIFY(v1.removedRoles.isEmpty());
+        QCOMPARE(v1.elementImages.size(), 4);
+        open("v2_omitted_largest.resora", &v2);
+        QVERIFY(v2.warnings.isEmpty());
+        QCOMPARE(v2.removedRoles, QStringList{"largest"});
+        QCOMPARE(v2.elementImages.size(), 3);
+        // association data survives: every remaining role keeps the same image file name as in v1
+        // (imageIds are positional and shift when an image is removed, so they are not compared)
+        for (const ElementImage &e : v2.elementImages) {
+            bool same = false;
+            for (const ElementImage &f : v1.elementImages)
+                same = same || (f.role == e.role && f.name == e.name);
+            QVERIFY2(same, qPrintable(e.role));
+        }
+    }
+
+    void omittedRolesNeedVersionTwo()  // version 1 must not carry omitted_roles; version 2 without it is fine
+    {
+        const QString dir = QFileInfo(QStringLiteral(__FILE__)).absolutePath() + "/fixtures/dashboard";
+        resora::OpenResult o = resora::openResora(dir + "/v1_no_omitted_roles.resora", resora::OpenOptions{p("fx_cache")});
+        QVERIFY(o.ok());
+        Restored got;
+        QString err;
+        resora::OpenedDocument d = o.document;
+        d.layout["omitted_roles"] = QJsonArray{"largest"};
+        QVERIFY(!restore(d, &got, &err) && err.contains("requires layout schema_version 2"));
+        d.layout["schema_version"] = 2;
+        QVERIFY(!restore(d, &got, &err) && err.contains("both as a widget and as omitted"));  // version 2 accepted, rule still enforced
+        d = o.document;
+        d.layout["schema_version"] = 2;
+        QVERIFY2(restore(d, &got, &err), qPrintable(err));
+        QVERIFY(got.removedRoles.isEmpty());
+        resora::closeDocument(&o.document);
+    }
+
+    void reexportPreservesVersionAndAssociations()  // no migration: versions are kept exactly as written
+    {
+        const QString dir = QFileInfo(QStringLiteral(__FILE__)).absolutePath() + "/fixtures/dashboard";
+        for (const char *name : {"v1_no_omitted_roles.resora", "v2_omitted_largest.resora"}) {
+            const resora::OpenResult o = resora::openResora(dir + "/" + name, resora::OpenOptions{p("fx_cache")});
+            QVERIFY(o.ok());
+            // the fixture's on-disk versions, asserted explicitly before any re-export
+            const int fixtureLayout = std::string(name) == "v1_no_omitted_roles.resora" ? 1 : 2;
+            QCOMPARE(o.document.layout.value("schema_version").toInt(), fixtureLayout);
+            QCOMPARE(o.document.analytics.value("schema_version").toInt(), 1);
+            QCOMPARE(o.document.config.value("schema_version").toInt(), 1);
+            QCOMPARE(o.document.manifest.value("schema_version").toInt(), 1);
+            Restored got;
+            QString err;
+            QVERIFY2(restore(o.document, &got, &err), qPrintable(err));
+            const QString out = p(QStringLiteral("re_") + name);
+            QVERIFY2(exportBundled(got.state, out, "re").ok(), name);
+            const resora::OpenResult again = resora::openResora(out, resora::OpenOptions{p("fx_cache")});
+            QVERIFY(again.ok());
+            const int expectVersion = std::string(name) == "v1_no_omitted_roles.resora" ? 1 : 2;
+            QCOMPARE(again.document.layout.value("schema_version").toInt(), expectVersion);
+            Restored back;
+            QVERIFY2(restore(again.document, &back, &err), qPrintable(err));
+            QCOMPARE(back.removedRoles, got.removedRoles);
+            QCOMPARE(back.elementImages.size(), got.elementImages.size());
+            // every remaining role keeps its image identity (role -> image filename), not only the count
+            const auto identities = [](const Restored &r) {
+                QStringList ids;
+                for (const ElementImage &e : r.elementImages)
+                    ids << e.role + QLatin1Char('|') + e.name;
+                ids.sort();
+                return ids;
+            };
+            QCOMPARE(identities(back), identities(got));
+            QVERIFY(!identities(got).isEmpty());
+            resora::OpenedDocument d1 = o.document, d2 = again.document;
+            resora::closeDocument(&d1);
+            resora::closeDocument(&d2);
+        }
     }
 
     void versionAndUnknownFieldPolicy()  // Phase 7 compatibility policy
@@ -619,7 +724,8 @@ private slots:
             return restore(d, &got, &err);
         };
         for (const char *res : {"layout", "config", "analytics"}) {
-            QVERIFY(!with(res, 2) && err.contains("newer RESORA") && err.contains("schema_version 2"));
+            const int newer = std::string(res) == "layout" ? 3 : 2;  // layout accepts 1 and 2 (Phase 7 bump)
+            QVERIFY(!with(res, newer) && err.contains("newer RESORA") && err.contains(QStringLiteral("schema_version %1").arg(newer)));
             QVERIFY(!with(res, 0) && err.contains("no valid schema_version"));
             QVERIFY(!with(res, "1") && err.contains("no valid schema_version"));
             QVERIFY(!with(res, 1.5) && err.contains("no valid schema_version"));

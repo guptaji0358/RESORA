@@ -38,6 +38,7 @@ enum class Error {
     BadTrailer, BadDirectory, TooManyResources, InvalidResourceId, DuplicateResourceId,
     ResourceOutOfRange, ResourceTooLarge, ChecksumMismatch, ResourceNotFound, UnsupportedCompression,
     Cancelled,  // added in Phase 2 (additive, appended last): progress callback asked to stop
+    OutOfSpace, // added in Phase 7 (additive, appended last): the destination volume ran out of space
 };
 
 struct Result

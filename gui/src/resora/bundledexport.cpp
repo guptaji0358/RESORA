@@ -1,6 +1,7 @@
 #include "resora/bundledexport.h"
 
 #include "resora/destinationfinalizer.h"
+#include "resora/exportinternal.h"
 #include "resora/exportcommon.h"
 #include "resora/resorareader.h"
 #include "resora/resorawriter.h"
@@ -37,6 +38,14 @@ QString thumbResourceId(int index) { return QStringLiteral("thumb-") + num(index
 QString imageId(int index) { return QStringLiteral("img-") + num(index); }
 
 ExportResult exportBundled(const BundledExportInput &in, const QString &targetPath, const ExportProgressFn &progress)
+{
+    return detail::exportBundledWith(in, targetPath, progress, detail::ExportSeams{});
+}
+
+namespace detail {
+
+ExportResult exportBundledWith(const BundledExportInput &in, const QString &targetPath, const ExportProgressFn &progress,
+                               const ExportSeams &seams)
 {
     if (targetPath.isEmpty())
         return fail(ExportError::InvalidInput, QStringLiteral("No destination path"));
@@ -152,17 +161,31 @@ ExportResult exportBundled(const BundledExportInput &in, const QString &targetPa
     if (!built)
         return fail(ExportError::InvalidInput, QStringLiteral("Cannot describe the container (resource id or count problem)"));
 
-    // ---- 3. write to a temporary sibling (Phase 1 Writer streams the images) ----
+    // ---- 3. free-space pre-check: container + reserve must fit on the destination volume ----
+    qint64 freeBytes = -1;
+    if (!detail::hasRoomFor(targetInfo.absolutePath(), w.containerBytes() + seams.reserveBytes, seams, &freeBytes))
+        return fail(ExportError::InsufficientStorage,
+                    QStringLiteral("Not enough free space on the destination drive: about %1 MiB needed, %2 MiB available")
+                        .arg((w.containerBytes() + seams.reserveBytes) >> 20)
+                        .arg(freeBytes >> 20));
+
+    // ---- 4. write to a temporary sibling (Phase 1 Writer streams the images) ----
     const QString tmp = tempSiblingName(targetPath);
     const auto cleanup = [&]() { QFile::remove(tmp); };
+    detail::WriterLimit::set(w, seams.writeLimit);
     const Result wr = w.write(tmp, [&](quint64 d, quint64 t) { return report(ExportProgress::Writing, d, t, -1); });
     if (!wr.ok()) {
         cleanup();
-        return fail(wr.error == Error::Cancelled ? ExportError::Cancelled : ExportError::WriteFailed,
-                    wr.error == Error::Cancelled ? QStringLiteral("Export cancelled") : wr.message);
+        if (wr.error == Error::Cancelled)
+            return fail(ExportError::Cancelled, QStringLiteral("Export cancelled"));
+        if (wr.error == Error::OutOfSpace)
+            return fail(ExportError::InsufficientStorage, wr.message);
+        return fail(ExportError::WriteFailed, wr.message);
     }
+    if (seams.afterWrite)
+        seams.afterWrite(tmp);
 
-    // ---- 4. verify: reopen with the Reader, check every resource and every image identity ----
+    // ---- 5. verify: reopen with the Reader, check every resource and every image identity ----
     if (!report(ExportProgress::Verifying, 0, 1, -1)) {
         cleanup();
         return fail(ExportError::Cancelled, QStringLiteral("Export cancelled"));
@@ -205,9 +228,10 @@ ExportResult exportBundled(const BundledExportInput &in, const QString &targetPa
             return res;
         }
 
-    // ---- 5. atomic swap into place ----
+    // ---- 6. atomic swap into place ----
     report(ExportProgress::Finalizing, 0, 0, -1);
-    const FinalizeResult fin = finalizeDestination(tmp, targetPath);  // ReplaceFileW / MoveFileExW; see destinationfinalizer.h
+    const FinalizeResult fin = seams.finalize ? seams.finalize(tmp, targetPath)
+                                              : finalizeDestination(tmp, targetPath);  // see destinationfinalizer.h
     if (!fin.ok()) {
         if (!fin.keepTemp)  // uncertain state: the temp may be the only valid copy, never delete it
             cleanup();
@@ -217,5 +241,7 @@ ExportResult exportBundled(const BundledExportInput &in, const QString &targetPa
     report(ExportProgress::Done, 0, 0, -1);  // 100% only now that the file is in place
     return res;
 }
+
+}  // namespace detail
 
 }  // namespace resora

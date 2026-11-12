@@ -25,4 +25,4 @@ Roadmap (docs/ROADMAP.md): all four features implemented, 2–4 awaiting review.
 | `.resora` Phase 4: import/opening engine (2026-11-08) | NOT FINISHED | tst_resoraimport 16 passed; ctest 16/16 | Phase 4 approved by the user 2026-11-08 (implement.md COMPLETED); manual verification still not done |
 | `.resora` Phase 5: dashboard integration (2026-11-08) | COMPLETED (user-approved 2026-11-09) | tst_dashboardstate 15 passed (after runtime-path correction); ctest 17/17 | Implemented, uncommitted; awaiting user review |
 | `.resora` Phase 6: export/import UI (2026-11-09) | COMPLETED (user-approved 2026-11-10) | tst_resoraui 14 passed; ctest 18/18 | Uncommitted; not visually verified |
-| `.resora` Phase 7: compatibility/reliability (2026-11-10) | IN PROGRESS | ctest 20/20; tst_resorareliability 9 | Uncommitted; not manually verified |
+| `.resora` Phase 7: compatibility/reliability (2026-11-10) | IN PROGRESS | ctest 20/20; tst_resorareliability 10 (2026-11-12) | Uncommitted; not manually verified |

@@ -36,15 +36,16 @@
     "layout": {
       "type": "object",
       "required": ["schema_version", "active_view"],
+      "description": "Version 1: no omitted_roles (all Phase 5-6 files). Version 2: may contain omitted_roles; written only when a role is removed. The reader accepts 1 and 2; other values are refused (newer = 'written by a newer RESORA').",
       "properties": {
-        "schema_version": {"const": 1},
+        "schema_version": {"enum": [1, 2]},
         "active_view": {"enum": ["dashboard", "detailed"], "x-phase": 5},
         "visible_sections": {"type": ["array", "null"], "items": {"type": "string"}, "x-phase": 5},
         "omitted_roles": {
           "type": "array",
           "uniqueItems": true,
           "items": {"enum": ["largest", "smallest", "highest", "lowest"]},
-          "description": "Roles whose image association the user removed (Remove from Dashboard). Optional; absent = none. A role listed here must have no widget. Null is invalid.",
+          "description": "Requires schema_version 2. Roles whose image association the user removed (Remove from Dashboard). Optional; absent = none. A role listed here must have no widget. Null is invalid.",
           "x-phase": 6
         },
         "widgets": {

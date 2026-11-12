@@ -10,6 +10,7 @@
 #include <QString>
 #include <functional>
 
+
 namespace resora {
 
 // One image to bundle. The source file is opened read-only and never modified.
@@ -35,7 +36,8 @@ struct BundledExportInput
 };
 
 enum class ExportError {
-    None, InvalidInput, SourceProblem, Cancelled, WriteFailed, VerifyFailed, FinalizeFailed
+    None, InvalidInput, SourceProblem, Cancelled, WriteFailed, VerifyFailed, FinalizeFailed,
+    InsufficientStorage  // Phase 7 (appended): destination volume lacks room; nothing was written to the target
 };
 
 enum class SourceIssue { Missing, Unreadable, Changed };

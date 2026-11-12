@@ -46,3 +46,7 @@ target_link_libraries(grab_screens PRIVATE imgan_core)
 qt_add_executable(tst_resorareliability tst_resorareliability.cpp)
 target_link_libraries(tst_resorareliability PRIVATE resora_format Qt6::Test)
 add_test(NAME tst_resorareliability COMMAND tst_resorareliability)
+
+qt_add_executable(tst_exportlowdisk tst_exportlowdisk.cpp)
+target_link_libraries(tst_exportlowdisk PRIVATE resora_format Qt6::Test)
+add_test(NAME tst_exportlowdisk COMMAND tst_exportlowdisk)

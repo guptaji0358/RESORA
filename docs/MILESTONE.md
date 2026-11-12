@@ -50,7 +50,7 @@ verified, and this does not block the FINISHED status.
 
 ---
 
-## Milestone: Resolution Analytics (Milestone 2)
+## Milestone 2: Resolution Analytics
 
 Scope: collection/resolution statistics, category/orientation/format distributions, Analytics phase in the GUI,
 `analytics` command, optional TXT analytics section. Definitions: [ANALYTICS.md](ANALYTICS.md).
@@ -333,3 +333,5 @@ Scope: <one or two lines>
 2. Manual: none; no GUI inspection.
 3. Change: unified schema_version policy, hashed duplicate checks, JSON cache marker + conservative startup sweep, safe extraction names, documented limits and compatibility policy. No format change, no migrations.
 4. Status: IN PROGRESS (awaiting user review), uncommitted. Limitations: Windows/local NTFS only; no disk-full/network/power-loss tests.
+2. 2026-11-12 continuation: added Unicode/long-path round-trip test; `tst_resorareliability` 10/10; full ctest 20/20 (direct cmake/ninja). Status remains NOT FINISHED pending user review; open items listed in docs/RESORA_FORMAT.md.
+3. 2026-11-12 low-disk reliability (Bundled and Linked export): up-front free-space check (container bytes + 16 MiB reserve, `ExportError::InsufficientStorage`, nothing written on refusal); Writer byte-limit seam maps to `OutOfSpace`. Automated: `tst_exportlowdisk` 16/16 (deterministic injected failures, no real disk filled); full ctest 21/21 (direct cmake/ninja, Qt on PATH). Manual: none. Not verified: real full disk, ENOSPC classification (surfaces as `WriteFailed`), removable drive, network share, power loss. Status: Phase 7 remains IN PROGRESS pending review; nothing committed. Details: implement.md "Phase 7 evidence: low-disk reliability"; docs/RESORA_FORMAT.md "Low-disk reliability (Phase 7)".

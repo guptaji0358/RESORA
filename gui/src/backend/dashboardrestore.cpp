@@ -49,8 +49,15 @@ bool restore(const resora::OpenedDocument &doc, Restored *out, QString *error)
 
     // layout
     const QJsonObject &lay = doc.layout;
-    if (const QString why = resora::schemaVersionProblem(lay.value("schema_version"), 1, "layout"); !why.isEmpty())
-        return fail(why);
+    // Layout versions: 1 = no omitted_roles (every Phase 5-6 file); 2 = may carry omitted_roles. Anything else is refused.
+    const QJsonValue layVersion = lay.value("schema_version");
+    const bool layoutV1 = layVersion.isDouble() && layVersion.toDouble() == 1.0;
+    if (!layoutV1) {
+        if (const QString why = resora::schemaVersionProblem(layVersion, 2, "layout"); !why.isEmpty())
+            return fail(why);
+    }
+    if (layoutV1 && lay.contains("omitted_roles"))
+        return fail("layout.omitted_roles requires layout schema_version 2 (version 1 has no omitted roles)");
     const QString view = lay.value("active_view").toString();
     if (view == "dashboard") r.state.viewIndex = 0;
     else if (view == "detailed") r.state.viewIndex = 1;

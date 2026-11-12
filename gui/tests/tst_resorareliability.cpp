@@ -201,6 +201,43 @@ private slots:
         }
     }
 
+    // Non-ASCII names and a long target path. Measured (UTF-16 units): folder `deep` ~266 and target ~283 with a
+    // QTemporaryDir under C:\Users\<user>\AppData\Local\Temp\<6 chars>. Lengths depend on the user name and temp path;
+    // the target is only beyond MAX_PATH (260) because of that base. The assertions check length > 200, not > 260.
+    void unicodeAndLongPathRoundTrip()
+    {
+        QString deep = p(QStringLiteral("ünïcode 写真 dir"));
+        for (int i = 0; i < 6; ++i)
+            deep += QStringLiteral("/nested_folder_segment_%1_abcdefghij").arg(i);
+        QVERIFY(deep.size() > 200);
+        QVERIFY(QDir().mkpath(deep));
+        const QString src = deep + QStringLiteral("/источник_画像.png");
+        const QByteArray bytes = pattern(5000, 7);
+        QVERIFY(put(src, bytes));
+        BundledExportInput in;
+        in.appVersion = "t";
+        in.analytics = QJsonObject{{"total", 1}};
+        ExportImage e;
+        e.sourcePath = src;
+        e.metadata = QJsonObject{{"format", "PNG"}, {"width", 1}, {"height", 1}};
+        e.thumbnail = "TH";
+        in.images.append(e);
+        const QString target = deep + QStringLiteral("/结果_export.resora");
+        QVERIFY(exportBundled(in, target).ok());
+        OpenOptions o;
+        o.cacheRoot = p("uni_cache");
+        OpenResult r = openResora(target, o);
+        QVERIFY2(r.ok(), qPrintable(r.message));
+        QCOMPARE(r.document.images.size(), 1);
+        {
+            QFile f(r.document.images[0].path);  // scoped: an open handle would block cache removal
+            QVERIFY(f.open(QIODevice::ReadOnly));
+            QCOMPARE(f.readAll(), bytes);
+        }
+        QVERIFY(closeDocument(&r.document));
+        QVERIFY(QDir(p("uni_cache")).entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty());
+    }
+
     void repeatedOpenCloseReleasesEverything()  // 25 cycles, alternating documents, nothing left behind
     {
         QStringList outs;

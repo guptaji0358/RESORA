@@ -53,6 +53,24 @@ Result Writer::addFile(const QString &id, quint32 type, const QString &sourcePat
     return {};
 }
 
+bool Writer::budgetOk(quint64 n, quint64 &written) const
+{
+    if (limit_ != 0 && written + n > limit_)
+        return false;
+    written += n;
+    return true;
+}
+
+quint64 Writer::containerBytes() const
+{
+    quint64 payload = 0;
+    for (const Item &it : items_)
+        payload += it.sourcePath.isEmpty() ? quint64(it.bytes.size())
+                                           : quint64(qMax<qint64>(0, QFileInfo(it.sourcePath).size()));
+    return quint64(kHeaderSize) + payload + quint64(kDirHeaderSize) + quint64(items_.size()) * kEntrySize
+           + quint64(kTrailerSize);
+}
+
 Result Writer::write(const QString &targetPath, const ProgressFn &progress) const
 {
     if (targetPath.isEmpty())
@@ -66,9 +84,14 @@ Result Writer::write(const QString &targetPath, const ProgressFn &progress) cons
         return Result::fail(Error::IoError, QStringLiteral("Cannot create %1: %2").arg(targetPath, out.errorString()));
 
     QCryptographicHash whole(QCryptographicHash::Sha256);
+    quint64 written = 0;  // bytes handed to the device so far (checked against limit_)
     const auto ioFail = [&](const QString &why) {
         out.cancelWriting();
         return Result::fail(Error::WriteFailed, why);
+    };
+    const auto full = [&]() {
+        out.cancelWriting();
+        return Result::fail(Error::OutOfSpace, QStringLiteral("Not enough space on the destination drive"));
     };
 
     // Header.
@@ -79,6 +102,8 @@ Result Writer::write(const QString &targetPath, const ProgressFn &progress) cons
     putU32(head, kHeaderSize);
     head.append(QByteArray(12, '\0'));
     head.append(QCryptographicHash::hash(head, QCryptographicHash::Sha256));
+    if (!budgetOk(quint64(head.size()), written))
+        return full();
     if (!putAndHash(out, whole, head.constData(), head.size()))
         return ioFail(QStringLiteral("Write failed: ") + out.errorString());
 
@@ -95,6 +120,8 @@ Result Writer::write(const QString &targetPath, const ProgressFn &progress) cons
         if (it.sourcePath.isEmpty()) {
             h.addData(it.bytes);
             len = quint64(it.bytes.size());
+            if (!budgetOk(len, written))
+                return full();
             if (!putAndHash(out, whole, it.bytes.constData(), it.bytes.size()))
                 return ioFail(QStringLiteral("Write failed: ") + out.errorString());
         } else {
@@ -123,6 +150,8 @@ Result Writer::write(const QString &targetPath, const ProgressFn &progress) cons
                     out.cancelWriting();
                     return Result::fail(Error::ResourceTooLarge, QStringLiteral("Resource too large: ") + it.id);
                 }
+                if (!budgetOk(quint64(n), written))
+                    return full();
                 if (!putAndHash(out, whole, buf.constData(), n))
                     return ioFail(QStringLiteral("Write failed: ") + out.errorString());
             }
@@ -156,6 +185,8 @@ Result Writer::write(const QString &targetPath, const ProgressFn &progress) cons
         dir.append(e.sha256);
     }
     const quint64 dirOffset = pos;
+    if (!budgetOk(quint64(dir.size()), written))
+        return full();
     if (!putAndHash(out, whole, dir.constData(), dir.size()))
         return ioFail(QStringLiteral("Write failed: ") + out.errorString());
 
@@ -170,6 +201,8 @@ Result Writer::write(const QString &targetPath, const ProgressFn &progress) cons
     whole.addData(tr);
     tr.append(whole.result());
     tr.append(endMagic());
+    if (!budgetOk(quint64(tr.size()), written))
+        return full();
     if (out.write(tr) != tr.size())
         return ioFail(QStringLiteral("Write failed: ") + out.errorString());
 

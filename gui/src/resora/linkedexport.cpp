@@ -1,6 +1,7 @@
 #include "resora/linkedexport.h"
 
 #include "resora/destinationfinalizer.h"
+#include "resora/exportinternal.h"
 #include "resora/exportcommon.h"
 #include "resora/resorareader.h"
 #include "resora/resorawriter.h"
@@ -47,6 +48,14 @@ constexpr int kSpan[] = {850, 70, 30, 0, 0};
 }  // namespace
 
 LinkedExportResult exportLinked(const LinkedExportInput &in, const QString &targetPath, const ExportProgressFn &progress)
+{
+    return detail::exportLinkedWith(in, targetPath, progress, detail::ExportSeams{});
+}
+
+namespace detail {
+
+LinkedExportResult exportLinkedWith(const LinkedExportInput &in, const QString &targetPath, const ExportProgressFn &progress,
+                                    const ExportSeams &seams)
 {
     if (targetPath.isEmpty())
         return fail(ExportError::InvalidInput, QStringLiteral("No destination path"));
@@ -217,17 +226,32 @@ LinkedExportResult exportLinked(const LinkedExportInput &in, const QString &targ
     if (!built)
         return fail(ExportError::InvalidInput, QStringLiteral("Cannot describe the container (resource id or count problem)"));
 
-    // ---- 4. write to a temporary sibling ----
+    // ---- 4. free-space pre-check: only the container (thumbnails + JSON) is written, never the image bytes ----
+    qint64 freeBytes = -1;
+    const quint64 needed = w.containerBytes() + seams.reserveBytes;
+    if (!detail::hasRoomFor(targetInfo.absolutePath(), needed, seams, &freeBytes))
+        return fail(ExportError::InsufficientStorage,
+                    QStringLiteral("Not enough free space on the destination drive: about %1 MiB needed, %2 MiB available")
+                        .arg(needed >> 20)
+                        .arg(freeBytes >> 20));
+
+    // ---- 5. write to a temporary sibling ----
     const QString tmp = tempSiblingName(targetPath);
     const auto cleanup = [&]() { QFile::remove(tmp); };
+    detail::WriterLimit::set(w, seams.writeLimit);
     const Result wr = w.write(tmp, [&](quint64 d, quint64 t) { return report(ExportProgress::Writing, d, t, -1); });
     if (!wr.ok()) {
         cleanup();
-        return fail(wr.error == Error::Cancelled ? ExportError::Cancelled : ExportError::WriteFailed,
-                    wr.error == Error::Cancelled ? QStringLiteral("Export cancelled") : wr.message);
+        if (wr.error == Error::Cancelled)
+            return fail(ExportError::Cancelled, QStringLiteral("Export cancelled"));
+        if (wr.error == Error::OutOfSpace)
+            return fail(ExportError::InsufficientStorage, wr.message);
+        return fail(ExportError::WriteFailed, wr.message);
     }
+    if (seams.afterWrite)
+        seams.afterWrite(tmp);
 
-    // ---- 5. verify: reopen, exact resource set, and NO image resource ----
+    // ---- 6. verify: reopen, exact resource set, and NO image resource ----
     if (!report(ExportProgress::Verifying, 0, 1, -1)) {
         cleanup();
         return fail(ExportError::Cancelled, QStringLiteral("Export cancelled"));
@@ -289,9 +313,9 @@ LinkedExportResult exportLinked(const LinkedExportInput &in, const QString &targ
             return changed(i, QStringLiteral("Content changed while exporting"));
     }
 
-    // ---- 6. atomic swap into place (shared finalizer) ----
+    // ---- 7. atomic swap into place (shared finalizer) ----
     report(ExportProgress::Finalizing, 0, 0, -1);
-    const FinalizeResult fin = finalizeDestination(tmp, targetPath);
+    const FinalizeResult fin = seams.finalize ? seams.finalize(tmp, targetPath) : finalizeDestination(tmp, targetPath);
     if (!fin.ok()) {
         if (!fin.keepTemp)
             cleanup();
@@ -301,5 +325,7 @@ LinkedExportResult exportLinked(const LinkedExportInput &in, const QString &targ
     report(ExportProgress::Done, 0, 0, -1);
     return res;
 }
+
+}  // namespace detail
 
 }  // namespace resora
