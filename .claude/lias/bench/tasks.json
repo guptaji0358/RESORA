@@ -3,6 +3,10 @@
     {"kind": "fact", "category": "project", "key": "duplicates default similarity threshold",
      "value": "DEFAULT_THRESHOLD = 90.0 percent (valid range 50-100), defined in scripts/engine/duplicates/finder.py",
      "source": "verified in code, 2026-11-12"}
+    ,
+    {"kind": "fact", "category": "project", "key": "cache folder deletion function",
+     "value": "removeOwnedCacheDir in gui/src/resora/cachesweep.cpp (declared in gui/include/resora/importinternal.h) is the only code path that deletes RESORA cache folders; it never deletes recursively or follows links",
+     "source": "verified in code, 2026-11-12"}
   ],
   "tasks": [
     {"id": "source_sizes",
@@ -10,6 +14,9 @@
      "expect": ["\\.cpp", "\\.py", "lines"]},
     {"id": "recall_threshold",
      "prompt": "What is the default similarity threshold for the duplicates command, and which file defines it?",
-     "expect": ["90", "finder\\.py"]}
+     "expect": ["90", "finder\\.py"]},
+    {"id": "recall_cache_delete",
+     "prompt": "Which function deletes RESORA cache folders, in which file, and does it delete recursively?",
+     "expect": ["removeOwnedCacheDir", "cachesweep\\.cpp", "not|never|non-recursive|no"]}
   ]
 }

@@ -94,3 +94,18 @@ Bugs the new tests found and that were fixed:
 Hardening added with them: `know add` is atomic (`BEGIN IMMEDIATE`), and a locked/busy DB is no longer treated as corrupt (it would have been quarantined).
 
 Not covered: behaviour in the desktop app, Windows paths with unusual characters, power loss mid-write, very long-running real-session use. The concurrency tests repeated 5 times with no flaky failures, which is not proof of race-freedom.
+
+## Stage 6: measurement summary (2026-11-12)
+Method: `bench/harness.py`, real `claude -p` runs, LIAS on vs only `Skill(lias)` blocked, arms alternated, 3 reps per cell, correctness regex-checked (all 18 corrected-baseline runs below were correct).
+
+| Task | Cost LIAS vs baseline (USD) | Turns | Tool calls | Output tokens | Wall (s) |
+|---|---|---|---|---|---|
+| source_sizes | 0.083 vs 0.080 (+4%) | 4 vs 3 | 2 vs 2 | 1174 vs 1525 | 17.2 vs 21.1 |
+| recall_threshold | 0.063 vs 0.061 (+4%) | 1.7 vs 2 | 0.7 vs 1 | 265 vs 388 | 9.6 vs 10.8 |
+| recall_cache_delete | 0.086 vs 0.089 (-3%; ranges overlap) | 3 vs 3.7 | 2 vs 2.7 | 863 vs 1014 | 20.0 vs 27.1 |
+
+What is measured: model turns, tool calls, tokens, cost, wall time. What is not: subscription credits (not exposed; cost is API-equivalent), and long-run accumulation (no multi-week data).
+
+**Honest conclusion:** on this small repo LIAS is cost-neutral (-3% to +4%, inside noise) while using about 15-30% fewer output tokens, 10-26% less wall time, and giving deterministic, verified answers. **No credit saving is demonstrated.** Where savings are plausible but unmeasured: much larger repos, expensive multi-file discoveries repeated across sessions, and heavy local computation. Biggest known cost driver is outside LIAS: the global skill list (~6k cache-write tokens per run).
+
+Remaining limitations: n=3, three tasks; seeded facts can go stale (no automatic staleness check against code); skill invocation is probabilistic; only headless mode tested; no agents or PostToolUse hook were built because nothing measured justified them.
