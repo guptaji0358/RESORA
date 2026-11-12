@@ -1,11 +1,11 @@
-# LIAS (Local Intelligence & Automation System) — v0.1, Stage 3
+﻿# LIAS (Local Intelligence & Automation System) â€” v0.1, Stage 3
 
 Everything lives in `.claude/lias/`; Claude Code requires `settings.json` and `skills/` directly under `.claude/`.
 
 | Piece | Path |
 |---|---|
-| CLI (single entry) | `lias.py` — `run`, `list`, `know add/search/forget/stats`, `doctor` |
-| Core | `core/` — `protocol` (JSON envelope), `guard` (root confinement, secret scan), `store` (SQLite+FTS5), `runner` |
+| CLI (single entry) | `lias.py` â€” `run`, `list`, `know add/search/forget/stats`, `doctor` |
+| Core | `core/` â€” `protocol` (JSON envelope), `guard` (root confinement, secret scan), `store` (SQLite+FTS5), `runner` |
 | Automations | `automations/<name>.json` (manifest) + `<name>.py` (stdin JSON -> stdout JSON) |
 | Hook | `hooks/prompt_retrieve.py` (UserPromptSubmit, registered in `.claude/settings.json`) |
 | Skill | `.claude/skills/lias/SKILL.md` (the only one; description costs context every turn) |
@@ -52,7 +52,7 @@ LIAS used more turns and tool calls here. The baseline solved it with one shell 
 ## Measurement harness (`bench/harness.py`)
 `python .claude/lias/bench/harness.py --reps 3` runs each task in `bench/tasks.json` through `claude -p` with LIAS on (skill + hook) and off (`--disable-slash-commands`, `LIAS_DISABLE=1`, plain Bash), arms alternating per rep. It records turns, tool calls, tokens and cost as reported by Claude Code, wall time, and a regex correctness check. It uses a throwaway knowledge DB (`LIAS_DB`). Each run spends real usage (about $0.03-0.10). `lias.py stats` summarizes the local event log (automation runs, cache hits, retrievals, injected characters).
 
-### Results, 2026-11-12 (3 reps per cell, 12 runs, all 12 answers correct)
+### Results, 2026-11-12 - SUPERSEDED, baseline was confounded (see below) (3 reps per cell, 12 runs, all 12 answers correct)
 | Task | Arm | Cost mean (USD) | Turns | Tool calls | Output tokens | Wall (s) |
 |---|---|---|---|---|---|---|
 | source_sizes | LIAS | 0.093 | 5 | 3 | 1461 | 19.8 |
@@ -68,3 +68,18 @@ LIAS used more turns and tool calls here. The baseline solved it with one shell 
 Limits: 3 reps is small, the two tasks are narrow, cost is API-equivalent USD and not subscription credits, and the seeded fact can go stale. Savings would be expected on larger repos and on repeated, expensive discoveries, but that is **unmeasured**.
 
 Next optimization candidates: put the automation list into SKILL.md so `list` is unnecessary, shorten the skill description, then re-run this harness.
+
+### Optimization and corrected benchmark (v0.2.0 skill)
+Changes: shorter skill description, automation call inlined in SKILL.md so Claude skips `list` (source_sizes went from 5 to 4 turns).
+
+**Confound found:** the first baseline used `--disable-slash-commands`, which also removed every global skill description. The baseline therefore had a smaller prompt (about 6k fewer cache-write tokens per run), and the "+47-62%" result mostly measured that, not LIAS. The baseline now blocks only `Skill(lias)` (`--disallowedTools`), and the harness also records cache-write tokens.
+
+Corrected run (3 reps per cell, all 12 answers correct):
+| Task | Arm | Cost (USD) | Turns | Output tokens | Cache-write tokens | Wall (s) |
+|---|---|---|---|---|---|---|
+| source_sizes | LIAS | 0.083 | 4 | 1174 | 14775 | 17.2 |
+| source_sizes | baseline | 0.080 | 3 | 1525 | 13061 | 21.1 |
+| recall_threshold | LIAS | 0.063 | 1.7 | 265 | 13552 | 9.6 |
+| recall_threshold | baseline | 0.061 | 2 | 388 | 12207 | 10.8 |
+
+**Conclusion:** cost is about equal (+3-4%, within the noise of n=3). LIAS gives roughly 23-32% fewer output tokens, 11-18% less wall time, and deterministic, verified results, but **no cost saving is demonstrated on these tasks**. Caveats: the baseline made 3 Skill calls across its 12 runs (target not recorded; possibly other skills or denied lias attempts), cost is API-equivalent USD, and the tasks are small. Separate finding: the global skill list (about 6k tokens of cache writes per run) is a larger standing cost than LIAS itself; trimming unused global skills would likely save more than anything in LIAS.

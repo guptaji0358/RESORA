@@ -30,7 +30,9 @@ from core import store  # noqa: E402
 COMMON = "Glob,Grep,Read"
 ARMS = {
     "lias": {"tools": f"{COMMON},Bash(python .claude/lias/lias.py *)", "flags": [], "env": {}},
-    "baseline": {"tools": f"{COMMON},Bash", "flags": ["--disable-slash-commands"],
+    # Only the lias skill is blocked: --disable-slash-commands would also drop every other
+    # skill description and shrink the prompt, which confounds the comparison.
+    "baseline": {"tools": f"{COMMON},Bash", "flags": ["--disallowedTools", "Skill(lias)"],
                  "env": {"LIAS_DISABLE": "1"}},
 }
 
@@ -57,6 +59,7 @@ def parse_stream(lines: list[str]) -> dict:
         "cost_usd": result.get("total_cost_usd"), "output_tokens": u.get("output_tokens"),
         "input_tokens_total": sum(u.get(k, 0) or 0 for k in
                                   ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")),
+        "cache_write_tokens": u.get("cache_creation_input_tokens"),
         "api_ms": result.get("duration_api_ms"), "is_error": result.get("is_error", True),
         "text": result.get("result", ""),
     }
@@ -85,8 +88,9 @@ def summarize(rows: list[dict]) -> dict:
     for (task, arm) in sorted({(r["task"], r["arm"]) for r in rows}):
         g = [r for r in rows if r["task"] == task and r["arm"] == arm]
         s: dict = {"n": len(g), "correct": sum(r["correct"] for r in g)}
-        for k in ("cost_usd", "turns", "tool_calls", "output_tokens", "input_tokens_total", "wall_s"):
-            v = [r[k] for r in g if r[k] is not None]
+        for k in ("cost_usd", "turns", "tool_calls", "output_tokens", "input_tokens_total",
+                  "cache_write_tokens", "wall_s"):
+            v = [r[k] for r in g if r.get(k) is not None]
             if v:
                 s[k] = {"mean": round(statistics.mean(v), 4), "min": min(v), "max": max(v)}
         out[f"{task}/{arm}"] = s
