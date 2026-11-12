@@ -50,8 +50,18 @@ FinalizeResult finalizeDestination(const QString &tmp, const QString &target);
 
 namespace detail {
 // Seam for tests: the three OS operations used by the Windows algorithm (error code 0 = success).
+// Outcome of pushing the finished temporary file to disk (before anything is moved).
+struct FlushResult
+{
+    unsigned long error = 0;  // 0 = flushed
+    bool openFailed = false;  // true: the file could not be opened for flushing; false: the flush itself failed
+};
+
 struct FinalizeOps
 {
+    // Open + flush the finished temp file (FlushFileBuffers on Windows). Empty = skip. Runs before any
+    // destination or backup file is touched, so a failure is always a clean failure.
+    std::function<FlushResult(const QString &tmp)> flush;
     std::function<unsigned long(const QString &tmp, const QString &dst)> moveNew;  // MoveFileExW, no overwrite
     std::function<unsigned long(const QString &dst, const QString &tmp, const QString &backup)> replace;  // ReplaceFileW
     std::function<unsigned long(const QString &from, const QString &to)> restore;  // MoveFileExW, no overwrite

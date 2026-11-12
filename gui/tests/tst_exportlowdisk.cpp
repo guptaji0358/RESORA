@@ -12,6 +12,7 @@
 #include <QFileInfo>
 #include <QTemporaryDir>
 #include <QtTest>
+#include <memory>
 
 using namespace resora;
 
@@ -93,6 +94,48 @@ FinalizeResult uncertainSwap(const QString &tmp, const QString &target)
     return detail::finalizeWith(o, tmp, target);
 }
 
+// Uncertain state with BOTH files alive: the old content sits under the backup name, the verified new
+// export is still the temp file, and the restore fails. Nothing may be deleted by the caller.
+FinalizeResult uncertainKeepsTemp(const QString &tmp, const QString &target)
+{
+    detail::FinalizeOps o;
+    o.attempts = 1;
+    o.moveNew = [](const QString &from, const QString &to) -> unsigned long {
+        return QFile::exists(to) ? 183ul : (QFile::rename(from, to) ? 0ul : 5ul);
+    };
+    o.replace = [](const QString &dst, const QString &, const QString &bak) -> unsigned long {
+        QFile::rename(dst, bak);
+        return 1177ul;
+    };
+    o.restore = [](const QString &, const QString &) -> unsigned long { return 5ul; };
+    return detail::finalizeWith(o, tmp, target);
+}
+
+// Records the OS operations the finalizer attempts; the flush step returns a scripted outcome.
+struct SwapProbe
+{
+    int moveNew = 0, replace = 0, restore = 0;
+    detail::FinalizeOps ops(detail::FlushResult flushResult)
+    {
+        detail::FinalizeOps o;
+        o.attempts = 1;
+        o.flush = [flushResult](const QString &) { return flushResult; };
+        o.moveNew = [this](const QString &from, const QString &to) -> unsigned long {
+            ++moveNew;
+            return QFile::exists(to) ? 183ul : (QFile::rename(from, to) ? 0ul : 5ul);
+        };
+        o.replace = [this](const QString &dst, const QString &src, const QString &bak) -> unsigned long {
+            ++replace;
+            return (QFile::rename(dst, bak) && QFile::rename(src, dst)) ? 0ul : 5ul;
+        };
+        o.restore = [this](const QString &, const QString &) -> unsigned long {
+            ++restore;
+            return 5ul;
+        };
+        return o;
+    }
+};
+
 // Replace is refused and nothing changes on disk (documented 1176 shape): clean failure.
 FinalizeResult refusedSwap(const QString &tmp, const QString &target)
 {
@@ -119,8 +162,8 @@ detail::ExportSeams roomy()
 class TstExportLowDisk : public QObject
 {
     Q_OBJECT
-    QTemporaryDir dir_;
-    QString p(const QString &n) const { return dir_.filePath(n); }
+    std::unique_ptr<QTemporaryDir> dir_;  // one fresh directory per test: no shared filesystem state
+    QString p(const QString &n) const { return dir_->filePath(n); }
     // Every case starts with an empty destination folder so exact folder listings stay meaningful.
     void resetOut() { QDir(p(QStringLiteral("out"))).removeRecursively(); QDir().mkpath(p(QStringLiteral("out"))); }
 
@@ -164,7 +207,12 @@ class TstExportLowDisk : public QObject
     }
 
 private slots:
-    void initTestCase() { QVERIFY(dir_.isValid()); }
+    void init()
+    {
+        dir_ = std::make_unique<QTemporaryDir>();
+        QVERIFY(dir_->isValid());
+    }
+    void cleanup() { dir_.reset(); }
 
     // ---------------- Bundled ----------------
 
@@ -394,6 +442,151 @@ private slots:
         const QStringList left = entries(p("out"));
         QCOMPARE(left.size(), 1);
         QCOMPARE(slurp(p("out/") + left.first()), QByteArray("previous"));
+    }
+
+    // ---------------- Source growth after the free-space estimate ----------------
+
+    void bundledSourceGrowingAfterPreflightIsRejectedBeforeOverrun()
+    {
+        resetOut();
+        QVERIFY(put(p("src/g.png"), pattern(1 << 20, 20)));
+        QVERIFY(put(p("out/keep.resora"), "previous"));
+        auto seams = roomy();
+        // The estimate is taken first; the source grows while the free-space check runs.
+        seams.availableBytes = [&](const QString &) -> qint64 {
+            QFile f(p("src/g.png"));
+            if (f.open(QIODevice::Append))
+                f.write(pattern(2 << 20, 21));
+            return qint64(1) << 40;
+        };
+        Recorder rec;
+        const auto r = detail::exportBundledWith(bundledBase({bundledImg(p("src/g.png"))}), p("out/keep.resora"),
+                                                 rec.fn(), seams);
+        QCOMPARE(r.error, ExportError::SourceProblem);  // not reported as a disk-space problem
+        QCOMPARE(r.issues.size(), 1);
+        QVERIFY(!rec.sawDone());
+        QCOMPARE(slurp(p("out/keep.resora")), QByteArray("previous"));
+        QCOMPARE(entries(p("out")), QStringList{"keep.resora"});
+    }
+
+    void bundledSourceGrowingDuringWritingIsRejected()
+    {
+        resetOut();
+        QVERIFY(put(p("src/h.png"), pattern(4 << 20, 22)));
+        QVERIFY(put(p("out/keep.resora"), "previous"));
+        bool grown = false;
+        const ExportProgressFn grow = [&](const ExportProgress &pr) {
+            if (pr.stage == ExportProgress::Writing && !grown) {
+                grown = true;
+                QFile f(p("src/h.png"));
+                if (f.open(QIODevice::Append))
+                    f.write(pattern(2 << 20, 23));
+            }
+            return true;
+        };
+        const auto r = detail::exportBundledWith(bundledBase({bundledImg(p("src/h.png"))}), p("out/keep.resora"), grow, roomy());
+        QVERIFY(grown);
+        QCOMPARE(r.error, ExportError::SourceProblem);
+        QCOMPARE(slurp(p("out/keep.resora")), QByteArray("previous"));
+        QCOMPARE(entries(p("out")), QStringList{"keep.resora"});
+    }
+
+    void linkedSourceGrowingAfterPreflightIsRejected()
+    {
+        resetOut();
+        QVERIFY(put(p("src/k.png"), pattern(64 << 10, 24)));
+        QVERIFY(put(p("out/keep.resora"), "previous"));
+        auto seams = roomy();
+        seams.availableBytes = [&](const QString &) -> qint64 {
+            QFile f(p("src/k.png"));
+            if (f.open(QIODevice::Append))
+                f.write(pattern(1 << 10, 25));
+            return qint64(1) << 40;
+        };
+        const auto r = detail::exportLinkedWith(linkedBase({linkedImg(p("src/k.png"))}), p("out/keep.resora"), {}, seams);
+        QCOMPARE(r.error, ExportError::SourceProblem);
+        QCOMPARE(slurp(p("out/keep.resora")), QByteArray("previous"));
+        QCOMPARE(entries(p("out")), QStringList{"keep.resora"});
+    }
+
+    // ---------------- Uncertain replacement keeps both files ----------------
+
+    void bundledUncertainReplaceKeepsTempAndBackup()
+    {
+        resetOut();
+        QVERIFY(put(p("src/m.png"), pattern(32 << 10, 26)));
+        QVERIFY(put(p("out/keep.resora"), "previous"));
+        auto seams = roomy();
+        seams.finalize = uncertainKeepsTemp;
+        const auto r = detail::exportBundledWith(bundledBase({bundledImg(p("src/m.png"))}), p("out/keep.resora"), {}, seams);
+        QCOMPARE(r.error, ExportError::FinalizeFailed);
+        QCOMPARE(entries(p("out")).size(), 2);  // backup (old) + temp (verified new): nothing deleted
+        int old = 0, fresh = 0;
+        for (const QString &n : entries(p("out"))) {
+            const QByteArray d = slurp(p("out/") + n);
+            if (d == "previous")
+                ++old;
+            else if (d.size() > 100)
+                ++fresh;
+        }
+        QCOMPARE(old, 1);
+        QCOMPARE(fresh, 1);
+    }
+
+    void linkedUncertainReplaceKeepsTempAndBackup()
+    {
+        resetOut();
+        QVERIFY(put(p("src/n.png"), pattern(32 << 10, 27)));
+        QVERIFY(put(p("out/keep.resora"), "previous"));
+        auto seams = roomy();
+        seams.finalize = uncertainKeepsTemp;
+        const auto r = detail::exportLinkedWith(linkedBase({linkedImg(p("src/n.png"))}), p("out/keep.resora"), {}, seams);
+        QCOMPARE(r.error, ExportError::FinalizeFailed);
+        QCOMPARE(entries(p("out")).size(), 2);
+    }
+
+    // ---------------- Finalizer flush seam ----------------
+
+    void finalizerFlushOpenFailureMovesNothing()
+    {
+        QVERIFY(put(p("d.resora"), "old"));
+        QVERIFY(put(p("d.resora.aaaa.tmp"), "new"));
+        SwapProbe probe;
+        const auto r = detail::finalizeWith(probe.ops({5, true}), p("d.resora.aaaa.tmp"), p("d.resora"));
+        QCOMPARE(r.status, FinalizeStatus::Failed);
+        QCOMPARE(r.osError, 5ul);
+        QVERIFY(r.message.contains(QStringLiteral("open")));
+        QCOMPARE(probe.moveNew + probe.replace + probe.restore, 0);
+        QCOMPARE(slurp(p("d.resora")), QByteArray("old"));
+        QCOMPARE(slurp(p("d.resora.aaaa.tmp")), QByteArray("new"));
+        QCOMPARE(entries(p(".")), (QStringList{"d.resora", "d.resora.aaaa.tmp"}));
+    }
+
+    void finalizerFlushFailureMovesNothing()
+    {
+        QVERIFY(put(p("d.resora"), "old"));
+        QVERIFY(put(p("d.resora.bbbb.tmp"), "new"));
+        SwapProbe probe;
+        const auto r = detail::finalizeWith(probe.ops({1117, false}), p("d.resora.bbbb.tmp"), p("d.resora"));
+        QCOMPARE(r.status, FinalizeStatus::Failed);
+        QCOMPARE(r.osError, 1117ul);
+        QVERIFY(r.message.contains(QStringLiteral("flush")));
+        QCOMPARE(probe.moveNew + probe.replace + probe.restore, 0);
+        QCOMPARE(slurp(p("d.resora")), QByteArray("old"));
+        QCOMPARE(slurp(p("d.resora.bbbb.tmp")), QByteArray("new"));
+        QCOMPARE(entries(p(".")), (QStringList{"d.resora", "d.resora.bbbb.tmp"}));
+    }
+
+    void finalizerSuccessfulFlushContinuesIntoReplacement()
+    {
+        QVERIFY(put(p("d.resora"), "old"));
+        QVERIFY(put(p("d.resora.cccc.tmp"), "new"));
+        SwapProbe probe;
+        const auto r = detail::finalizeWith(probe.ops({0, false}), p("d.resora.cccc.tmp"), p("d.resora"));
+        QVERIFY2(r.ok(), qPrintable(r.message));
+        QCOMPARE(probe.replace, 1);
+        QCOMPARE(slurp(p("d.resora")), QByteArray("new"));
+        QVERIFY(!QFile::exists(p("d.resora.cccc.tmp")));
     }
 
     void linkedDistinctErrorCodesPerFailure()

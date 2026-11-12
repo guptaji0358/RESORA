@@ -1,8 +1,6 @@
-feat(resora): Phase 7 compatibility and reliability hardening
+feat(resora): low-disk audit follow-up (source-growth cap, flush seam)
 
-- schemaVersionProblem: one schema_version policy (integer == 1; newer/older/invalid reported specifically) used by importer and dashboard restore; charts schema now checked
-- hashed duplicate-id checks in container reader and writer (65536-entry directories)
-- JSON cache marker with owner pid; conservative startup sweepStaleCache (dead owner, >=1h, real doc-<32hex> dirs only, never follows links)
-- extracted image names: fixed image-extension list else .img; device-name stems prefixed
-- tests: tst_resorareliability (new), tst_resorafile +4, tst_dashboardstate +1
-- docs: RESORA_FORMAT Phase 7 section (compat policy, limits, cache lifecycle, assumptions), implement.md, MILESTONE.md, AgentsMemory
+- Bundled export caps the Writer byte budget at the preflight estimate; a source that grows after the free-space check aborts early as SourceProblem (not a space error)
+- FinalizeOps::flush internal seam wraps open + FlushFileBuffers; failures leave the previous destination and temp file untouched
+- tst_exportlowdisk: per-test temp dirs, 22 cases (growth after preflight/during write, uncertain replacement keeps backup+temp, flush-seam tests)
+- docs: RESORA_FORMAT, MILESTONE.md, implement.md, memory (CURRENT_STATE, KNOWN_ISSUES, MILESTONES)

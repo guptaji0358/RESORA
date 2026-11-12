@@ -162,24 +162,40 @@ ExportResult exportBundledWith(const BundledExportInput &in, const QString &targ
         return fail(ExportError::InvalidInput, QStringLiteral("Cannot describe the container (resource id or count problem)"));
 
     // ---- 3. free-space pre-check: container + reserve must fit on the destination volume ----
+    // The estimate is a snapshot, not a guarantee: the reserve is only a margin (it also covers the old and
+    // new destination coexisting during replacement). To keep a source that grows afterwards from writing
+    // past the estimate, the Writer's byte budget is capped at the estimate (see step 4).
     qint64 freeBytes = -1;
-    if (!detail::hasRoomFor(targetInfo.absolutePath(), w.containerBytes() + seams.reserveBytes, seams, &freeBytes))
+    const quint64 estimate = w.containerBytes();
+    if (!detail::hasRoomFor(targetInfo.absolutePath(), estimate + seams.reserveBytes, seams, &freeBytes))
         return fail(ExportError::InsufficientStorage,
                     QStringLiteral("Not enough free space on the destination drive: about %1 MiB needed, %2 MiB available")
-                        .arg((w.containerBytes() + seams.reserveBytes) >> 20)
+                        .arg((estimate + seams.reserveBytes) >> 20)
                         .arg(freeBytes >> 20));
 
     // ---- 4. write to a temporary sibling (Phase 1 Writer streams the images) ----
     const QString tmp = tempSiblingName(targetPath);
     const auto cleanup = [&]() { QFile::remove(tmp); };
-    detail::WriterLimit::set(w, seams.writeLimit);
+    // Budget = the estimate the free-space check was based on (a test capacity may only lower it). An
+    // unchanged container is exactly `estimate` bytes, so exceeding it means a source grew after the check.
+    detail::WriterLimit::set(w, seams.writeLimit != 0 ? qMin<quint64>(seams.writeLimit, estimate) : estimate);
     const Result wr = w.write(tmp, [&](quint64 d, quint64 t) { return report(ExportProgress::Writing, d, t, -1); });
     if (!wr.ok()) {
         cleanup();
         if (wr.error == Error::Cancelled)
             return fail(ExportError::Cancelled, QStringLiteral("Export cancelled"));
-        if (wr.error == Error::OutOfSpace)
+        if (wr.error == Error::OutOfSpace) {
+            for (int i = 0; i < in.images.size(); ++i)  // budget overrun by a grown source is not a space problem
+                if (!sameSource(in.images[i].sourcePath, srcs[i]))
+                    res.issues.append({i, in.images[i].sourcePath, SourceIssue::Changed,
+                                       QStringLiteral("Source changed while exporting")});
+            if (!res.issues.isEmpty()) {
+                res.error = ExportError::SourceProblem;
+                res.message = QStringLiteral("A source image changed during the export");
+                return res;
+            }
             return fail(ExportError::InsufficientStorage, wr.message);
+        }
         return fail(ExportError::WriteFailed, wr.message);
     }
     if (seams.afterWrite)

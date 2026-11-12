@@ -107,6 +107,15 @@ namespace detail {
 
 FinalizeResult finalizeWith(const FinalizeOps &ops, const QString &tmp, const QString &target)
 {
+    if (ops.flush) {  // nothing has moved yet: failure keeps the previous destination and the temp file
+        const FlushResult f = ops.flush(tmp);
+        if (f.error != 0)
+            return failure(FinalizeStatus::Failed,
+                           (f.openFailed ? QStringLiteral("Could not open the new file to flush it to disk (Windows error %1); the previous file was kept")
+                                         : QStringLiteral("Could not flush the new file to disk (Windows error %1); the previous file was kept"))
+                               .arg(f.error),
+                           f.error);
+    }
     unsigned long last = 0;
     bool hadPrevious = false;
     for (int attempt = 1; attempt <= ops.attempts; ++attempt) {
@@ -145,25 +154,18 @@ FinalizeResult finalizeDestination(const QString &tmp, const QString &target)
 
 #ifdef Q_OS_WIN
     const auto wide = [](const QString &p) { return native(p).toStdWString(); };
-    {  // push the finished temp file to disk before it becomes the destination. Nothing has moved yet, so
-       // a failure here is a clean failure: the previous destination and the temp file are untouched.
-        const HANDLE h = CreateFileW(wide(tmp).c_str(), GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+    detail::FinalizeOps ops;
+    // Push the finished temp file to disk before it becomes the destination (see finalizeWith).
+    ops.flush = [&](const QString &file) -> detail::FlushResult {
+        const HANDLE h = CreateFileW(wide(file).c_str(), GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
                                      OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (h == INVALID_HANDLE_VALUE)
-            return failure(FinalizeStatus::Failed,
-                           QStringLiteral("Could not open the new file to flush it to disk (Windows error %1); the previous file was kept")
-                               .arg(GetLastError()),
-                           GetLastError());
+            return {GetLastError(), true};
         const bool flushed = FlushFileBuffers(h) != 0;
         const DWORD err = flushed ? 0 : GetLastError();
         CloseHandle(h);
-        if (!flushed)
-            return failure(FinalizeStatus::Failed,
-                           QStringLiteral("Could not flush the new file to disk (Windows error %1); the previous file was kept")
-                               .arg(err),
-                           err);
-    }
-    detail::FinalizeOps ops;
+        return {err, false};
+    };
     ops.moveNew = [&](const QString &from, const QString &to) -> unsigned long {
         return MoveFileExW(wide(from).c_str(), wide(to).c_str(), 0) ? 0 : GetLastError();
     };

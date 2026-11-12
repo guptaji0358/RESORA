@@ -89,3 +89,4 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 
 ## 2026-11-12 Phase 7 low-disk audit corrections [V]
 - Finalizer now checks FlushFileBuffers (clean `Failed`, nothing moved); `setByteLimit` and the `*With` export functions moved out of public headers (`exportinternal.h`, `detail::WriterLimit`). Focused ctest 7/7; full suite and run.bat not run. Open: source-growth vs estimate, real ENOSPC classification, test gaps. Phase 7 IN PROGRESS, nothing committed.
+- 2026-11-12 audit follow-up: Bundled caps Writer budget at the preflight estimate (grown source -> `SourceProblem`, not a space error; reserve is a margin, not a guarantee); `FinalizeOps::flush` internal seam with 3 tests; `tst_exportlowdisk` per-test temp dirs, 22 cases (growth, uncertain keeps temp+backup). Focused 6/6, full ctest 21/21 (direct build, Qt on PATH). run.bat not run, nothing committed, no manual verification. Phase 7 IN PROGRESS.

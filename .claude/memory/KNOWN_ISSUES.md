@@ -28,3 +28,6 @@ None confirmed (per docs). Insights redesign unassessed [?].
 
 ## 2026-11-12 Test environment [V]
 - Qt test binaries exit 0xc0000135 under plain ctest unless `D:\Apps\Qt6\6.12.0\mingw_64\bin` and `D:\Apps\Qt6\Tools\mingw1310_64\bin` are on PATH. Run ctest with those on PATH (run.bat is not used).
+
+## 2026-11-12 Low-disk limits [V]
+- The free-space check is a snapshot: concurrent source growth is detected (Bundled budget capped at the estimate -> `SourceProblem`; Linked final rehash), not prevented. The 16 MiB reserve is a margin, not a guarantee. Real ENOSPC surfaces as `WriteFailed` (QSaveFile hides the OS code). Real full disk, network/removable drives and power loss untested.
