@@ -83,3 +83,14 @@ Corrected run (3 reps per cell, all 12 answers correct):
 | recall_threshold | baseline | 0.061 | 2 | 388 | 12207 | 10.8 |
 
 **Conclusion:** cost is about equal (+3-4%, within the noise of n=3). LIAS gives roughly 23-32% fewer output tokens, 11-18% less wall time, and deterministic, verified results, but **no cost saving is demonstrated on these tasks**. Caveats: the baseline made 3 Skill calls across its 12 runs (target not recorded; possibly other skills or denied lias attempts), cost is API-equivalent USD, and the tasks are small. Separate finding: the global skill list (about 6k tokens of cache writes per run) is a larger standing cost than LIAS itself; trimming unused global skills would likely save more than anything in LIAS.
+
+## Stage 5: testing (2026-11-12) - 44 unit/integration tests, all passing
+Covered: success, failure, timeout, missing dependency, invalid input, unknown/unavailable automation, large output, retrieval, update, contradiction, duplicate, expiry, restart persistence, corrupt-DB recovery, project-root and junction escape, concurrent writers (same fact x6, 8 distinct), concurrent identical automation runs, hook with 5000 rows and a 140 KB prompt (<3 s, output capped), hook with unavailable storage, hook never spawning processes (no recursion path), and stored-text injection.
+
+Bugs the new tests found and that were fixed:
+1. An unusable DB location crashed the CLI with a traceback instead of an error envelope.
+2. A stored multi-line value could forge an extra "knowledge entry" line in the hook's injected context. Fields are now collapsed to one line.
+3. No size limit on stored fields (now 2000 chars for values).
+Hardening added with them: `know add` is atomic (`BEGIN IMMEDIATE`), and a locked/busy DB is no longer treated as corrupt (it would have been quarantined).
+
+Not covered: behaviour in the desktop app, Windows paths with unusual characters, power loss mid-write, very long-running real-session use. The concurrency tests repeated 5 times with no flaky failures, which is not proof of race-freedom.

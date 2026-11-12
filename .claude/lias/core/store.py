@@ -14,6 +14,7 @@ from core.guard import LIAS_DIR, contains_secret
 
 DB_PATH = Path(os.environ.get("LIAS_DB") or LIAS_DIR / "database" / "knowledge.db")
 SCHEMA = LIAS_DIR / "database" / "schema.sql"
+MAX_VALUE = 2000
 KINDS = ("fact", "preference", "decision", "temporary", "unverified", "historical")
 _STOP = frozenset(
     "the a an is are was were be my your our this that these those what where when who how "
@@ -41,6 +42,10 @@ def _healthy(path: Path) -> bool:
             return con.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         finally:
             con.close()
+    except sqlite3.OperationalError as e:
+        if "locked" in str(e).lower() or "busy" in str(e).lower():
+            raise  # a busy DB is not a corrupt DB; never quarantine it
+        return False
     except sqlite3.DatabaseError:
         return False
 
@@ -83,9 +88,21 @@ def _backup(con: sqlite3.Connection, path: Path) -> None:
         old.unlink()
 
 
-def add(con: sqlite3.Connection, *, kind: str, category: str, key: str, value: str,
-        source: str, status: str = "confirmed", confidence: float = 1.0,
-        ttl_days: float | None = None, db_path: Path = DB_PATH) -> dict[str, Any]:
+def add(con: sqlite3.Connection, **kw: Any) -> dict[str, Any]:
+    """Atomic add: the duplicate/contradiction check and the insert share one write lock."""
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        return _add(con, **kw)
+    finally:
+        if con.in_transaction:
+            con.rollback()
+
+
+def _add(con: sqlite3.Connection, *, kind: str, category: str, key: str, value: str,
+         source: str, status: str = "confirmed", confidence: float = 1.0,
+         ttl_days: float | None = None, db_path: Path = DB_PATH) -> dict[str, Any]:
+    if len(key) > 200 or len(value) > MAX_VALUE or len(source) > 200 or len(category) > 100:
+        raise ValueError(f"field too long (value max {MAX_VALUE} chars)")
     if kind not in KINDS:
         raise ValueError(f"kind must be one of {KINDS}")
     if status not in ("confirmed", "unverified"):
