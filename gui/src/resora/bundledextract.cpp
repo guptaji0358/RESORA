@@ -56,8 +56,11 @@ QString safeStem(const QString &id)
 namespace {
 OpenResult abortWith(const QString &dir, OpenError e, const QString &m)
 {
-    QDir(dir).removeRecursively();  // `dir` was created by us a moment ago and holds only our files
-    return failWith(e, m);
+    // `dir` was created by us a moment ago; the same ownership rules as every other removal apply
+    // (non-recursive, never follows links, keeps anything foreign).
+    const CleanupResult c = removeOwnedCacheDir(dir, CleanupMode::Abort);
+    OpenResult r = failWith(e, c.done() ? m : m + QStringLiteral(" (cache folder kept: ") + c.detail + QLatin1Char(')'));
+    return r;
 }
 }  // namespace
 
@@ -148,12 +151,10 @@ bool closeDocument(OpenedDocument *doc)
 {
     if (!doc || doc->cacheDir.isEmpty())
         return true;
-    const QFileInfo fi(doc->cacheDir);
-    const bool marked = fi.isDir() && !fi.isSymLink() && fi.fileName().startsWith(QLatin1String("doc-"))
-                        && QFile::exists(doc->cacheDir + QLatin1Char('/') + QLatin1String(detail::kCacheMarker));
-    bool gone = !fi.exists();
-    if (marked)
-        gone = QDir(doc->cacheDir).removeRecursively();
+    // Same ownership policy as the startup sweep; on NotOwned/Failed the folder is preserved, cacheDir is kept
+    // so the caller can report and retry, and false is returned.
+    const detail::CleanupResult c = detail::removeOwnedCacheDir(doc->cacheDir, detail::CleanupMode::Close);
+    const bool gone = c.done();
     if (gone) {
         doc->cacheDir.clear();
         for (ImageRef &r : doc->images)

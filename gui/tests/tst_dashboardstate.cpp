@@ -343,6 +343,27 @@ private slots:
         QVERIFY(QDir(p("cache")).entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty());
     }
 
+    void sessionReportsFailedCleanupAndRetries()  // close() must not silently drop a cache folder it could not remove
+    {
+        const State a = capture(0);
+        QVERIFY(exportBundled(a, p("a.resora"), "t").ok());
+        Session ses;
+        QVERIFY(ses.open(p("a.resora"), resora::OpenOptions{p("cachefail")}).ok);
+        const QString img = ses.current()->elementImages[0].path;
+        const QString dir = QFileInfo(img).absolutePath();
+        QVERIFY(put(dir + "/foreign.txt", "user data"));  // not ours -> the folder must be kept untouched
+        QVERIFY(!ses.close());
+        QVERIFY(!ses.current());
+        QCOMPARE(ses.pendingCleanup(), QStringList{dir});
+        QVERIFY(QFileInfo(img).isFile() && QFileInfo(dir + "/foreign.txt").isFile());
+        QVERIFY(!ses.retryCleanup());  // still blocked: reported again, not forgotten
+        QCOMPARE(ses.pendingCleanup().size(), 1);
+        QVERIFY(QFile::remove(dir + "/foreign.txt"));
+        QVERIFY(ses.retryCleanup());
+        QVERIFY(ses.pendingCleanup().isEmpty());
+        QVERIFY(!QFileInfo::exists(dir));
+    }
+
     void restoreFailureAfterOpenCleansCache()
     {
         // a valid container whose dashboard parts are unusable must not become the active state

@@ -340,3 +340,9 @@ Scope: <one or two lines>
 
 5. 2026-11-12 git-state correction (supersedes "uncommitted" / "nothing committed" in items 1-4 above and in the Phase 7 items, kept as history): the Phase 7 implementation is commit `954c4fb`; the low-disk audit follow-up of item 4 is commit `de8bedb`. Final audit corrections (uncommitted, tests only): Bundled growth tests now assert the post-write hook and Verifying/Finalizing stages are never reached (budget cap proven; mutation-checked), progress recorders on all full-export failure tests (never `Done`, permille < 1000), and an export-level flush-failure test (old destination byte-identical, temp removed by export cleanup, no `Done`). Automated: `tst_exportlowdisk` 25 passed (23 cases + init/cleanup), full ctest 21/21 (direct cmake/ninja, Qt on PATH). Manual: none; `run.bat` not run. Status: Phase 7 remains IN PROGRESS.
 
+
+### Phase 7 addendum - Linked path security and cache safety (2026-11-12)
+Status: Phase 7 remains IN PROGRESS. UNC/device paths rejected before filesystem access for recorded paths, relinks, hint_path and imageRoot; closeDocument, failed-open cleanup and sweep share one ownership-checked, non-recursive deletion; Session reports/retries failed cleanup. Automated: full ctest 21/21 (direct build). Not verified: real network share, manual/GUI. Details: implement.md, docs/RESORA_FORMAT.md.
+
+### Phase 7 audit follow-up - mapped drives and cache race (2026-11-12)
+Status: Phase 7 remains IN PROGRESS. Remote/SUBST-to-UNC drive letters rejected without remote I/O; `DirLock` closes the validate-to-delete swap on Windows. Evidence: full ctest 21/21 (automated, this machine); real mapped SMB share and manual GUI not tested. Limits listed in docs/RESORA_FORMAT.md.

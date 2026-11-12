@@ -4,13 +4,37 @@ namespace dashboard {
 
 Session::~Session() { close(); }
 
-void Session::close()
+void Session::release(resora::OpenedDocument *d)
+{
+    if (d->cacheDir.isEmpty())
+        return;
+    const QString dir = d->cacheDir;
+    if (!resora::closeDocument(d) && !pending_.contains(dir))
+        pending_ << dir;
+}
+
+bool Session::close()
 {
     if (has_)
-        resora::closeDocument(&doc_);
+        release(&doc_);
     doc_ = resora::OpenedDocument();
     current_ = Restored();
     has_ = false;
+    return pending_.isEmpty();
+}
+
+bool Session::retryCleanup()
+{
+    QStringList still;
+    const QStringList todo = pending_;
+    for (const QString &dir : todo) {
+        resora::OpenedDocument stub;
+        stub.cacheDir = dir;
+        if (!resora::closeDocument(&stub))
+            still << dir;
+    }
+    pending_ = still;
+    return pending_.isEmpty();
 }
 
 // Transactional: open + restore build a NEW state on the side. The active dashboard (and its cache
@@ -29,7 +53,7 @@ Session::Outcome Session::open(const QString &path, const resora::OpenOptions &o
     Restored fresh;
     QString why;
     if (!restore(o.open.document, &fresh, &why)) {
-        resora::closeDocument(&o.open.document);
+        release(&o.open.document);
         o.message = why;
         return o;
     }

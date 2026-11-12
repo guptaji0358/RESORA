@@ -1,4 +1,5 @@
 // Import / opening engine tests (Phase 4). Temporary data only; links resora_format + QtTest (no widgets).
+#include "resora/importinternal.h"
 #include "resora/linkedexport.h"
 #include "resora/resoraimport.h"
 #include "resora/resorawriter.h"
@@ -10,6 +11,11 @@
 #include <QJsonDocument>
 #include <QTemporaryDir>
 #include <QtTest>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <string>
+#endif
 
 using namespace resora;
 
@@ -296,6 +302,145 @@ private slots:
             o.imageRoot = p("inside");
             QCOMPARE(openResora(f, o).error, OpenError::LinksBlocked);
         }
+    }
+
+    // ---- Phase 7: local-only path policy (decided from the string, before any filesystem access) ----
+    QJsonObject folderBase(const QString &hint) const
+    {
+        return {{"path_resolution", QJsonObject{{"policy", "absolute-then-relative"},
+                                                {"base", QJsonObject{{"kind", "folder"}, {"hint_path", hint}}}}}};
+    }
+
+    void networkPathsAreNotLocalAbsolute()
+    {
+        using resora::detail::isLocalAbsolutePath;
+        for (const QString &bad : {QStringLiteral("\\\\host\\share\\x.png"), QStringLiteral("//host/share/x.png"),
+                                   QStringLiteral("\\\\?\\C:\\x.png"), QStringLiteral("\\\\.\\pipe\\x"),
+                                   QStringLiteral("\\/host/share"), QStringLiteral("//?/UNC/host/share/x.png"), QString(),
+                                   QStringLiteral("rel/x.png"), QStringLiteral("C:x.png")})
+            QVERIFY2(!isLocalAbsolutePath(bad), qPrintable(bad));
+        QVERIFY(isLocalAbsolutePath(p("a/b.png")));
+        QVERIFY(isLocalAbsolutePath(QStringLiteral("C:/images/a.png")));
+    }
+
+#ifdef Q_OS_WIN
+    // Mapped-drive policy: judged from the DOS-device table (QueryDosDeviceW), never from the remote file system.
+    // SUBST-style mappings made with DefineDosDevice need no privilege and never touch the network.
+    static wchar_t freeLetter()
+    {
+        for (wchar_t c = L'Y'; c >= L'L'; --c) {
+            wchar_t dev[3] = {c, L':', 0}, buf[8];
+            if (QueryDosDeviceW(dev, buf, 8) == 0 && GetLastError() == ERROR_FILE_NOT_FOUND)
+                return c;
+        }
+        return 0;
+    }
+
+    void driveLettersLocalRemoteAndSubst()
+    {
+        const QChar sys = QDir::rootPath().at(0);  // C: on this machine
+        QVERIFY(!resora::detail::isRemoteDriveLetter(sys));
+        QVERIFY(resora::detail::isLocalAbsolutePath(QDir::rootPath() + QStringLiteral("images/a.png")));
+        wchar_t l1 = freeLetter();
+        if (!l1)
+            QSKIP("no free drive letter for a SUBST probe");
+        const wchar_t dev1[3] = {l1, L':', 0};
+        QVERIFY(!resora::detail::isRemoteDriveLetter(QChar(l1)));  // unassigned: nothing to contact, reported later as "not found"
+        const std::wstring local = QDir::toNativeSeparators(p("inside")).toStdWString();
+        QDir().mkpath(p("inside"));
+        QVERIFY(DefineDosDeviceW(0, dev1, local.c_str()));
+        const bool localSubst = !resora::detail::isRemoteDriveLetter(QChar(l1));  // SUBST of a local folder stays local
+        // A drive substituted to a UNC target (no connection is made by defining it) is remote.
+        wchar_t l2 = 0;
+        for (wchar_t c = l1 - 1; c >= L'L'; --c) {
+            wchar_t d[3] = {c, L':', 0}, b[8];
+            if (QueryDosDeviceW(d, b, 8) == 0 && GetLastError() == ERROR_FILE_NOT_FOUND) { l2 = c; break; }
+        }
+        bool uncSubst = true, chained = true, pathRejected = true;
+        if (l2) {
+            const wchar_t dev2[3] = {l2, L':', 0};
+            if (DefineDosDeviceW(DDD_RAW_TARGET_PATH, dev2, L"\\??\\UNC\\resora-no-such-host\\share")) {
+                uncSubst = resora::detail::isRemoteDriveLetter(QChar(l2));
+                pathRejected = !resora::detail::isLocalAbsolutePath(QString(QChar(l2)) + QStringLiteral(":/x.png"));
+                // SUBST of a drive that is itself remote: judged transitively
+                wchar_t l3 = 0;
+                for (wchar_t c = l2 - 1; c >= L'L'; --c) {
+                    wchar_t d[3] = {c, L':', 0}, b[8];
+                    if (QueryDosDeviceW(d, b, 8) == 0 && GetLastError() == ERROR_FILE_NOT_FOUND) { l3 = c; break; }
+                }
+                if (l3) {
+                    const wchar_t dev3[3] = {l3, L':', 0};
+                    const std::wstring tgt = std::wstring(1, l2) + L":\\";
+                    if (DefineDosDeviceW(0, dev3, tgt.c_str())) {
+                        chained = resora::detail::isRemoteDriveLetter(QChar(l3));
+                        DefineDosDeviceW(DDD_REMOVE_DEFINITION, dev3, nullptr);
+                    }
+                }
+                DefineDosDeviceW(DDD_REMOVE_DEFINITION, dev2, nullptr);
+            }
+        }
+        DefineDosDeviceW(DDD_REMOVE_DEFINITION, dev1, nullptr);
+        QVERIFY2(localSubst, "SUBST of a local folder must stay local");
+        QVERIFY2(uncSubst, "SUBST to a UNC target must be remote");
+        QVERIFY2(pathRejected, "a path on a remote drive letter must not be 'local absolute'");
+        QVERIFY2(chained, "SUBST of a remote drive must be remote");
+    }
+#endif
+
+    void networkRecordedPathRejectedWithoutAccess()
+    {
+        const QByteArray d = pattern(400, 2);
+        for (const QString &unc : {QStringLiteral("\\\\resora-no-such-host\\share\\x.png"), QStringLiteral("//resora-no-such-host/share/x.png"),
+                                   QStringLiteral("\\\\?\\UNC\\resora-no-such-host\\share\\x.png")}) {
+            const QString f = craft("unc1.resora", "linked", {linkedRec("img-1", unc, QString(), d)});
+            QVERIFY(!f.isEmpty());
+            QElapsedTimer t;
+            t.start();
+            const auto r = openResora(f, opts());
+            QCOMPARE(r.error, OpenError::LinksBlocked);
+            QCOMPARE(r.links[0].state, LinkState::UnsafePath);  // an access attempt would have produced Missing/Unreadable
+            QVERIFY(r.links[0].message.contains("not accessed"));
+            QVERIFY2(t.elapsed() < 3000, "a network lookup seems to have happened");
+        }
+    }
+
+    void networkRelinkRejectedSamePolicyNoFallback()
+    {
+        const QByteArray d = pattern(450, 6);
+        QVERIFY(put(p("nr/ok.png"), d));  // the recorded path is valid, so a silent fallback would succeed
+        const QString f = craft("unc2.resora", "linked", {linkedRec("img-1", p("nr/ok.png"), QString(), d)});
+        QVERIFY(!f.isEmpty());
+        QVERIFY(openResora(f, opts()).ok());
+        for (const QString &unc : {QStringLiteral("\\\\resora-no-such-host\\share\\x.png"), QStringLiteral("//resora-no-such-host/share/x.png"),
+                                   QStringLiteral("relative/x.png")}) {
+            const auto r = relinkAndOpen(f, opts(), {{"img-1", unc}});
+            QCOMPARE(r.error, OpenError::LinksBlocked);
+            QCOMPARE(r.links[0].state, LinkState::UnsafePath);
+            QVERIFY(r.links[0].viaRelink);
+            QCOMPARE(r.links[0].resolvedPath, unc);  // the user's replacement, never the old valid path
+        }
+    }
+
+    void networkBaseFoldersRejected()
+    {
+        const QByteArray d = pattern(350, 8);
+        QVERIFY(put(p("nb/inside/x.png"), d));
+        const QString unc = QStringLiteral("//resora-no-such-host/share/inside");
+        const QString f = craft("unc3.resora", "linked", {linkedRec("img-1", p("nb/nowhere/x.png"), "x.png", d)}, folderBase(unc));
+        QVERIFY(!f.isEmpty());
+        auto r = openResora(f, opts());  // hint_path is network, no imageRoot
+        QCOMPARE(r.error, OpenError::LinksBlocked);
+        QCOMPARE(r.links[0].state, LinkState::UnsafePath);
+        QVERIFY(r.links[0].message.contains("network base folder rejected"));
+        auto o = opts();  // a network imageRoot is rejected too
+        o.imageRoot = unc;
+        r = openResora(f, o);
+        QCOMPARE(r.error, OpenError::LinksBlocked);
+        QCOMPARE(r.links[0].state, LinkState::UnsafePath);
+        o.imageRoot = p("nb/inside");  // control: a local base still resolves
+        r = openResora(f, o);
+        QVERIFY2(r.ok(), qPrintable(r.message));
+        QVERIFY(r.links[0].viaRelative);
     }
 
     void traversalAndCollisionsInIndexRejected()

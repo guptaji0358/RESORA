@@ -95,8 +95,8 @@ def main(argv: list[str] | None = None) -> int:
     except (ValueError, json.JSONDecodeError) as e:
         emit(envelope("invalid_input", error=str(e)))
         return 2
-    except sqlite3.Error as e:
-        emit(envelope("error", error=f"database error: {e}"))
+    except (sqlite3.Error, OSError) as e:
+        emit(envelope("error", error=f"storage unavailable: {e}"))
         return 3
 
 
