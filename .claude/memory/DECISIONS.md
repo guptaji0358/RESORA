@@ -72,3 +72,15 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 
 ## 2026-11-12 Layout schema version 2 for omitted_roles [V]
 - Decision: layout `schema_version` is 2 only when `layout.omitted_roles` is present; version 1 files are unchanged. Reader accepts 1 and 2; `omitted_roles` in version 1 is refused. No migration (additive, no rewrite). Evidence: pre-change Phase 5/6 reader (a467857^) restores v1 and rejects v2 with "unsupported schema_version" (real probe). Charts/analytics/config stay at 1.
+
+## 2026-11-12 Linked-path security + cache deletion policy [V][U-requested policy]
+- Decision: Linked paths must be local absolute; UNC/device/drive-relative rejected from the string before any filesystem access (recorded path, relink, hint_path, imageRoot). Document's own folder is the only permitted non-local base. Relink = same rules, no fallback to old path. SHA-256 identity unchanged. No format change. Network support, if wanted, must be a separate explicit user option.
+- Decision: cache folders removed only via `removeOwnedCacheDir` (name + non-link + valid marker + only RESORA-named regular files, non-recursive, marker deleted last); otherwise preserved. Failed cleanup is reported (`Session::pendingCleanup`) and retryable.
+- Why: audit found automatic SMB access and a weakly-checked recursive delete. How to apply: new path-taking code must call `isLocalAbsolutePath`; never `removeRecursively` on cache folders.
+
+## 2026-11-12 Mapped drives and cache race (audit) [V][U-requested policy]
+- Decision: reject remote drive letters via local DOS-device table (no remote I/O); document that local symlinks/junctions to network locations are not detected (OneDrive reparse points rule out blanket rejection). Cache deletion holds a no-share-delete, reparse-aware handle (`DirLock`) from validation to rmdir; guarantee and residual local-attacker window are documented in docs/RESORA_FORMAT.md. Rejected: ACL/ownership hardening and handle-based NtDeleteFile (fragile, no benefit vs same-user attacker). Pending cleanup UI deferred; startup sweep accepted as fallback.
+
+## LIAS local automation/knowledge system (2026-11-12)
+- [U] User approved building LIAS in `.claude/lias/` (+ `.claude/settings.json` hook, `.claude/skills/lias`). Stage 3 core implemented and unit-tested (29 tests); separate from `.claude/memory/`. Not yet verified in a live Claude session; no credit-savings claims. See `.claude/lias/docs/README.md`.
+- [V] LIAS Stage 4 headless live tests (2026-11-12): skill auto-discovery, hook retrieval, store, unknown-fact all worked; cost benefit unproven (n=1). Desktop-app behaviour not tested.

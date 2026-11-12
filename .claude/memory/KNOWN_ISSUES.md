@@ -31,3 +31,6 @@ None confirmed (per docs). Insights redesign unassessed [?].
 
 ## 2026-11-12 Low-disk limits [V]
 - The free-space check is a snapshot: concurrent source growth is detected (Bundled budget capped at the estimate -> `SourceProblem`; Linked final rehash), not prevented. The 16 MiB reserve is a margin, not a guarantee. Real ENOSPC surfaces as `WriteFailed` (QSaveFile hides the OS code). Real full disk, network/removable drives and power loss untested.
+
+## 2026-11-12 Linked-path / cache limits [V]
+- [superseded 2026-11-12 audit] Mapped drive letters ARE now rejected (QueryDosDeviceW + GetDriveTypeW fallback, SUBST followed); cache deletion holds a Windows `DirLock` (no share-delete, reparse-aware). Remaining: local symlink/junction to a network location is undetected before open (OneDrive reparse points make blanket rejection unusable); window between lock release and final rmdir (removes a link only); non-Windows has no lock. UNC paths in old Linked files open as UnsafePath (relink to local). No UI shows `pendingCleanup()`; UI never calls `retryCleanup()`; the pending list dies with the `Session` object on replace/reset, so the startup sweep (owner dead + >1 h) is the accepted fallback. Real SMB/mapped-share and symlink-privilege cases untested (tests use SUBST/DefineDosDevice and junctions).
