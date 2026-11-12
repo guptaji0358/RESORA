@@ -1,0 +1,15 @@
+{
+  "seed": [
+    {"kind": "fact", "category": "project", "key": "duplicates default similarity threshold",
+     "value": "DEFAULT_THRESHOLD = 90.0 percent (valid range 50-100), defined in scripts/engine/duplicates/finder.py",
+     "source": "verified in code, 2026-11-12"}
+  ],
+  "tasks": [
+    {"id": "source_sizes",
+     "prompt": "Analyze the size of all source files.",
+     "expect": ["\\.cpp", "\\.py", "lines"]},
+    {"id": "recall_threshold",
+     "prompt": "What is the default similarity threshold for the duplicates command, and which file defines it?",
+     "expect": ["90", "finder\\.py"]}
+  ]
+}

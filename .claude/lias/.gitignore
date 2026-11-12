@@ -3,4 +3,5 @@ database/*.db-*
 database/backups/
 cache/
 logs/
+bench/results/
 __pycache__/

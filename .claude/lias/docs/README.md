@@ -48,3 +48,23 @@ Same prompt "Analyze the size of all source files.":
 | Baseline (`--disable-slash-commands`, Bash/Glob/Grep/Read) | 2 | 1556 | 0.192 |
 
 LIAS used more turns and tool calls here. The baseline solved it with one shell pipeline. The lower cost may come from fewer output tokens and cache effects. Repeat runs are needed before concluding anything. Honest takeaway: LIAS gives deterministic, reusable, verified results. The cost benefit is unproven.
+
+## Measurement harness (`bench/harness.py`)
+`python .claude/lias/bench/harness.py --reps 3` runs each task in `bench/tasks.json` through `claude -p` with LIAS on (skill + hook) and off (`--disable-slash-commands`, `LIAS_DISABLE=1`, plain Bash), arms alternating per rep. It records turns, tool calls, tokens and cost as reported by Claude Code, wall time, and a regex correctness check. It uses a throwaway knowledge DB (`LIAS_DB`). Each run spends real usage (about $0.03-0.10). `lias.py stats` summarizes the local event log (automation runs, cache hits, retrievals, injected characters).
+
+### Results, 2026-11-12 (3 reps per cell, 12 runs, all 12 answers correct)
+| Task | Arm | Cost mean (USD) | Turns | Tool calls | Output tokens | Wall (s) |
+|---|---|---|---|---|---|---|
+| source_sizes | LIAS | 0.093 | 5 | 3 | 1461 | 19.8 |
+| source_sizes | baseline | 0.064 | 3 | 2 | 2162 | 35.8 |
+| recall_threshold | LIAS | 0.063 | 1.7 | 0.7 | 304 | 9.4 |
+| recall_threshold | baseline | 0.039 | 2.3 | 1.3 | 431 | 10.3 |
+
+**Finding: LIAS did not reduce cost here; it raised it by about 47% (source_sizes) and 62% (recall).** It did reduce output tokens (about -32% and -29%), and source_sizes wall time (-45%). Likely causes, not yet isolated:
+- The skill description sits in context on every turn and loading the skill adds a turn.
+- The `list` call before `run` adds a turn (5 turns versus 3).
+- The repo is small and the baseline answers with one shell pipeline or a single grep, so there is little repeated work for LIAS to remove.
+
+Limits: 3 reps is small, the two tasks are narrow, cost is API-equivalent USD and not subscription credits, and the seeded fact can go stale. Savings would be expected on larger repos and on repeated, expensive discoveries, but that is **unmeasured**.
+
+Next optimization candidates: put the automation list into SKILL.md so `list` is unnecessary, shorten the skill description, then re-run this harness.

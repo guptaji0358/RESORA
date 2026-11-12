@@ -5,6 +5,7 @@ Deterministic, stdlib only, never blocks, never raises. No match -> no output.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -16,6 +17,8 @@ MAX_CHARS = 1200
 
 def main() -> None:
     try:
+        if os.environ.get("LIAS_DISABLE"):  # benchmark baseline arm
+            return
         payload = json.loads(sys.stdin.buffer.read().decode("utf-8-sig"))
         prompt = (payload.get("prompt") or "").strip()
         if len(prompt) < 8 or prompt.startswith("/"):

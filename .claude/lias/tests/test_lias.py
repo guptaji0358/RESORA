@@ -181,6 +181,34 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(r.get("truncated"))
 
 
+class BenchTests(unittest.TestCase):
+    def test_parse_stream_and_summary(self):
+        sys.path.insert(0, str(LIAS / "bench"))
+        import harness
+        lines = [
+            json.dumps({"type": "assistant", "message": {"content": [
+                {"type": "tool_use", "name": "Skill"}, {"type": "tool_use", "name": "Bash"}]}}),
+            "garbage",
+            json.dumps({"type": "result", "num_turns": 3, "total_cost_usd": 0.1, "result": "90 in finder.py",
+                        "usage": {"output_tokens": 50, "input_tokens": 2, "cache_read_input_tokens": 10}}),
+        ]
+        m = harness.parse_stream(lines)
+        self.assertEqual((m["turns"], m["tool_calls"], m["skill_calls"], m["input_tokens_total"]), (3, 2, 1, 12))
+        self.assertTrue(harness.check(m["text"], ["90", r"finder\.py"]))
+        self.assertFalse(harness.check("nothing", ["90"]))
+        rows = [{"task": "t", "arm": "a", "correct": True, "cost_usd": c, "turns": 1, "tool_calls": 0,
+                 "output_tokens": 1, "input_tokens_total": 1, "wall_s": 1} for c in (1.0, 3.0)]
+        s = harness.summarize(rows)["t/a"]
+        self.assertEqual((s["n"], s["cost_usd"]["mean"], s["cost_usd"]["max"]), (2, 2.0, 3.0))
+
+    def test_event_stats(self):
+        with tempfile.TemporaryDirectory() as t:
+            runner.log_event({"type": "run", "status": "ok", "cached": True, "duration_ms": 5}, Path(t))
+            runner.log_event({"type": "retrieve", "hits": 2, "injected_chars": 100}, Path(t))
+            s = runner.event_stats(Path(t))
+            self.assertEqual((s["runs"], s["cache_hits"], s["injected_chars"]), (1, 1, 100))
+
+
 class IntegrationTests(unittest.TestCase):
     def cli(self, *args):
         p = subprocess.run([sys.executable, str(LIAS / "lias.py"), *args],

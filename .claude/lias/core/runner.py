@@ -36,6 +36,30 @@ def log_event(event: dict[str, Any], logs: Path = LOGS) -> None:
         pass
 
 
+def event_stats(logs: Path = LOGS) -> dict[str, Any]:
+    """Summarize the local event log: local work done without a model, injected context."""
+    f = logs / "events.jsonl"
+    s: dict[str, Any] = {"runs": 0, "cache_hits": 0, "run_failures": 0, "run_ms_total": 0,
+                         "retrievals": 0, "retrievals_with_hits": 0, "injected_chars": 0}
+    if not f.is_file():
+        return s
+    for line in f.read_text(encoding="utf-8").splitlines():
+        try:
+            e = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if e.get("type") == "run":
+            s["runs"] += 1
+            s["cache_hits"] += bool(e.get("cached"))
+            s["run_failures"] += e.get("status") != "ok"
+            s["run_ms_total"] += e.get("duration_ms", 0)
+        elif e.get("type") == "retrieve":
+            s["retrievals"] += 1
+            s["retrievals_with_hits"] += bool(e.get("hits"))
+            s["injected_chars"] += e.get("injected_chars", 0)
+    return s
+
+
 def list_automations(root: Path = AUTOMATIONS) -> list[dict[str, Any]]:
     out = []
     for m in sorted(root.glob("*.json")):

@@ -29,6 +29,7 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument("--confirm", action="store_true")
     sub.add_parser("list")
     sub.add_parser("doctor")
+    sub.add_parser("stats")
     k = sub.add_parser("know").add_subparsers(dest="kcmd", required=True)
     a = k.add_parser("add")
     a.add_argument("--kind", required=True, choices=store.KINDS)
@@ -70,6 +71,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if res["status"] == "ok" else 1
         if ns.cmd == "list":
             emit(envelope("ok", runner.list_automations()))
+        elif ns.cmd == "stats":
+            emit(envelope("ok", runner.event_stats()))
         elif ns.cmd == "doctor":
             emit(envelope("ok", _doctor()))
         else:

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import sqlite3
 import time
@@ -11,7 +12,7 @@ from typing import Any
 
 from core.guard import LIAS_DIR, contains_secret
 
-DB_PATH = LIAS_DIR / "database" / "knowledge.db"
+DB_PATH = Path(os.environ.get("LIAS_DB") or LIAS_DIR / "database" / "knowledge.db")
 SCHEMA = LIAS_DIR / "database" / "schema.sql"
 KINDS = ("fact", "preference", "decision", "temporary", "unverified", "historical")
 _STOP = frozenset(
