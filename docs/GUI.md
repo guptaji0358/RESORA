@@ -1,14 +1,14 @@
-# Qt GUI (`gui/`)
+# Qt GUI (`scripts/gui/`)
 
 Presentation only: it collects options, runs the `scan` command as a child process and renders the NDJSON it emits. No image logic lives here. Contract: [BACKEND_CONTRACT.md](BACKEND_CONTRACT.md).
 
-## Directory layout (`gui/`)
+## Directory layout (`scripts/gui/`)
 - `include/<module>/*.h`: all headers (`backend`, `locations`, `ui`, `widgets`, plus `mainwindow.h`). Single include root; always include as `"widgets/foo.h"` (never sibling-relative).
 - `src/<module>/*.cpp`: implementations, mirroring `include/`. A class split over several files keeps the extra parts here (`duplicatefinder_results.cpp`, `comparisonworkspace_ui.cpp`).
 - `main/main.cpp`: executable entry point.
-- `tests/`: Qt Test targets and `grab_screens`. Headers are listed as sources in `gui/CMakeLists.txt` (glob of `include/`) so AUTOMOC finds them.
+- `scripts/tests/`: Qt Test targets and `grab_screens`. Headers are listed as sources in `scripts/gui/CMakeLists.txt` (glob of `include/`) so AUTOMOC finds them.
 
-## Classes (`gui/include/`, `gui/src/`)
+## Classes (`scripts/gui/include/`, `scripts/gui/src/`)
 | Class | Responsibility |
 |---|---|
 | `MainWindow` | Layout, input validation, overwrite confirmation, owns one `BackendProcess` per scan, progress/status/result display |
@@ -45,12 +45,12 @@ Product: **RESORA** (RES from resolution, ORA for a distinctive ending), subtitl
 
 | Piece | Where |
 |---|---|
-| Names, tagline, version, mark (rendered from `Assets/branding/mark.svg`), `QIcon` | `ui/brand` (`Brand::paintMark`, `Brand::icon`) |
-| SVG icon family: tinting, hover/disabled states, DPR, missing-asset fallback | `ui/icons` (`Icons::icon/pixmap/artwork`), assets in [Assets/README.md](../Assets/README.md) |
+| Names, tagline, version, mark (rendered from `scripts/Assets/branding/mark.svg`), `QIcon` | `ui/brand` (`Brand::paintMark`, `Brand::icon`) |
+| SVG icon family: tinting, hover/disabled states, DPR, missing-asset fallback | `ui/icons` (`Icons::icon/pixmap/artwork`), assets in [scripts/Assets/README.md](../Assets/README.md) |
 | Header lockup (mark + wordmark + descriptor) | `widgets/BrandLockup`, used by `AppHeader` |
 | About box (F1) | `widgets/AboutDialog` |
 | Window title, app name/icon | `MainWindow`, `main()` |
-| Exe icon + Windows file description | `Assets/app/resora.rc` + `resora.ico` (regenerate with `python Assets/app/generate_icon.py`; reads `Assets/branding/mark.svg`) |
+| Exe icon + Windows file description | `scripts/Assets/app/resora.rc` + `resora.ico` (regenerate with `python scripts/Assets/app/generate_icon.py`; reads `scripts/Assets/branding/mark.svg`) |
 
 The executable file name stays `ImageResolutionAnalyzer.exe` (run.bat and tooling); the Windows resource shows "RESORA" as product name. No splash screen: the app starts instantly, so one would only add delay. The tagline appears on the Source page and in About.
 
@@ -101,10 +101,10 @@ GUI-only feature; the Python engine is not involved. Open Settings from the head
 - `locations/locationstore.*`: validation (unique names case-insensitively, unique paths, absolute paths only, name <= 64) and persistence to `saved_locations.json` (`{"version":1,"locations":[...]}`) in `QStandardPaths::AppConfigLocation`, written atomically (`QSaveFile`); a failed save rolls the change back. Corrupt file -> moved aside as `.corrupt-<time>`; unreadable entries are preserved on save; newer format version or unreadable file -> read-only. Missing folders are flagged, never deleted.
 - `locations/locationrecommender.*`: pure logic for what to offer (only available folders) and the value produced (folder, or folder + typed file name / `image_resolution_report.<ext>` for reports).
 - `widgets/locationsuggester.*`: popup attached to one `QLineEdit` (focus, click, typing, Up/Down/Enter/Esc). Attached to the CSV and TXT report fields and to the folder path field of the Import dialog (`ImportDialog`); choosing only fills the field.
-- `widgets/settingsdialog.*`, `savedlocationspanel.*`, `locationrow.*`: Settings UI. Tests: `gui/tests/tst_locations.cpp`.
+- `widgets/settingsdialog.*`, `savedlocationspanel.*`, `locationrow.*`: Settings UI. Tests: `scripts/gui/tests/tst_locations.cpp`.
 
 ## Visual assets
-SVG sources live in `Assets/` and are compiled in via `Assets/resora.qrc` (`:/icons/*.svg`, `:/branding/*`, `:/illustrations/*`); the GUI links `Qt6::Svg`. Icons use two colour tokens (paper, ember) that `ui/icons.cpp` swaps at render time, so hover, disabled and on-primary states come from one file and stay sharp at any DPR. `ChamferButton::setGlyph` draws an icon in the label colour; stock buttons use `Icons::icon(name)` (a state-aware `QIconEngine`). A missing asset logs a warning and draws a dashed red box instead of nothing. `tst_icons` covers the family.
+SVG sources live in `scripts/Assets/` and are compiled in via `scripts/Assets/resora.qrc` (`:/icons/*.svg`, `:/branding/*`, `:/illustrations/*`); the GUI links `Qt6::Svg`. Icons use two colour tokens (paper, ember) that `ui/icons.cpp` swaps at render time, so hover, disabled and on-primary states come from one file and stay sharp at any DPR. `ChamferButton::setGlyph` draws an icon in the label colour; stock buttons use `Icons::icon(name)` (a state-aware `QIconEngine`). A missing asset logs a warning and draws a dashed red box instead of nothing. `tst_icons` covers the family.
 
 ## Image properties (Milestone 1)
 `widgets/propertiesdialog` (a `FramelessDialog`, Ctrl+I / "Image Properties" button on the Readout page) runs the `properties` backend command

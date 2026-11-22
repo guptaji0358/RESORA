@@ -1,6 +1,6 @@
-﻿# RESORA â€” Image Resolution Analyzer
+﻿﻿# RESORA â€” Image Resolution Analyzer
 
-Product name RESORA, tagline "See every pixel clearly." Identity (mark, wordmark, icon, About) in `gui/{include,src}/ui/brand.*`, [docs/GUI.md](docs/GUI.md). Repo, packages and exe file name (`ImageResolutionAnalyzer.exe`) intentionally keep the old name.
+Product name RESORA, tagline "See every pixel clearly." Identity (mark, wordmark, icon, About) in `scripts/gui/{include,src}/ui/brand.*`, [docs/GUI.md](docs/GUI.md). Repo, packages and exe file name (`ImageResolutionAnalyzer.exe`) intentionally keep the old name.
 
 Windows desktop tool: scan a folder, read each image's pixel dimensions from its header (no pixel decoding), classify the resolution (SD â€¦ 8K+), export reports. Original images are opened read-only and never modified.
 
@@ -18,7 +18,7 @@ Don't re-explore the whole repo or re-read finished reports. Memory never replac
 - Skip Context7 for pure refactoring, debugging or review that does not depend on a library API, and for general programming concepts.
 
 ## Architecture
-- **GUI** (`gui/`): C++17 + Qt 6 Widgets, CMake + Ninja. Presentation only; no image logic.
+- **GUI** (`scripts/gui/`): C++17 + Qt 6 Widgets, CMake + Ninja. Presentation only; no image logic.
 - **Engine** (`scripts/engine/`): pure Python package, run as `python -m scripts.engine ...`. All scanning/classification/export logic. Must never import Qt or any GUI toolkit, and must not depend on the GUI's working directory.
 - **IPC:** the GUI launches the backend as a separate process (`QProcess`): NDJSON envelopes on stdout (`progress`*, then one `result`/`error`), diagnostics on stderr, exit codes 0/1/2/3/130. Contract: [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md). New commands go in `scripts/engine/commands/<name>.py` and are registered in `scripts/engine/registry.py`; command modules never import each other, never print to stdout, never import Qt. The GUI finds it via env `IMGAN_PYTHON` + `IMGAN_BACKEND_DIR` (set by `run.bat`). Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -26,7 +26,7 @@ Don't re-explore the whole repo or re-read finished reports. Memory never replac
 One module = one responsibility, independently testable, plain inputs/outputs. Dependencies point downward only (`commands/*` -> `command`, `protocol`, logic modules); feature modules never import each other; no giant `utils`/manager files, no global mutable state. Size: most modules <=150 lines, >250 needs review, >350 needs justification, avoid 500+ (guidelines, never split needlessly). Map and how-tos: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Environment (this machine)
-- Qt 6.12.0 MinGW 64 at `D:\Apps\Qt6\6.12.0\mingw_64`; MinGW 13.1, CMake, Ninja under `D:\Apps\Qt6\Tools` (override with `QT_DIR` / `QT_TOOLS`). Use Qt's MinGW, **not** the MSYS2 `g++` on PATH (ABI mismatch).
+- Qt 6.12.0 MinGW 64 at `C:\Qt\6.12.0\mingw_64`; MinGW 13.1, CMake, Ninja under `C:\Qt\Tools` (override with `QT_DIR` / `QT_TOOLS`). Use Qt's MinGW, **not** the MSYS2 `g++` on PATH (ABI mismatch).
 - Python 3.11+ from PATH (3.13 installed). `py -3` is broken here (stale 3.15t registration), so `python` is preferred.
 
 ## Build and run
@@ -42,13 +42,13 @@ One module = one responsibility, independently testable, plain inputs/outputs. D
 - `run.bat /push` pushes the current branch (explicit user action only; it never stages, commits or force-pushes). Don't run it unless the user asks.
 
 ## Testing
-- Engine: `unittest` in `tests/` (`.venv\Scripts\python -m unittest discover -s tests`); run automatically by `run.bat`. Add tests with every engine change.
+- Engine: `unittest` in `scripts/tests/` (`.venv\Scripts\python -m unittest discover -s scripts/tests`); run automatically by `run.bat`. Add tests with every engine change.
 - GUI: must at least build cleanly; verify launch via `run.bat`. Never claim a test passed without running it.
 
 ## Conventions
 - Python: type hints, `from __future__ import annotations`, stdlib-first, no global state, errors reported (never swallowed).
 - C++: C++17, Qt idioms, `QProcess` for the engine, no blocking calls on the GUI thread.
-- Dependencies: Python deps only in `requirements.txt` (lower bounds, minimal). Qt modules added explicitly in `gui/CMakeLists.txt`.
+- Dependencies: Python deps only in `requirements.txt` (lower bounds, minimal). Qt modules added explicitly in `scripts/gui/CMakeLists.txt`.
 - Python stays as `.py` during development (no compiled executables). Keep the engine packaging-friendly (single CLI entry, no dynamic imports/path hacks) so Nuitka can be adopted later in a separate task.
 
 ## Git workflow
@@ -66,10 +66,42 @@ One module = one responsibility, independently testable, plain inputs/outputs. D
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): GUI/engine split.
 - [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md): CLI/IPC contract (protocol v1), QProcess, cancellation, how to add commands.
 - [docs/GUI.md](docs/GUI.md): GUI classes, backend discovery, QProcess, progress, cancellation, reports.
-- [Assets/README.md](Assets/README.md): visual assets (SVG icons, branding, ICO), colour tokens, how to add an icon.
+- [scripts/Assets/README.md](scripts/Assets/README.md): visual assets (SVG icons, branding, ICO), colour tokens, how to add an icon.
 - [docs/MILESTONE.md](docs/MILESTONE.md): permanent per-milestone completion record (append only; evidence-based).
 - [docs/ROADMAP.md](docs/ROADMAP.md): approved four-feature roadmap (properties, analytics, comparison, duplicates) and per-milestone plan; Milestones 1-4 are implemented (awaiting review).
 - [docs/ANALYTICS.md](docs/ANALYTICS.md): Resolution analytics definitions (averages, percentages, categories), `analytics` command, TXT option.
 - [docs/DUPLICATES.md](docs/DUPLICATES.md): Duplicate Finder (`duplicates` command): exact/similar algorithms, thresholds, storage savings.
 - [docs/RESORA_FORMAT.md](docs/RESORA_FORMAT.md): `.resora` binary container format (Phase 1 of `implement.md`).
 - [docs/IMAGE_ANALYSIS.md](docs/IMAGE_ANALYSIS.md): `scan` command, classification strategy, EXIF/multi-frame behaviour, reports.
+
+## Independent Testing and Evaluation (global policy)
+
+Applies whenever the task is to test, evaluate or review existing capabilities. Existing project rules above still apply; if one conflicts with this section, stop and ask the user instead of choosing silently.
+
+### Role: independent tester and real user
+Act as an independent software tester and actual application user. Discover and report functional bugs, unexpected behaviour, performance problems, usability issues, inconsistent behaviour, reliability problems, and missing or incomplete functionality. You are evaluating the product, not automatically developing or repairing it.
+
+### No-fix policy during testing
+Do not fix bugs found while testing: do not modify source code, refactor, silently change behaviour, commit or push, or implement fixes during an evaluation. Report problems with enough evidence to be addressed separately. Bug fixing and implementation need separate authorization.
+
+### Rate what works
+Testing is not only about finding bugs. When functionality works, rate it objectively:
+
+| Category | Question |
+|---|---|
+| Functionality | Does it perform its intended task? |
+| Reliability | Does it behave consistently? |
+| Performance | Is its responsiveness acceptable? |
+| Usability | Is the experience intuitive? |
+| Error handling | Does it handle failures properly? |
+
+Give an overall rating out of 10 with supporting observations. Never inflate ratings without evidence.
+
+### Incremental testing
+Test progressively during development, not in one massive campaign. Test the capability currently being developed, directly related functionality and relevant regression scenarios; record issues; evaluate what works; leave unrelated capabilities for their own development stages. The goal is continuous product evaluation, not a one-time audit.
+
+### Code exploration: CodeLens MCP by default
+Use CodeLens MCP as the default tool for reading and exploring related source code (understanding implementations, navigating functions and classes, tracing dependencies and execution paths, locating relevant code, understanding component interactions). Use other tools when needed for runtime testing, browser interaction, terminal execution, logs, screenshots or anything CodeLens does not support. It is the default, not an exclusive tool.
+
+### Evidence-based reporting
+For each evaluated capability report: capability name; overall rating /10; status (Working / Partially Working / Broken / Not Tested); verified working behaviours; bugs found; reproduction steps; expected vs actual behaviour; severity; evidence and measurements; remaining limitations; recommendations. Distinguish confirmed bugs from suspicions and untested assumptions.

@@ -1,6 +1,6 @@
 # Backend CLI Contract (protocol v1)
 
-The GUI and backend share only this contract. Implementation: `scripts/engine/protocol.py` (wire format), `cli.py` + `main.py` (CLI), `registry.py` (commands); module map in [ARCHITECTURE.md](ARCHITECTURE.md). Verified by `tests/test_contract.py`.
+The GUI and backend share only this contract. Implementation: `scripts/engine/protocol.py` (wire format), `cli.py` + `main.py` (CLI), `registry.py` (commands); module map in [ARCHITECTURE.md](ARCHITECTURE.md). Verified by `scripts/tests/test_contract.py`.
 
 ## 1. CLI
 
@@ -79,4 +79,4 @@ python -m scripts.engine --cancel-on-stdin _contract-test progress --steps 5 --d
 1. Create `scripts/engine/commands/<name>.py` exporting `COMMAND = Command(name=..., help=..., run=run, add_arguments=...)`. `run(args, ctx)` returns the result `data`, uses `ctx.emit.progress(...)`, `ctx.cancel.check()`, `ctx.params`, and raises `BackendError` for expected failures. Document its args/result shape in the module docstring.
 2. Register it: one explicit import and one list entry in `scripts/engine/registry.py:build_registry`. No dynamic imports or path hacks.
 3. Put reusable logic in its own module/package (see [ARCHITECTURE.md](ARCHITECTURE.md#adding-a-module)); the command module is a thin adapter. Commands never import each other, never write to stdout, never import Qt.
-4. Add tests in `tests/` (logic directly, plus one subprocess test through this contract).
+4. Add tests in `scripts/tests/` (logic directly, plus one subprocess test through this contract).
