@@ -702,7 +702,7 @@ private slots:
         resora::closeDocument(&o.document);
     }
 
-    // Regenerates the committed compatibility fixtures in gui/tests/fixtures/dashboard. Skipped unless
+    // Regenerates the committed compatibility fixtures in scripts/gui/tests/fixtures/dashboard. Skipped unless
     // RESORA_WRITE_FIXTURES names an existing folder (manifest timestamps differ per run; the tests never compare bytes).
     void writeCompatibilityFixtures()
     {

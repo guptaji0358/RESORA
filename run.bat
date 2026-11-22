@@ -19,8 +19,8 @@ set "BUILD=build"
 set "LOGDIR=logs"
 set "LOG=%LOGDIR%\run.log"
 set "RUNNER=scripts\launcher\runstage.ps1"
-if not defined QT_DIR set "QT_DIR=D:\Apps\Qt6\6.12.0\mingw_64"
-if not defined QT_TOOLS set "QT_TOOLS=D:\Apps\Qt6\Tools"
+if not defined QT_DIR set "QT_DIR=C:\Qt\6.12.0\mingw_64"
+if not defined QT_TOOLS set "QT_TOOLS=C:\Qt\Tools"
 set "NOLAUNCH=0"
 set "DOCOMMIT=1"
 if /i "%~1"=="/nocommit" set "DOCOMMIT=0"
@@ -98,7 +98,7 @@ call :runstage
 if errorlevel 1 call :stagefail 4 40 "Backend selfcheck failed"& exit /b 40
 call :done 4
 call :begin 5
-set "RS_CMD="%VPY%" -m unittest discover -v -s tests"
+set "RS_CMD="%VPY%" -m unittest discover -v -s scripts/tests"
 call :runstage
 if errorlevel 1 call :stagefail 5 41 "Backend tests failed"& exit /b 41
 call :done 5
@@ -108,7 +108,7 @@ set "PATH=%QT_TOOLS%\mingw1310_64\bin;%QT_TOOLS%\CMake_64\bin;%QT_TOOLS%\Ninja;%
 if not exist "%QT_DIR%\lib\cmake\Qt6\Qt6Config.cmake" call :stagefail 6 50 "Qt not found at %QT_DIR% (set QT_DIR)"& exit /b 50
 call :begin 6
 if not exist "%BUILD%\CMakeCache.txt" (
-    set "RS_CMD=cmake -S gui -B "%BUILD%" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="%QT_DIR%""
+    set "RS_CMD=cmake -S scripts/gui -B "%BUILD%" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="%QT_DIR%""
     call :runstage
     if errorlevel 1 call :stagefail 6 51 "CMake configure failed"& exit /b 51
     call :done 6 "configured"

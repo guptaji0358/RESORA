@@ -38,7 +38,7 @@ Never promote [I] or [?] to a decision without the user confirming.
 - `PROJECT_HISTORY.md` — chronology from git + docs
 
 ## Authoritative detail lives elsewhere (link, don't copy)
-`CLAUDE.md`, `docs/ARCHITECTURE.md`, `docs/BACKEND_CONTRACT.md`, `docs/GUI.md`, `docs/MILESTONE.md` (evidence records), `docs/ROADMAP.md`, `docs/ANALYTICS.md`, `docs/DUPLICATES.md`, `docs/IMAGE_ANALYSIS.md`, `Assets/README.md`.
+`CLAUDE.md`, `docs/ARCHITECTURE.md`, `docs/BACKEND_CONTRACT.md`, `docs/GUI.md`, `docs/MILESTONE.md` (evidence records), `docs/ROADMAP.md`, `docs/ANALYTICS.md`, `docs/DUPLICATES.md`, `docs/IMAGE_ANALYSIS.md`, `scripts/Assets/README.md`.
 
 ## Rules for editing memory
 - Concise; no source code dumps; no secrets/tokens/passwords ever.

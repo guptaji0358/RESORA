@@ -32,7 +32,7 @@ One module = one responsibility.
 - Direction: `commands/*` → `command`, `protocol` (and future logic modules) ← never the reverse. Only `registry` imports commands. No cycles.
 - Feature/command modules never import each other. Shared needs go in a lower-level module with a single purpose, not a grab-bag `utils.py`.
 - No module imports Qt or another GUI toolkit; none writes to stdout except `protocol.py`; no global mutable state (state travels in `Context`).
-- Enforced by `tests/test_engine_modules.py`.
+- Enforced by `scripts/tests/test_engine_modules.py`.
 
 ## Adding a module
 1. Give it one responsibility, plain inputs and outputs (no `argparse`, `Context` or stdout inside pure logic), e.g. `scripts/engine/scanning/headers.py`.
@@ -40,7 +40,7 @@ One module = one responsibility.
 3. Expose it through a thin `commands/<name>.py` adapter and register it ([BACKEND_CONTRACT.md §9](BACKEND_CONTRACT.md#9-adding-a-command)).
 
 ## Testing a module independently
-Import it in a test and call it directly, with no subprocess and no GUI (see `tests/test_engine_modules.py`). Commands additionally get one subprocess test via `python -m scripts.engine` (see `tests/test_contract.py`). Run: `.venv\Scripts\python -m unittest discover -s tests`.
+Import it in a test and call it directly, with no subprocess and no GUI (see `scripts/tests/test_engine_modules.py`). Commands additionally get one subprocess test via `python -m scripts.engine` (see `scripts/tests/test_contract.py`). Run: `.venv\Scripts\python -m unittest discover -s scripts/tests`.
 
 ## Size guidelines
 Most modules 1-150 lines; 151-250 fine; over 250 review whether responsibilities should split; over 350 needs strong justification; avoid 500+. Guidelines, not limits: never split just to save lines.

@@ -32,8 +32,8 @@ Reasons behind some earlier choices (e.g. why phase rail structure) were presuma
 - [U] "Approve" answered my open questions; I applied my recommendations: independent sources with a "Use Analyzer import" convenience; Properties inline as an Analyzer step. Supersedes the old 4-phase rail (Source/Scan/Readout/Analytics) and the Compare Back button.
 
 ## 2026-11-07 C++ directory reorganization [U approved]
-- [U] `gui/` split into `include/` (headers), `src/` (matching .cpp), `main/` (entry point). Subfolders kept. User answered "approve" without choosing the open questions; I applied my recommendations: qualified includes (`"widgets/x.h"`), headers-less split parts (`duplicatefinder_results.cpp`, `comparisonworkspace_ui.cpp`) stay in `src/widgets/`, `grab_screens.cpp` stays in `tests/`.
-- [V] AUTOMOC needs headers listed as target sources (`RESORA_HEADERS` glob in `gui/CMakeLists.txt`); without it Q_OBJECT classes fail to link.
+- [U] `scripts/gui/` split into `include/` (headers), `src/` (matching .cpp), `main/` (entry point). Subfolders kept. User answered "approve" without choosing the open questions; I applied my recommendations: qualified includes (`"widgets/x.h"`), headers-less split parts (`duplicatefinder_results.cpp`, `comparisonworkspace_ui.cpp`) stay in `src/widgets/`, `grab_screens.cpp` stays in `scripts/tests/`.
+- [V] AUTOMOC needs headers listed as target sources (`RESORA_HEADERS` glob in `scripts/gui/CMakeLists.txt`); without it Q_OBJECT classes fail to link.
 
 ## 2026-11-08 `.resora` container in C++/Qt Core [U]
 - [U] Phase 1 of the `.resora` dashboard export (see root `implement.md`): the open C++ vs Python question is resolved in favour of C++ with Qt Core. Reasons: dashboard state, thumbnails and QSaveFile atomicity are GUI-side (no IPC); Qt Core covers streaming, atomic replace and SHA-256; byte hashing is not image analysis; separate Qt-Core-only library `resora_format` keeps it independent of dashboard UI.
