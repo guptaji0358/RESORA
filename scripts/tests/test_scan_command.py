@@ -17,7 +17,7 @@ from scripts.engine.command import Context
 from scripts.engine.commands import scan
 from scripts.engine.protocol import EXIT_INVALID_INPUT, BackendError, CancelToken, Cancelled, Emitter
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def make_tree(root: Path) -> None:

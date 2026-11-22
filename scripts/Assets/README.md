@@ -14,4 +14,4 @@ Colour tokens: icons use only paper `#EFE9DD` (strokes) and ember `#FF5B2E` (acc
 at render time (hover, disabled, on-primary), so never add other colours to an icon.
 Adding an icon: drop the SVG in `icons/`, add one `<file>` line to `resora.qrc`. `tst_icons` checks every
 compiled icon renders and only uses the two tokens. After changing `branding/mark.svg` run
-`python Assets/app/generate_icon.py` to refresh `resora.ico`.
+`python scripts/Assets/app/generate_icon.py` to refresh `resora.ico`.

@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-# Visual assets live in the repository-level Assets/ directory (see Assets/README.md).
+# Visual assets live in the repository-level scripts/Assets/ directory (see scripts/Assets/README.md).
 set(RESORA_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/../Assets)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg Test)

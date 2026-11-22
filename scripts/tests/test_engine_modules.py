@@ -13,7 +13,7 @@ from scripts.engine.params import load_params
 from scripts.engine.protocol import EXIT_INVALID_INPUT, BackendError, CancelToken, Cancelled, Emitter
 from scripts.engine.registry import build_registry
 
-ENGINE = Path(__file__).resolve().parents[1] / "scripts" / "engine"
+ENGINE = Path(__file__).resolve().parents[2] / "scripts" / "engine"
 GUI_TOOLKITS = {"PyQt5", "PyQt6", "PySide2", "PySide6", "tkinter"}
 
 
