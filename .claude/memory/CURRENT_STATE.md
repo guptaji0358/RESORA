@@ -82,7 +82,7 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 - Phase 7 IN PROGRESS pending review. Open decisions: file association; real low-disk test. (omitted_roles schema policy resolved 2026-11-12: layout version 2 when omitted_roles present; reader accepts 1 and 2; older Phase 5 readers reject 2.) Details: docs/RESORA_FORMAT.md "Open Phase 7 items".
 
 ## 2026-11-12 omitted_roles compatibility [V]
-- Layout schema 2 introduced for files with omitted_roles; fixtures `scripts/gui/tests/fixtures/dashboard/`; real pre-change reader probe checked. tst_dashboardstate 27 passed/1 skipped; full ctest 20/20 (direct cmake/ninja, Qt on PATH). No file association change, no run.bat, no commit. Phase 7 IN PROGRESS. Details: implement.md "omitted_roles compatibility".
+- Layout schema 2 introduced for files with omitted_roles; fixtures `scripts/gui/tests/dashboard/fixtures/`; real pre-change reader probe checked. tst_dashboardstate 27 passed/1 skipped; full ctest 20/20 (direct cmake/ninja, Qt on PATH). No file association change, no run.bat, no commit. Phase 7 IN PROGRESS. Details: implement.md "omitted_roles compatibility".
 
 ## 2026-11-12 Phase 7 low-disk reliability [V]
 - Export had no up-front free-space check; added (`InsufficientStorage`, container + 16 MiB reserve) for Bundled and Linked, plus Writer byte-limit seam (`OutOfSpace`). Deterministic tests: `tst_exportlowdisk` 16/16; full ctest 21/21 (direct build). Details: implement.md "low-disk reliability". Real full disk not tested; ENOSPC on real disk surfaces as WriteFailed. Phase 7 IN PROGRESS, nothing committed.
@@ -106,3 +106,5 @@ Independent-feature organization implemented (ToolRail, hosted Duplicates/Proper
 ## 2026-11-12 Phase 7 application-level cache cleanup ownership [V]
 - Implemented, uncommitted: `dashboard::CacheCleanupManager` (`scripts/gui/include|src/backend/cachecleanupmanager.*`) shared by MainWindow, every `Session` and the Open dialog's import job; retries at dashboard replacement, reset points, Open dialog close and `~MainWindow`. Pending folders survive session destruction; every retry re-applies the close ownership check.
 - Automated: full ctest 21/21 (direct cmake/ninja, Qt on PATH); `tst_dashboardstate` 28 + 1 skipped (4 new cleanup cases). `run.bat` not run; no manual/GUI verification. Phase 7 IN PROGRESS; file association not started. Details: implement.md "Phase 7 - Application-level cache cleanup ownership".
+
+- 2026-11-22: `scripts/gui/tests/` regrouped into subfolders (backend/, ui/, features/, dashboard/ incl. fixtures, resora/, tools/); `tests/CMakeLists.txt` uses `imgan_add_test(<dir> <name>)` / `resora_add_test`; target and ctest names unchanged. Automated: run.bat build + ctest 21/21 passed. Not committed. Note: run.bat reads only the first switch, so `/nolaunch /nocommit` still auto-commits.

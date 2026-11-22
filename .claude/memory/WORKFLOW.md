@@ -34,13 +34,13 @@ No memory write for trivial edits; group related changes into one entry; don't d
 If a memory write fails: don't claim success, name the file that failed, report the implementation result separately, never ignore it silently.
 
 ## Build / test (from CLAUDE.md) [V]
-- `run.bat` = launcher (kills only `ImageResolutionAnalyzer.exe`, venv, selfcheck, unittest, build, ctest, launch). `run.bat /nolaunch` builds and checks only. Log: `logs/run.log`. Never invent other launch commands.
-- Engine tests: `.venv\Scripts\python -m unittest discover -s scripts/tests`. GUI tests: ctest via run.bat. Prefer focused tests for what changed.
+- `run.bat` = launcher (kills only `ImageResolutionAnalyzer.exe`, venv, selfcheck, unittest, build, ctest, launch). `run.bat /nolaunch` builds and checks only. Log: `out/logs/run.log`. Never invent other launch commands.
+- Engine tests: `out\.venv\Scripts\python -m unittest discover -s scripts/tests`. GUI tests: ctest via run.bat. Prefer focused tests for what changed.
 - Qt 6.12.0 MinGW at `C:\Qt\6.12.0\mingw_64` (moved from D:\Apps\Qt6, 2026-11-21); use Qt's MinGW, not MSYS2 g++. Use `python` not `py -3`.
-- `scripts/gui/tests/grab_screens.cpp` renders real windows to PNGs for visual inspection (sample data) [R].  `grab_screens <outdir> dup` renders only the Duplicates states.
+- `scripts/gui/tests/tools/grab_screens.cpp` renders real windows to PNGs for visual inspection (sample data) [R].  `grab_screens <outdir> dup` renders only the Duplicates states.
 
 ## Git [V]
-Check `git status` first. No commit without explicit permission. `.venv/ build/ logs/` ignored.
+Check `git status` first. No commit without explicit permission. `out/` (.venv, build, logs) ignored.
 
 ## Reporting
 Separate automated vs manual verification; state plainly what was not seen; keep reports practical.
