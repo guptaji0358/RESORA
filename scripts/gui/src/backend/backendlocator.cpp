@@ -38,7 +38,7 @@ QString findPython(const QProcessEnvironment &env, const QString &workDir, QStri
             *error = QStringLiteral("IMGAN_PYTHON does not exist: %1").arg(fromEnv);
         return fromEnv;
     }
-    for (const char *rel : {".venv/Scripts/python.exe", ".venv/bin/python"}) {
+    for (const char *rel : {"out/.venv/Scripts/python.exe", "out/.venv/bin/python"}) {
         const QString candidate = QDir(workDir).filePath(QString::fromLatin1(rel));
         if (QFileInfo(candidate).isFile())
             return candidate;
@@ -46,7 +46,7 @@ QString findPython(const QProcessEnvironment &env, const QString &workDir, QStri
     const QString onPath = QStandardPaths::findExecutable(QStringLiteral("python"));
     if (!onPath.isEmpty())
         return onPath;
-    *error = QStringLiteral("Python not found. Run run.bat once to create .venv, or set IMGAN_PYTHON.");
+    *error = QStringLiteral("Python not found. Run run.bat once to create out/.venv, or set IMGAN_PYTHON.");
     return {};
 }
 } // namespace
