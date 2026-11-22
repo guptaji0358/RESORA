@@ -2,27 +2,27 @@
     <qresource prefix="/">
         <file>branding/mark-mono.svg</file>
         <file>branding/mark.svg</file>
-        <file>icons/add.svg</file>
-        <file>icons/bookmark.svg</file>
-        <file>icons/check.svg</file>
-        <file>icons/csv.svg</file>
-        <file>icons/error.svg</file>
-        <file>icons/folder-open.svg</file>
-        <file>icons/folder.svg</file>
-        <file>icons/image.svg</file>
-        <file>icons/images.svg</file>
-        <file>icons/import.svg</file>
-        <file>icons/open-report.svg</file>
-        <file>icons/refresh.svg</file>
-        <file>icons/remove.svg</file>
-        <file>icons/rename.svg</file>
-        <file>icons/report.svg</file>
-        <file>icons/scan.svg</file>
-        <file>icons/settings.svg</file>
-        <file>icons/stop.svg</file>
-        <file>icons/swap.svg</file>
-        <file>icons/txt.svg</file>
-        <file>icons/warning.svg</file>
+        <file alias="icons/add.svg">icons/actions/add.svg</file>
+        <file alias="icons/bookmark.svg">icons/actions/bookmark.svg</file>
+        <file alias="icons/check.svg">icons/status/check.svg</file>
+        <file alias="icons/csv.svg">icons/files/csv.svg</file>
+        <file alias="icons/error.svg">icons/status/error.svg</file>
+        <file alias="icons/folder-open.svg">icons/files/folder-open.svg</file>
+        <file alias="icons/folder.svg">icons/files/folder.svg</file>
+        <file alias="icons/image.svg">icons/files/image.svg</file>
+        <file alias="icons/images.svg">icons/files/images.svg</file>
+        <file alias="icons/import.svg">icons/actions/import.svg</file>
+        <file alias="icons/open-report.svg">icons/files/open-report.svg</file>
+        <file alias="icons/refresh.svg">icons/actions/refresh.svg</file>
+        <file alias="icons/remove.svg">icons/actions/remove.svg</file>
+        <file alias="icons/rename.svg">icons/actions/rename.svg</file>
+        <file alias="icons/report.svg">icons/files/report.svg</file>
+        <file alias="icons/scan.svg">icons/actions/scan.svg</file>
+        <file alias="icons/settings.svg">icons/actions/settings.svg</file>
+        <file alias="icons/stop.svg">icons/actions/stop.svg</file>
+        <file alias="icons/swap.svg">icons/actions/swap.svg</file>
+        <file alias="icons/txt.svg">icons/files/txt.svg</file>
+        <file alias="icons/warning.svg">icons/status/warning.svg</file>
         <file>illustrations/empty-results.svg</file>
     </qresource>
 </RCC>
