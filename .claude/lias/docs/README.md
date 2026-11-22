@@ -9,7 +9,7 @@ Everything lives in `.claude/lias/`; Claude Code requires `settings.json` and `s
 | Automations | `automations/<name>.json` (manifest) + `<name>.py` (stdin JSON -> stdout JSON) |
 | Hook | `hooks/prompt_retrieve.py` (UserPromptSubmit, registered in `.claude/settings.json`) |
 | Skill | `.claude/skills/lias/SKILL.md` (the only one; description costs context every turn) |
-| Runtime data (git-ignored) | `database/knowledge.db`, `database/backups/`, `cache/`, `logs/events.jsonl` |
+| Runtime data (git-ignored) | `out/database/knowledge.db`, `out/database/backups/`, `out/cache/`, `out/logs/events.jsonl`, `out/bench/` (all generated output lives under `out/`) |
 
 ## Behaviour
 - **Runner statuses:** ok, invalid_input, needs_confirmation, missing_dependency, timeout, failed, error. Output is verified to be a JSON object; over 20k chars it is truncated. Results are cached per manifest `cache_ttl_s`, keyed on args and file mtimes.

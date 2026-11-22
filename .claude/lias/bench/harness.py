@@ -113,8 +113,8 @@ def main() -> int:
             store.add(con, db_path=db, **s)
         con.close()
         rows = []
-        results = HERE / "results"
-        results.mkdir(exist_ok=True)
+        results = HERE.parent / "out" / "bench"
+        results.mkdir(parents=True, exist_ok=True)
         out = results / f"{time.strftime('%Y%m%d-%H%M%S')}.jsonl"
         for rep in range(ns.reps):
             for task in tasks:

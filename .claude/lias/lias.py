@@ -1,4 +1,4 @@
-"""LIAS CLI. stdout: one compact JSON envelope. Diagnostics: stderr / logs/events.jsonl.
+"""LIAS CLI. stdout: one compact JSON envelope. Diagnostics: stderr / out/logs/events.jsonl.
 
   lias.py run <name> [--json '{...}'] [--no-cache] [--confirm]
   lias.py list

@@ -6,6 +6,7 @@ from pathlib import Path
 
 LIAS_DIR = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = LIAS_DIR.parents[1]
+OUT_DIR = LIAS_DIR / "out"  # generated runtime output (cache, logs, db, bench results); git-ignored
 
 _SECRET_PATTERNS = [
     re.compile(r"(?i)\b(api[_-]?key|secret|token|passwd|password)\b\s*[:=]\s*\S{6,}"),
