@@ -19,4 +19,4 @@ Assets: SVGs in `scripts/Assets/`, compiled via `scripts/Assets/resora.qrc`, GUI
 Python deps only in `requirements.txt` (Pillow etc., lower bounds). Qt modules explicit in `scripts/gui/CMakeLists.txt`. Python stays `.py` in development; engine kept packaging-friendly (single CLI entry, no dynamic imports) so Nuitka can be adopted later in a separate task [V]. Exe name stays `ImageResolutionAnalyzer.exe` on purpose [V].
 
 ## Tests [V]
-Engine: `unittest` in `scripts/tests/`. GUI: ctest executables `scripts/gui/tests/tst_*.cpp` (protocolparser, backendprocess, widgets, locations, icons, dialogs, properties, analytics, comparison, duplicates, dashboard, insights).
+Engine: `unittest` in `scripts/tests/`. GUI: ctest executables `scripts/gui/tests/<area>/tst_*.cpp` (areas: backend, ui, features, dashboard, resora; tools/ holds grab_screens) (protocolparser, backendprocess, widgets, locations, icons, dialogs, properties, analytics, comparison, duplicates, dashboard, insights).

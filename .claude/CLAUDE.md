@@ -30,8 +30,8 @@ One module = one responsibility, independently testable, plain inputs/outputs. D
 - Python 3.11+ from PATH (3.13 installed). `py -3` is broken here (stale 3.15t registration), so `python` is preferred.
 
 ## Build and run
-- `run.bat` is the development launcher: kills only `ImageResolutionAnalyzer.exe`, reuses/creates `.venv`, reinstalls deps only if `requirements.txt` changed, runs engine selfcheck + unit tests, configures (once) and builds the GUI into `build/`, launches it.
-- `run.bat` also runs GUI tests via ctest (exit 53). `run.bat /nolaunch` builds and checks without launching. `run.bat` now auto-commits by default after a successful build (user request 2026-11-08; `/nocommit` skips it):  `git add -A` + commit with the last block of `commit.txt` (explicit user action only; never pushes; exit 67-69). `run.bat /push` is a separate Git-only push (exit 60-66, see header of run.bat). Log: `logs/run.log`. Exit codes: 10 stop app, 20-22 python/venv, 30 pip, 40-41 engine checks, 50-52 Qt/build.
+- `run.bat` is the development launcher: kills only `ImageResolutionAnalyzer.exe`, reuses/creates `out/.venv`, reinstalls deps only if `requirements.txt` changed, runs engine selfcheck + unit tests, configures (once) and builds the GUI into `out/build/`, launches it.
+- `run.bat` also runs GUI tests via ctest (exit 53). `run.bat /nolaunch` builds and checks without launching. `run.bat` now auto-commits by default after a successful build (user request 2026-11-08; `/nocommit` skips it):  `git add -A` + commit with the last block of `commit.txt` (explicit user action only; never pushes; exit 67-69). `run.bat /push` is a separate Git-only push (exit 60-66, see header of run.bat). Log: `out/logs/run.log`. Exit codes: 10 stop app, 20-22 python/venv, 30 pip, 40-41 engine checks, 50-52 Qt/build.
 
 ## Development workflow (verification discipline)
 - Don't run `run.bat /nolaunch` repeatedly to prove completion; don't repeat a successful verification without a reason (changed code, a failure to re-check, shared infrastructure touched).
@@ -42,7 +42,7 @@ One module = one responsibility, independently testable, plain inputs/outputs. D
 - `run.bat /push` pushes the current branch (explicit user action only; it never stages, commits or force-pushes). Don't run it unless the user asks.
 
 ## Testing
-- Engine: `unittest` in `scripts/tests/` (`.venv\Scripts\python -m unittest discover -s scripts/tests`); run automatically by `run.bat`. Add tests with every engine change.
+- Engine: `unittest` in `scripts/tests/` (`out\.venv\Scripts\python -m unittest discover -s scripts/tests`); run automatically by `run.bat`. Add tests with every engine change.
 - GUI: must at least build cleanly; verify launch via `run.bat`. Never claim a test passed without running it.
 
 ## Conventions
@@ -54,7 +54,7 @@ One module = one responsibility, independently testable, plain inputs/outputs. D
 ## Git workflow
 - Check `git status` before changes; never discard user modifications; never force-push; **never commit without explicit permission**.
 - After each meaningful task, write a concise conventional-commit message into `commit.txt` describing only work actually done (no invention, don't touch unrelated changes). Keep it in sync with the real diff.
-- `.venv/`, `build/`, `logs/` are git-ignored.
+- `out/` (holds `.venv/`, `build/`, `logs/`, all run.bat output) is git-ignored.
 
 ## Restrictions
 - No Qt in the engine; no image-analysis logic in C++.

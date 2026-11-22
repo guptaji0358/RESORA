@@ -14,11 +14,11 @@ import time
 from pathlib import Path
 from typing import Any
 
-from core.guard import LIAS_DIR, PROJECT_ROOT, resolve_inside
+from core.guard import LIAS_DIR, OUT_DIR, PROJECT_ROOT, resolve_inside
 
 AUTOMATIONS = LIAS_DIR / "automations"
-CACHE = LIAS_DIR / "cache"
-LOGS = LIAS_DIR / "logs"
+CACHE = OUT_DIR / "cache"
+LOGS = OUT_DIR / "logs"
 MAX_OUT = 20000
 _TYPES = {"str": str, "int": int, "bool": bool, "path": str}
 

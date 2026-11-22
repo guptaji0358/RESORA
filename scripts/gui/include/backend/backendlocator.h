@@ -13,5 +13,5 @@ struct BackendLocation
 };
 
 // Order: IMGAN_BACKEND_DIR / IMGAN_PYTHON (set by run.bat), else search upwards from appDir for
-// scripts/engine and use <dir>/.venv, else `python` on PATH. Never installs or downloads anything.
+// scripts/engine and use <dir>/out/.venv, else `python` on PATH. Never installs or downloads anything.
 BackendLocation locateBackend(const QProcessEnvironment &env, const QString &appDir);

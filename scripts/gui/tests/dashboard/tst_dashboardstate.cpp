@@ -702,7 +702,7 @@ private slots:
         resora::closeDocument(&o.document);
     }
 
-    // Regenerates the committed compatibility fixtures in scripts/gui/tests/fixtures/dashboard. Skipped unless
+    // Regenerates the committed compatibility fixtures in scripts/gui/tests/dashboard/fixtures. Skipped unless
     // RESORA_WRITE_FIXTURES names an existing folder (manifest timestamps differ per run; the tests never compare bytes).
     void writeCompatibilityFixtures()
     {
@@ -717,7 +717,7 @@ private slots:
 
     void compatibilityFixturesRestore()  // real versioned files on disk (v1 = Phase 5 shape, v2 = omitted_roles)
     {
-        const QString dir = QFileInfo(QStringLiteral(__FILE__)).absolutePath() + "/fixtures/dashboard";
+        const QString dir = QFileInfo(QStringLiteral(__FILE__)).absolutePath() + "/fixtures";
         const auto open = [&](const QString &name, Restored *got) {
             const resora::OpenResult o = resora::openResora(dir + "/" + name, resora::OpenOptions{p("fx_cache")});
             QVERIFY2(o.ok(), qPrintable(o.message));
@@ -748,7 +748,7 @@ private slots:
 
     void omittedRolesNeedVersionTwo()  // version 1 must not carry omitted_roles; version 2 without it is fine
     {
-        const QString dir = QFileInfo(QStringLiteral(__FILE__)).absolutePath() + "/fixtures/dashboard";
+        const QString dir = QFileInfo(QStringLiteral(__FILE__)).absolutePath() + "/fixtures";
         resora::OpenResult o = resora::openResora(dir + "/v1_no_omitted_roles.resora", resora::OpenOptions{p("fx_cache")});
         QVERIFY(o.ok());
         Restored got;
@@ -767,7 +767,7 @@ private slots:
 
     void reexportPreservesVersionAndAssociations()  // no migration: versions are kept exactly as written
     {
-        const QString dir = QFileInfo(QStringLiteral(__FILE__)).absolutePath() + "/fixtures/dashboard";
+        const QString dir = QFileInfo(QStringLiteral(__FILE__)).absolutePath() + "/fixtures";
         for (const char *name : {"v1_no_omitted_roles.resora", "v2_omitted_largest.resora"}) {
             const resora::OpenResult o = resora::openResora(dir + "/" + name, resora::OpenOptions{p("fx_cache")});
             QVERIFY(o.ok());

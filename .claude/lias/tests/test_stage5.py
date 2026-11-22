@@ -91,14 +91,14 @@ class IsolationTests(unittest.TestCase):
     @unittest.skipUnless(os.name == "nt", "junction test is Windows-specific")
     def test_junction_escape_refused(self):
         with tempfile.TemporaryDirectory() as outside:
-            link = guard.PROJECT_ROOT / ".claude" / "lias" / "cache" / "_junction_test"
-            link.parent.mkdir(exist_ok=True)
+            link = guard.PROJECT_ROOT / ".claude" / "lias" / "out" / "cache" / "_junction_test"
+            link.parent.mkdir(parents=True, exist_ok=True)
             r = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), outside], capture_output=True)
             if r.returncode != 0:
                 self.skipTest("cannot create junction")
             try:
                 with self.assertRaises(ValueError):
-                    guard.resolve_inside(".claude/lias/cache/_junction_test")
+                    guard.resolve_inside(".claude/lias/out/cache/_junction_test")
             finally:
                 os.rmdir(link)
 

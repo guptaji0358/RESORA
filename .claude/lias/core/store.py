@@ -10,9 +10,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from core.guard import LIAS_DIR, contains_secret
+from core.guard import LIAS_DIR, OUT_DIR, contains_secret
 
-DB_PATH = Path(os.environ.get("LIAS_DB") or LIAS_DIR / "database" / "knowledge.db")
+DB_PATH = Path(os.environ.get("LIAS_DB") or OUT_DIR / "database" / "knowledge.db")
 SCHEMA = LIAS_DIR / "database" / "schema.sql"
 MAX_VALUE = 2000
 KINDS = ("fact", "preference", "decision", "temporary", "unverified", "historical")

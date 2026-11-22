@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-SKIP = {".git", ".venv", "build", "logs", "__pycache__", "node_modules", "cache", "backups"}
+SKIP = {".git", ".venv", "build", "logs", "out", "__pycache__", "node_modules", "cache", "backups"}
 
 
 def main() -> None:
