@@ -9,8 +9,8 @@ only opened read-only and are never modified.
 
 ```powershell
 cd path\to\this\folder
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+python -m venv out/.venv
+.\out\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
