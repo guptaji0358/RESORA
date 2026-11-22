@@ -3,14 +3,14 @@
 #include <QSignalSpy>
 #include <QtTest>
 
-#include "backend/dashboardmodel.h"
-#include "widgets/analyticsdashboard.h"
-#include "widgets/analyticspanel.h"
-#include "widgets/barchart.h"
-#include "widgets/donutchart.h"
-#include "widgets/hbarchart.h"
-#include "widgets/metriccard.h"
-#include "widgets/segmentedswitch.h"
+#include "backend/dashboard/dashboardmodel.h"
+#include "widgets/analytics/analyticsdashboard.h"
+#include "widgets/analytics/analyticspanel.h"
+#include "widgets/charts/barchart.h"
+#include "widgets/charts/donutchart.h"
+#include "widgets/charts/hbarchart.h"
+#include "widgets/controls/metriccard.h"
+#include "widgets/controls/segmentedswitch.h"
 
 namespace {
 const char *kResult = R"JSON({"source":"folder","folder":"C:/pics","recursive":true,"duplicates_ignored":0,"analytics":{

@@ -7,12 +7,12 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include "backend/dashboardstate.h"
-#include "backend/resoraworkflow.h"
-#include "widgets/analyticspanel.h"
-#include "widgets/exportdialog.h"
-#include "widgets/openresoradialog.h"
-#include "widgets/relinkpanel.h"
+#include "backend/dashboard/dashboardstate.h"
+#include "backend/workflow/resoraworkflow.h"
+#include "widgets/analytics/analyticspanel.h"
+#include "widgets/dialogs/exportdialog.h"
+#include "widgets/dialogs/openresoradialog.h"
+#include "widgets/panels/relinkpanel.h"
 
 using namespace dashboard;
 Q_DECLARE_METATYPE(resoraui::ExportOutcome)

@@ -4,8 +4,8 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include "backend/propertiesmodel.h"
-#include "widgets/propertiesdialog.h"
+#include "backend/features/propertiesmodel.h"
+#include "widgets/dialogs/propertiesdialog.h"
 
 namespace {
 QJsonObject parse(const char *json)

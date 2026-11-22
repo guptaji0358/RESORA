@@ -7,11 +7,11 @@
 #include "locations/locationrecommender.h"
 #include "locations/locationstore.h"
 #include "mainwindow.h"
-#include "widgets/importdialog.h"
-#include "widgets/locationrow.h"
-#include "widgets/locationsuggester.h"
-#include "widgets/reportselector.h"
-#include "widgets/savedlocationspanel.h"
+#include "widgets/dialogs/importdialog.h"
+#include "widgets/panels/locationrow.h"
+#include "widgets/panels/locationsuggester.h"
+#include "widgets/panels/reportselector.h"
+#include "widgets/panels/savedlocationspanel.h"
 
 namespace {
 QString mk(const QTemporaryDir &d, const QString &name)

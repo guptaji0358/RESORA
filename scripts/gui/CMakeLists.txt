@@ -33,31 +33,31 @@ file(GLOB_RECURSE RESORA_HEADERS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/i
 add_library(imgan_core STATIC
     ${RESORA_HEADERS}
     src/mainwindow.cpp
-    src/backend/analyticsmodel.cpp
-    src/backend/backendlocator.cpp
-    src/backend/backendprocess.cpp
-    src/backend/comparison.cpp
-    src/backend/duplicatesmodel.cpp
-    src/widgets/duplicatefinder.cpp
-    src/widgets/duplicatefinder_results.cpp
-    src/backend/previewloader.cpp
-    src/widgets/imagepane.cpp
-    src/widgets/comparisonviewer.cpp
-    src/widgets/comparisontable.cpp
-    src/backend/insightmetrics.cpp
-    src/widgets/insightcanvas.cpp
-    src/widgets/resolutionchart.cpp
-    src/widgets/filesizebars.cpp
-    src/widgets/dimensiondiagram.cpp
-    src/widgets/aspectindicator.cpp
-    src/widgets/metadatacompare.cpp
-    src/widgets/collapsiblesection.cpp
-    src/widgets/insightsview.cpp
-    src/widgets/comparisonworkspace.cpp
-    src/widgets/comparisonworkspace_ui.cpp
-    src/backend/importselection.cpp
-    src/backend/propertiesmodel.cpp
-    src/backend/protocolparser.cpp
+    src/backend/features/analyticsmodel.cpp
+    src/backend/process/backendlocator.cpp
+    src/backend/process/backendprocess.cpp
+    src/backend/features/comparison.cpp
+    src/backend/features/duplicatesmodel.cpp
+    src/widgets/duplicates/duplicatefinder.cpp
+    src/widgets/duplicates/duplicatefinder_results.cpp
+    src/backend/features/previewloader.cpp
+    src/widgets/comparison/imagepane.cpp
+    src/widgets/comparison/comparisonviewer.cpp
+    src/widgets/comparison/comparisontable.cpp
+    src/backend/features/insightmetrics.cpp
+    src/widgets/insights/insightcanvas.cpp
+    src/widgets/charts/resolutionchart.cpp
+    src/widgets/charts/filesizebars.cpp
+    src/widgets/insights/dimensiondiagram.cpp
+    src/widgets/insights/aspectindicator.cpp
+    src/widgets/comparison/metadatacompare.cpp
+    src/widgets/controls/collapsiblesection.cpp
+    src/widgets/insights/insightsview.cpp
+    src/widgets/comparison/comparisonworkspace.cpp
+    src/widgets/comparison/comparisonworkspace_ui.cpp
+    src/backend/workflow/importselection.cpp
+    src/backend/features/propertiesmodel.cpp
+    src/backend/process/protocolparser.cpp
     src/locations/savedlocation.cpp
     src/locations/locationstore.cpp
     src/locations/locationrecommender.cpp
@@ -65,45 +65,45 @@ add_library(imgan_core STATIC
     src/ui/icons.cpp
     src/ui/theme.cpp
     src/ui/uiformat.cpp
-    src/widgets/aboutdialog.cpp
-    src/widgets/analyticspanel.cpp
-    src/widgets/analyticsdashboard.cpp
-    src/widgets/chartbase.cpp
-    src/widgets/barchart.cpp
-    src/widgets/donutchart.cpp
-    src/widgets/hbarchart.cpp
-    src/widgets/segmentedswitch.cpp
-    src/backend/dashboardmodel.cpp
-    src/backend/dashboardserialize.cpp src/backend/dashboardrestore.cpp src/backend/dashboardsession.cpp
-    src/backend/cachecleanupmanager.cpp
-    src/backend/resoraworkflow.cpp src/backend/resorajobs.cpp src/backend/relinkmodel.cpp
-    src/widgets/confirmdialog.cpp src/widgets/exportdialog.cpp src/widgets/relinkpanel.cpp
-    src/widgets/openresoradialog.cpp
-    src/widgets/pixelspan.cpp
-    src/widgets/sharechart.cpp
-    src/widgets/appheader.cpp
-    src/widgets/brandlockup.cpp
-    src/widgets/distributionbar.cpp
-    src/widgets/viewfinder.cpp
-    src/widgets/chamferbutton.cpp
-    src/widgets/toggleswitch.cpp
-    src/widgets/phaserail.cpp
-    src/widgets/toolnav.cpp
-    src/widgets/elidedlabel.cpp
-    src/widgets/flowlayout.cpp
-    src/widgets/framelessdialog.cpp
-    src/widgets/importdialog.cpp
-    src/widgets/locationrow.cpp
-    src/widgets/locationsuggester.cpp
-    src/widgets/savedlocationspanel.cpp
-    src/widgets/settingsdialog.cpp
-    src/widgets/metriccard.cpp
-    src/widgets/progresspanel.cpp
-    src/widgets/propertiesdialog.cpp
-    src/widgets/reportselector.cpp
-    src/widgets/resultspanel.cpp
-    src/widgets/sectioncard.cpp
-    src/widgets/sourcepicker.cpp
+    src/widgets/dialogs/aboutdialog.cpp
+    src/widgets/analytics/analyticspanel.cpp
+    src/widgets/analytics/analyticsdashboard.cpp
+    src/widgets/charts/chartbase.cpp
+    src/widgets/charts/barchart.cpp
+    src/widgets/charts/donutchart.cpp
+    src/widgets/charts/hbarchart.cpp
+    src/widgets/controls/segmentedswitch.cpp
+    src/backend/dashboard/dashboardmodel.cpp
+    src/backend/dashboard/dashboardserialize.cpp src/backend/dashboard/dashboardrestore.cpp src/backend/dashboard/dashboardsession.cpp
+    src/backend/workflow/cachecleanupmanager.cpp
+    src/backend/workflow/resoraworkflow.cpp src/backend/workflow/resorajobs.cpp src/backend/workflow/relinkmodel.cpp
+    src/widgets/dialogs/confirmdialog.cpp src/widgets/dialogs/exportdialog.cpp src/widgets/panels/relinkpanel.cpp
+    src/widgets/dialogs/openresoradialog.cpp
+    src/widgets/analytics/pixelspan.cpp
+    src/widgets/charts/sharechart.cpp
+    src/widgets/chrome/appheader.cpp
+    src/widgets/chrome/brandlockup.cpp
+    src/widgets/charts/distributionbar.cpp
+    src/widgets/chrome/viewfinder.cpp
+    src/widgets/controls/chamferbutton.cpp
+    src/widgets/controls/toggleswitch.cpp
+    src/widgets/chrome/phaserail.cpp
+    src/widgets/chrome/toolnav.cpp
+    src/widgets/controls/elidedlabel.cpp
+    src/widgets/controls/flowlayout.cpp
+    src/widgets/dialogs/framelessdialog.cpp
+    src/widgets/dialogs/importdialog.cpp
+    src/widgets/panels/locationrow.cpp
+    src/widgets/panels/locationsuggester.cpp
+    src/widgets/panels/savedlocationspanel.cpp
+    src/widgets/dialogs/settingsdialog.cpp
+    src/widgets/controls/metriccard.cpp
+    src/widgets/panels/progresspanel.cpp
+    src/widgets/dialogs/propertiesdialog.cpp
+    src/widgets/panels/reportselector.cpp
+    src/widgets/panels/resultspanel.cpp
+    src/widgets/controls/sectioncard.cpp
+    src/widgets/panels/sourcepicker.cpp
     ${RESORA_ASSETS}/resora.qrc
 )
 target_include_directories(imgan_core PUBLIC include)

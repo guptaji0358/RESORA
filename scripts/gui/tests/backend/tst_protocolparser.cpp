@@ -2,7 +2,7 @@
 #include <QSignalSpy>
 #include <QtTest>
 
-#include "backend/protocolparser.h"
+#include "backend/process/protocolparser.h"
 
 class TstProtocolParser : public QObject
 {

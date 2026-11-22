@@ -12,28 +12,28 @@
 #include <QTemporaryDir>
 #include <QTimer>
 
-#include "backend/duplicatesmodel.h"
-#include "backend/propertiesmodel.h"
+#include "backend/features/duplicatesmodel.h"
+#include "backend/features/propertiesmodel.h"
 #include "locations/locationstore.h"
 #include "mainwindow.h"
 #include "ui/theme.h"
-#include "widgets/aboutdialog.h"
-#include "widgets/analyticspanel.h"
+#include "widgets/dialogs/aboutdialog.h"
+#include "widgets/analytics/analyticspanel.h"
 #include <QJsonArray>
 #include <QLayout>
 
-#include "backend/comparison.h"
-#include "widgets/collapsiblesection.h"
-#include "widgets/comparisontable.h"
-#include "widgets/comparisonworkspace.h"
-#include "widgets/insightsview.h"
-#include "widgets/duplicatefinder.h"
-#include "widgets/importdialog.h"
-#include "widgets/progresspanel.h"
-#include "widgets/propertiesdialog.h"
-#include "widgets/resultspanel.h"
-#include "widgets/settingsdialog.h"
-#include "widgets/sourcepicker.h"
+#include "backend/features/comparison.h"
+#include "widgets/controls/collapsiblesection.h"
+#include "widgets/comparison/comparisontable.h"
+#include "widgets/comparison/comparisonworkspace.h"
+#include "widgets/insights/insightsview.h"
+#include "widgets/duplicates/duplicatefinder.h"
+#include "widgets/dialogs/importdialog.h"
+#include "widgets/panels/progresspanel.h"
+#include "widgets/dialogs/propertiesdialog.h"
+#include "widgets/panels/resultspanel.h"
+#include "widgets/dialogs/settingsdialog.h"
+#include "widgets/panels/sourcepicker.h"
 
 namespace {
 QString gOut;

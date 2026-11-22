@@ -4,15 +4,15 @@
 #include <QtTest>
 #include <cmath>
 
-#include "backend/comparison.h"
-#include "widgets/aspectindicator.h"
-#include "widgets/collapsiblesection.h"
-#include "widgets/comparisontable.h"
-#include "widgets/dimensiondiagram.h"
-#include "widgets/filesizebars.h"
-#include "widgets/insightsview.h"
-#include "widgets/metadatacompare.h"
-#include "widgets/resolutionchart.h"
+#include "backend/features/comparison.h"
+#include "widgets/insights/aspectindicator.h"
+#include "widgets/controls/collapsiblesection.h"
+#include "widgets/comparison/comparisontable.h"
+#include "widgets/insights/dimensiondiagram.h"
+#include "widgets/charts/filesizebars.h"
+#include "widgets/insights/insightsview.h"
+#include "widgets/comparison/metadatacompare.h"
+#include "widgets/charts/resolutionchart.h"
 
 namespace {
 // bytes < 0 -> file_size null (missing); w/h <= 0 -> dimensions reported as 0.

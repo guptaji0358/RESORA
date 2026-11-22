@@ -7,9 +7,9 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include "backend/backendlocator.h"
-#include "backend/backendprocess.h"
-#include "backend/scanrequest.h"
+#include "backend/process/backendlocator.h"
+#include "backend/process/backendprocess.h"
+#include "backend/process/scanrequest.h"
 
 class TstBackendProcess : public QObject
 {

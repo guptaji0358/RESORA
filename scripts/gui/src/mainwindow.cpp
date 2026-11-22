@@ -1,10 +1,10 @@
 #include "mainwindow.h"
 
-#include "widgets/analyticspanel.h"
-#include "widgets/comparisonworkspace.h"
-#include "widgets/duplicatefinder.h"
+#include "widgets/analytics/analyticspanel.h"
+#include "widgets/comparison/comparisonworkspace.h"
+#include "widgets/duplicates/duplicatefinder.h"
 #include <QStandardPaths>
-#include "widgets/propertiesdialog.h"
+#include "widgets/dialogs/propertiesdialog.h"
 
 #include <QCheckBox>
 #include <QPainter>
@@ -29,25 +29,25 @@
 #include <QTemporaryFile>
 #include <QVBoxLayout>
 
-#include "backend/backendprocess.h"
+#include "backend/process/backendprocess.h"
 #include "locations/locationstore.h"
-#include "widgets/settingsdialog.h"
-#include "widgets/appheader.h"
-#include "widgets/chamferbutton.h"
-#include "widgets/flowlayout.h"
-#include "widgets/phaserail.h"
-#include "widgets/toolnav.h"
-#include "widgets/toggleswitch.h"
-#include "widgets/sourcepicker.h"
+#include "widgets/dialogs/settingsdialog.h"
+#include "widgets/chrome/appheader.h"
+#include "widgets/controls/chamferbutton.h"
+#include "widgets/controls/flowlayout.h"
+#include "widgets/chrome/phaserail.h"
+#include "widgets/chrome/toolnav.h"
+#include "widgets/controls/toggleswitch.h"
+#include "widgets/panels/sourcepicker.h"
 #include "ui/brand.h"
 #include "ui/theme.h"
-#include "widgets/aboutdialog.h"
-#include "widgets/exportdialog.h"
-#include "widgets/openresoradialog.h"
-#include "widgets/progresspanel.h"
-#include "widgets/reportselector.h"
-#include "widgets/resultspanel.h"
-#include "widgets/sectioncard.h"
+#include "widgets/dialogs/aboutdialog.h"
+#include "widgets/dialogs/exportdialog.h"
+#include "widgets/dialogs/openresoradialog.h"
+#include "widgets/panels/progresspanel.h"
+#include "widgets/panels/reportselector.h"
+#include "widgets/panels/resultspanel.h"
+#include "widgets/controls/sectioncard.h"
 
 namespace {
 constexpr qint64 kProgressIntervalMs = 100;  // UI refresh cap; backend already throttles

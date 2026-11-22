@@ -4,8 +4,8 @@
 #include <QSignalSpy>
 #include <QtTest>
 
-#include "backend/duplicatesmodel.h"
-#include "widgets/duplicatefinder.h"
+#include "backend/features/duplicatesmodel.h"
+#include "widgets/duplicates/duplicatefinder.h"
 
 namespace {
 // Shape documented in docs/DUPLICATES.md: 1 exact group (3 files) + 1 similar group (2 images).

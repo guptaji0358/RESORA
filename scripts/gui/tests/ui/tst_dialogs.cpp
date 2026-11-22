@@ -11,14 +11,14 @@
 #include <QtTest>
 
 #include "locations/locationstore.h"
-#include "widgets/aboutdialog.h"
-#include "widgets/chamferbutton.h"
-#include "widgets/locationrow.h"
-#include "widgets/locationsuggester.h"
-#include "widgets/savedlocationspanel.h"
-#include "widgets/framelessdialog.h"
-#include "widgets/importdialog.h"
-#include "widgets/settingsdialog.h"
+#include "widgets/dialogs/aboutdialog.h"
+#include "widgets/controls/chamferbutton.h"
+#include "widgets/panels/locationrow.h"
+#include "widgets/panels/locationsuggester.h"
+#include "widgets/panels/savedlocationspanel.h"
+#include "widgets/dialogs/framelessdialog.h"
+#include "widgets/dialogs/importdialog.h"
+#include "widgets/dialogs/settingsdialog.h"
 
 // Window management for the shared dialog frame. Runs offscreen: geometry/close/Esc logic is
 // verified here; real window dragging (startSystemMove) needs a real desktop.

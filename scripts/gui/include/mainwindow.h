@@ -5,12 +5,12 @@
 #include <QMainWindow>
 #include <QPointer>
 
-#include "backend/backendlocator.h"
-#include "backend/cachecleanupmanager.h"
+#include "backend/process/backendlocator.h"
+#include "backend/workflow/cachecleanupmanager.h"
 #include <memory>
 
-#include "backend/dashboardstate.h"
-#include "backend/scanrequest.h"
+#include "backend/dashboard/dashboardstate.h"
+#include "backend/process/scanrequest.h"
 #include "ui/toolrequest.h"
 
 class AppHeader;

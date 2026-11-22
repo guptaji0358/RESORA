@@ -4,10 +4,10 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include "backend/comparison.h"
-#include "backend/previewloader.h"
-#include "widgets/comparisonviewer.h"
-#include "widgets/comparisonworkspace.h"
+#include "backend/features/comparison.h"
+#include "backend/features/previewloader.h"
+#include "widgets/comparison/comparisonviewer.h"
+#include "widgets/comparison/comparisonworkspace.h"
 
 namespace {
 QJsonObject props(const QString &name, int w, int h, qint64 bytes, bool withDpi, bool withIcc = false)

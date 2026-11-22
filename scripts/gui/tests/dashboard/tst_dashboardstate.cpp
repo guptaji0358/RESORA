@@ -6,8 +6,8 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include "backend/dashboardstate.h"
-#include "widgets/analyticspanel.h"
+#include "backend/dashboard/dashboardstate.h"
+#include "widgets/analytics/analyticspanel.h"
 
 using namespace dashboard;
 

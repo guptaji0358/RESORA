@@ -4,13 +4,13 @@
 #include <QSignalSpy>
 #include <QtTest>
 
-#include "backend/analyticsmodel.h"
-#include "backend/scanrequest.h"
-#include "widgets/analyticspanel.h"
-#include "widgets/metriccard.h"
-#include "widgets/phaserail.h"
-#include "widgets/pixelspan.h"
-#include "widgets/sharechart.h"
+#include "backend/features/analyticsmodel.h"
+#include "backend/process/scanrequest.h"
+#include "widgets/analytics/analyticspanel.h"
+#include "widgets/controls/metriccard.h"
+#include "widgets/chrome/phaserail.h"
+#include "widgets/analytics/pixelspan.h"
+#include "widgets/charts/sharechart.h"
 
 namespace {
 // What the engine returns (shape documented in docs/ANALYTICS.md): 3 analyzed + 2 failed.

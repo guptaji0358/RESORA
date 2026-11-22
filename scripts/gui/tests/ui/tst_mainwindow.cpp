@@ -10,12 +10,12 @@
 #include <QtTest>
 #include <functional>
 
-#include "backend/dashboardstate.h"
+#include "backend/dashboard/dashboardstate.h"
 #include "mainwindow.h"
-#include "widgets/analyticspanel.h"
-#include "widgets/exportdialog.h"
-#include "widgets/openresoradialog.h"
-#include "widgets/relinkpanel.h"
+#include "widgets/analytics/analyticspanel.h"
+#include "widgets/dialogs/exportdialog.h"
+#include "widgets/dialogs/openresoradialog.h"
+#include "widgets/panels/relinkpanel.h"
 
 using namespace dashboard;
 
