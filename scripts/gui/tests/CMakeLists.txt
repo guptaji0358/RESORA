@@ -1,52 +1,53 @@
-function(imgan_add_test name)
-    qt_add_executable(${name} ${name}.cpp)
+# Tests are grouped by area in subfolders (backend/, resora/, features/, dashboard/, ui/, tools/).
+# Executable and ctest names are unchanged (tst_<name>), only the source location differs.
+
+# GUI test: links the full app library + QtTest.
+function(imgan_add_test dir name)
+    qt_add_executable(${name} ${dir}/${name}.cpp)
     target_link_libraries(${name} PRIVATE imgan_core Qt6::Test)
     add_test(NAME ${name} COMMAND ${name})
     # Offscreen so widget tests run without a visible desktop.
     set_tests_properties(${name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endfunction()
 
-imgan_add_test(tst_protocolparser)
-imgan_add_test(tst_backendprocess)
-imgan_add_test(tst_widgets)
-imgan_add_test(tst_locations)
-imgan_add_test(tst_icons)
-imgan_add_test(tst_dialogs)
-imgan_add_test(tst_properties)
-imgan_add_test(tst_analytics)
-imgan_add_test(tst_dashboard)
-imgan_add_test(tst_comparison)
-imgan_add_test(tst_insights)
-imgan_add_test(tst_duplicates)
-imgan_add_test(tst_dashboardstate)
-imgan_add_test(tst_resoraui)
-imgan_add_test(tst_mainwindow)
-
 # Container library test: links only the Qt-Core-only library (proves no widgets dependency).
-qt_add_executable(tst_resorafile tst_resorafile.cpp)
-target_link_libraries(tst_resorafile PRIVATE resora_format Qt6::Test)
-add_test(NAME tst_resorafile COMMAND tst_resorafile)
+function(resora_add_test dir name)
+    qt_add_executable(${name} ${dir}/${name}.cpp)
+    target_link_libraries(${name} PRIVATE resora_format Qt6::Test)
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
 
-qt_add_executable(tst_bundledexport tst_bundledexport.cpp)
-target_link_libraries(tst_bundledexport PRIVATE resora_format Qt6::Test)
-add_test(NAME tst_bundledexport COMMAND tst_bundledexport)
+# backend/ - process + protocol
+imgan_add_test(backend tst_protocolparser)
+imgan_add_test(backend tst_backendprocess)
 
-qt_add_executable(tst_linkedexport tst_linkedexport.cpp)
-target_link_libraries(tst_linkedexport PRIVATE resora_format Qt6::Test)
-add_test(NAME tst_linkedexport COMMAND tst_linkedexport)
+# ui/ - widgets, dialogs, locations, icons, main window
+imgan_add_test(ui tst_widgets)
+imgan_add_test(ui tst_locations)
+imgan_add_test(ui tst_icons)
+imgan_add_test(ui tst_dialogs)
+imgan_add_test(ui tst_mainwindow)
 
-qt_add_executable(tst_resoraimport tst_resoraimport.cpp)
-target_link_libraries(tst_resoraimport PRIVATE resora_format Qt6::Test)
-add_test(NAME tst_resoraimport COMMAND tst_resoraimport)
+# features/ - properties, analytics, comparison, insights, duplicates
+imgan_add_test(features tst_properties)
+imgan_add_test(features tst_analytics)
+imgan_add_test(features tst_comparison)
+imgan_add_test(features tst_insights)
+imgan_add_test(features tst_duplicates)
 
-# Developer tool: renders windows/dialogs to PNG on the real platform plugin (not run by ctest).
-qt_add_executable(grab_screens grab_screens.cpp)
+# dashboard/ - dashboard UI and state (compatibility fixtures in dashboard/fixtures)
+imgan_add_test(dashboard tst_dashboard)
+imgan_add_test(dashboard tst_dashboardstate)
+
+# resora/ - .resora container, export/import, reliability
+imgan_add_test(resora tst_resoraui)
+resora_add_test(resora tst_resorafile)
+resora_add_test(resora tst_bundledexport)
+resora_add_test(resora tst_linkedexport)
+resora_add_test(resora tst_resoraimport)
+resora_add_test(resora tst_resorareliability)
+resora_add_test(resora tst_exportlowdisk)
+
+# tools/ - developer tool: renders windows/dialogs to PNG on the real platform plugin (not run by ctest).
+qt_add_executable(grab_screens tools/grab_screens.cpp)
 target_link_libraries(grab_screens PRIVATE imgan_core)
-
-qt_add_executable(tst_resorareliability tst_resorareliability.cpp)
-target_link_libraries(tst_resorareliability PRIVATE resora_format Qt6::Test)
-add_test(NAME tst_resorareliability COMMAND tst_resorareliability)
-
-qt_add_executable(tst_exportlowdisk tst_exportlowdisk.cpp)
-target_link_libraries(tst_exportlowdisk PRIVATE resora_format Qt6::Test)
-add_test(NAME tst_exportlowdisk COMMAND tst_exportlowdisk)
