@@ -14,9 +14,10 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 
 set "APP_EXE=ImageResolutionAnalyzer.exe"
-set "VENV=.venv"
-set "BUILD=build"
-set "LOGDIR=logs"
+set "OUT=out"
+set "VENV=out\.venv"
+set "BUILD=out\build"
+set "LOGDIR=out\logs"
 set "LOG=%LOGDIR%\run.log"
 set "RUNNER=scripts\launcher\runstage.ps1"
 if not defined QT_DIR set "QT_DIR=C:\Qt\6.12.0\mingw_64"
@@ -246,7 +247,7 @@ exit /b 0
 :gitcommit
 rem Explicit opt-in (run.bat /commit). Reached only after build, tests and launch succeeded.
 rem Exit codes: 0 committed / nothing to commit, 67 git missing or not a repository, 68 commit.txt missing/empty, 69 commit failed.
-rem Stages with `git add -A` (ignored folders .venv/build/logs stay out), message = last block of commit.txt. Never pushes.
+rem Stages with `git add -A` (ignored folder out/ stays out), message = last block of commit.txt. Never pushes.
 where git >nul 2>&1
 if errorlevel 1 echo ERROR 67: Git is not installed or not on PATH.& exit /b 67
 git rev-parse --is-inside-work-tree >nul 2>&1
